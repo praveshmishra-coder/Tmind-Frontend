@@ -1,0 +1,10 @@
+export default function Devices() {
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-semibold mb-4">Devices</h1>
+      <p className="text-muted-foreground">
+        View, register, and monitor connected devices here.
+      </p>
+    </div>
+  );
+}
