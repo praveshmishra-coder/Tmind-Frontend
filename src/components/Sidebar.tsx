@@ -4,7 +4,6 @@ import {
   Network,
   Cpu,
   Activity,
-  AlertTriangle,
   FileText,
   Settings,
 } from "lucide-react";
@@ -14,7 +13,6 @@ const menuItems = [
   { icon: <Network size={18} />, label: "Assets", path: "/assets" },
   { icon: <Cpu size={18} />, label: "Devices", path: "/devices" },
   { icon: <Activity size={18} />, label: "Signals", path: "/signals" },
-  { icon: <AlertTriangle size={18} />, label: "Alerts", path: "/alerts" },
   { icon: <FileText size={18} />, label: "Reports", path: "/reports" },
   { icon: <Settings size={18} />, label: "Settings", path: "/settings" },
 ];

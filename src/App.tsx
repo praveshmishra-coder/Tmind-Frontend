@@ -5,7 +5,6 @@ import Dashboard from "./pages/Dashboard";
 import Assets from "./pages/Assets";
 import Devices from "./pages/Devices";
 import Signals from "./pages/Signals";
-import Alerts from "./pages/Alerts";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 
@@ -22,7 +21,6 @@ export default function App() {
           <Route path="/assets" element={<Assets />} />
           <Route path="/devices" element={<Devices />} />
           <Route path="/signals" element={<Signals />} />
-          <Route path="/alerts" element={<Alerts />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

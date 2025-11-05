@@ -12,7 +12,7 @@ export default function Dashboard() {
 
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle>Total Assets</CardTitle>
+          <CardTitle>Total Departments</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-4xl font-bold">18</p>
