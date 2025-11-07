@@ -89,6 +89,7 @@ export default function Devices() {
                   <Button
                     variant="secondary"
                     size="sm"
+                    onClick={() => navigate("/devices/edit")}
                     className="flex items-center gap-1"
                   >
                     <Settings className="h-4 w-4" /> Edit
@@ -96,6 +97,7 @@ export default function Devices() {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => navigate("/devices/config")}
                     className="flex items-center gap-1"
                   >
                     <Wrench className="h-4 w-4" /> Config

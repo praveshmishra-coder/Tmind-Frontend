@@ -17,12 +17,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-// import { toast } from "@/components/ui/use-toast";
+// import { toast } from "@/components/ui/use-toast"; // if using shadcn toast
 // import axios from "axios";
 
 export default function AddDeviceForm() {
   const navigate = useNavigate();
 
+  // local form state
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -33,12 +34,14 @@ export default function AddDeviceForm() {
 
   const [loading, setLoading] = useState(false);
 
+  // handle change
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // handle dropdown change
   const handleSelectChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
   };
@@ -49,8 +52,13 @@ export default function AddDeviceForm() {
 
     // try {
     //   const response = await axios.post("/api/devices", formData);
-    //   const { deviceId } = response.data;
-    //   toast({ title: "Device Added", description: "Device created successfully!" });
+    //   const { deviceId, configId } = response.data;
+
+    //   toast({
+    //     title: "Device Added",
+    //     description: `Device created successfully!`,
+    //   });
+
     //   navigate(`/devices/configure/${deviceId}`);
     // } catch (error) {
     //   console.error(error);
@@ -62,6 +70,7 @@ export default function AddDeviceForm() {
     // } finally {
     //   setLoading(false);
     // }
+    navigate("/devices");
   };
 
   return (
@@ -108,31 +117,12 @@ export default function AddDeviceForm() {
                 defaultValue={formData.protocol}
                 onValueChange={(val) => handleSelectChange("protocol", val)}
               >
-                <SelectTrigger className="bg-card border border-border">
+                <SelectTrigger>
                   <SelectValue placeholder="Select protocol" />
                 </SelectTrigger>
-                <SelectContent className="bg-card border border-border text-foreground">
+                <SelectContent className="bg-background text-foreground">
                   <SelectItem value="ModbusRTU">ModbusRTU</SelectItem>
                   <SelectItem value="ModbusTCP">ModbusTCP</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Connection Type */}
-            <div className="grid gap-2">
-              <Label>Connection Type</Label>
-              <Select
-                defaultValue={formData.connectionType}
-                onValueChange={(val) =>
-                  handleSelectChange("connectionType", val)
-                }
-              >
-                <SelectTrigger className="bg-card border border-border">
-                  <SelectValue placeholder="Select connection type" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border border-border text-foreground">
-                  <SelectItem value="Serial">Serial</SelectItem>
-                  <SelectItem value="Ethernet">Ethernet</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -144,10 +134,10 @@ export default function AddDeviceForm() {
                 defaultValue={formData.status}
                 onValueChange={(val) => handleSelectChange("status", val)}
               >
-                <SelectTrigger className="bg-card border border-border">
+                <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent className="bg-card border border-border text-foreground">
+                <SelectContent className="bg-background text-foreground">
                   <SelectItem value="Active">Active</SelectItem>
                   <SelectItem value="Inactive">Inactive</SelectItem>
                 </SelectContent>
@@ -163,6 +153,7 @@ export default function AddDeviceForm() {
               >
                 Cancel
               </Button>
+
               <Button type="submit" disabled={loading}>
                 {loading ? "Saving..." : "Save Device"}
               </Button>
