@@ -19,6 +19,15 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface Device {
   deviceId: string;
@@ -68,7 +77,6 @@ export default function Devices() {
         setLoading(false);
       }
     };
-
     fetchDevices();
   }, [pageNumber, pageSize, debouncedSearch]);
 
@@ -89,6 +97,12 @@ export default function Devices() {
       setSelectedDevice(null);
     }
   };
+
+  // Generate page numbers for CN UI pagination
+  const pageNumbers = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pageNumbers.push(i);
+  }
 
   return (
     <div className="p-6 space-y-8">
@@ -151,9 +165,7 @@ export default function Devices() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        navigate(`/devices/edit/${d.deviceId}`)
-                      }
+                      onClick={() => navigate(`/devices/edit/${d.deviceId}`)}
                       className="flex items-center gap-1"
                     >
                       <Settings className="h-4 w-4" /> Edit
@@ -161,9 +173,7 @@ export default function Devices() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        navigate(`/devices/config/${d.deviceId}`)
-                      }
+                      onClick={() => navigate(`/devices/config/${d.deviceId}`)}
                       className="flex items-center gap-1"
                     >
                       <Wrench className="h-4 w-4" /> Config
@@ -192,10 +202,7 @@ export default function Devices() {
               ))}
               {devices.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={3}
-                    className="text-center p-6 text-muted-foreground"
-                  >
+                  <td colSpan={3} className="text-center p-6 text-muted-foreground">
                     No devices found.
                   </td>
                 </tr>
@@ -205,29 +212,52 @@ export default function Devices() {
         </div>
       )}
 
-      {/* Pagination */}
+      {/* CN UI Pagination */}
       {!loading && !error && totalPages > 1 && (
-        <div className="flex justify-between items-center mt-4">
-          <Button
-            onClick={() => setPageNumber((prev) => Math.max(prev - 1, 1))}
-            disabled={pageNumber === 1}
-          >
-            Previous
-          </Button>
+        <Pagination className="justify-center mt-6">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPageNumber((prev) => Math.max(prev - 1, 1));
+                }}
+              />
+            </PaginationItem>
 
-          <span>
-            Page {pageNumber} of {totalPages}
-          </span>
+            {pageNumbers.map((num) => (
+              <PaginationItem key={num}>
+                <PaginationLink
+                  href="#"
+                  isActive={num === pageNumber}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPageNumber(num);
+                  }}
+                >
+                  {num}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
 
-          <Button
-            onClick={() =>
-              setPageNumber((prev) => Math.min(prev + 1, totalPages))
-            }
-            disabled={pageNumber === totalPages}
-          >
-            Next
-          </Button>
-        </div>
+            {totalPages > 5 && (
+              <PaginationItem>
+                <PaginationEllipsis />
+              </PaginationItem>
+            )}
+
+            <PaginationItem>
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPageNumber((prev) => Math.min(prev + 1, totalPages));
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       )}
 
       {/* Delete Confirmation Dialog */}
@@ -236,19 +266,14 @@ export default function Devices() {
                animate-in fade-in-0 zoom-in-95 duration-200
                flex flex-col items-center justify-center text-center mx-auto">
           <div className="flex flex-col items-center text-center space-y-4 w-full ">
-            {/* Warning Icon */}
             <div className="bg-red-100 dark:bg-red-900/40 p-3 rounded-full">
               <AlertTriangle className="h-12 w-12 text-red-600 dark:text-red-400" />
             </div>
-
-            {/* Title */}
             <DialogHeader>
               <DialogTitle className="text-xl font-semibold text-red-600 dark:text-red-400">
                 Confirm Deletion
               </DialogTitle>
             </DialogHeader>
-
-            {/* Message */}
             <p className="text-sm text-muted-foreground leading-relaxed">
               Are you sure you want to delete{" "}
               <span className="font-medium text-foreground">
@@ -256,8 +281,6 @@ export default function Devices() {
               </span>
               ?
             </p>
-
-            {/* Buttons */}
             <DialogFooter className="flex w-full justify-between pt-4">
               <Button
                 variant="outline"
