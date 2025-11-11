@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Settings, Trash2, Wrench, Search, HdmiPort } from "lucide-react";
+import { Settings, Trash2, Wrench, Search, HdmiPort, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getDevices, deleteDevice } from "@/api/deviceApi";
-import { toast, ToastContainer } from "react-toastify";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 interface Device {
@@ -24,6 +31,8 @@ export default function Devices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
   const navigate = useNavigate();
 
@@ -45,49 +54,19 @@ export default function Devices() {
     fetchDevices();
   }, []);
 
-  // React-Toastify confirmation for deletion
-  const confirmDelete = (deviceId: string) => {
-    toast(
-      ({ closeToast }) => (
-        <div className="flex flex-col gap-2">
-          <p>Are you sure you want to delete this device?</p>
-          <div className="flex justify-end gap-2 mt-2">
-            <button
-              className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
-              onClick={closeToast}
-            >
-              Cancel
-            </button>
-            <button
-              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-              onClick={async () => {
-                await handleDelete(deviceId);
-                closeToast();
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      ),
-      {
-        autoClose: false,
-        closeOnClick: false,
-        draggable: false,
-        position: "top-center",
-      }
-    );
-  };
-
   // Delete device API call
-  const handleDelete = async (deviceId: string) => {
+  const handleDelete = async () => {
+    if (!selectedDevice) return;
     try {
-      await deleteDevice(deviceId);
-      setDevices((prev) => prev.filter((d) => d.deviceId !== deviceId));
-      toast.success("Device deleted successfully!");
+      await deleteDevice(selectedDevice.deviceId);
+      setDevices((prev) => prev.filter((d) => d.deviceId !== selectedDevice.deviceId));
+      toast.success(`Device "${selectedDevice.name}" deleted successfully!`);
     } catch (err) {
       console.error("Error deleting device:", err);
-      toast.error("Failed to delete device. Check console.");
+      toast.error("Failed to delete device. Please try again.");
+    } finally {
+      setOpenDialog(false);
+      setSelectedDevice(null);
     }
   };
 
@@ -98,9 +77,6 @@ export default function Devices() {
 
   return (
     <div className="p-6 space-y-8">
-      {/* Toast container */}
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -181,7 +157,10 @@ export default function Devices() {
                       variant="destructive"
                       size="sm"
                       className="flex items-center gap-1"
-                      onClick={() => confirmDelete(d.deviceId)}
+                      onClick={() => {
+                        setSelectedDevice(d);
+                        setOpenDialog(true);
+                      }}
                     >
                       <Trash2 className="h-4 w-4" /> Delete
                     </Button>
@@ -199,6 +178,56 @@ export default function Devices() {
           </table>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <DialogContent className="sm:max-w-md border border-border shadow-2xl rounded-2xl p-6 bg-card
+               animate-in fade-in-0 zoom-in-95 duration-200
+               flex flex-col items-center justify-center text-center mx-auto">
+          <div className="flex flex-col items-center text-center space-y-4 w-full ">
+            {/* Warning Icon */}
+            <div className="bg-red-100 dark:bg-red-900/40 p-3 rounded-full">
+              <AlertTriangle className="h-12 w-12 text-red-600 dark:text-red-400" />
+            </div>
+
+            {/* Title */}
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold text-red-600 dark:text-red-400">
+                Confirm Deletion
+              </DialogTitle>
+            </DialogHeader>
+
+            {/* Message */}
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-foreground">
+                "{selectedDevice?.name}"
+              </span>
+              ?
+            </p>
+
+            {/* Buttons */}
+            <DialogFooter className="flex w-full justify-between pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setOpenDialog(false)}
+                className="w-[45%] hover:bg-muted"
+              >
+                No,Keep it
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                className="w-[45%] bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2 shadow-md transition-all"
+              >
+                <Trash2 className="h-4 w-4" />
+                Yes, Delete it
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

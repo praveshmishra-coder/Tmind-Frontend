@@ -14,6 +14,7 @@ import Signals from "./pages/Signals";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import DeletedDevices from "./devices/DeletedDevices";
+import Profile from "./pages/Profile";
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/deleted-devices" element={<DeletedDevices />} />
+          <Route path="/profile" element={<Profile />} />
         </Route>
 
         {/* Redirect unknown routes to login */}
