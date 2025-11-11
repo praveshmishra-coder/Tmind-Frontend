@@ -18,7 +18,7 @@ export default function ConfigureDevice() {
   const [deviceDetails, setDeviceDetails] = useState({
     name: "",
     description: "",
-    protocol: "",
+    protocol: "ModbusTCP",
   });
 
   const [formData, setFormData] = useState({
@@ -35,25 +35,38 @@ export default function ConfigureDevice() {
   // 🔹 Fetch device details
   useEffect(() => {
     if (!deviceId) return;
+
     const fetchDevice = async () => {
       try {
         const res = await getDeviceById(deviceId);
+        console.log("🔹 Fetched device:", res);
+
         if (res) {
           setDeviceDetails({
-            name: res.name || "Unknown",
+            name: res.name || "",
             description: res.description || "",
             protocol: res.protocol || "ModbusTCP",
           });
-          setFormData((prev) => ({
-            ...prev,
-            configName: `${res.name}_config`,
-          }));
+
+          setFormData({
+            configName: res.deviceConfiguration?.name || `${res.name}_config`,
+            pollInterval: res.deviceConfiguration?.pollIntervalMs || 1000,
+            protocolSettings: res.deviceConfiguration?.protocolSettingsJson
+              ? JSON.parse(res.deviceConfiguration.protocolSettingsJson)
+              : {
+                  IpAddress: "127.0.0.1",
+                  Port: 5020,
+                  SlaveId: 1,
+                  Endian: "Little",
+                },
+          });
         }
       } catch (error) {
-        console.error("Failed to fetch device:", error);
+        console.error("❌ Failed to fetch device:", error);
         toast.error("Error fetching device details. Please try again.");
       }
     };
+
     fetchDevice();
   }, [deviceId]);
 
@@ -79,12 +92,11 @@ export default function ConfigureDevice() {
     });
   };
 
-  // ✅ Required Field Validation
+  // ✅ Validation
   const validateForm = () => {
     const { configName, pollInterval, protocolSettings } = formData;
     const { IpAddress, Port, SlaveId } = protocolSettings;
 
-    // 🔸 Configuration Name validation (must not start with hyphen)
     const configNameRegex = /^[A-Za-z][A-Za-z0-9_\- ]{0,99}$/;
     if (!configName.trim()) {
       toast.error("Configuration name is required.");
@@ -97,27 +109,22 @@ export default function ConfigureDevice() {
       return false;
     }
 
-    // 🔸 Poll Interval validation (100–300000)
     if (isNaN(Number(pollInterval)) || pollInterval < 100 || pollInterval > 300000) {
       toast.error("Poll interval must be between 100 and 300000 milliseconds.");
       return false;
     }
 
-    // 🔸 IP Address validation
-    const ipRegex =
-      /^(25[0-5]|2[0-4]\d|1?\d{1,2})(\.(25[0-5]|2[0-4]\d|1?\d{1,2})){3}$/;
+    const ipRegex = /^(25[0-5]|2[0-4]\d|1?\d{1,2})(\.(25[0-5]|2[0-4]\d|1?\d{1,2})){3}$/;
     if (!ipRegex.test(IpAddress)) {
       toast.error("Invalid IP Address format (e.g., 192.168.1.1)");
       return false;
     }
 
-    // 🔸 Port validation
     if (isNaN(Port) || Port < 1 || Port > 65535) {
       toast.error("Port must be between 1 and 65535");
       return false;
     }
 
-    // 🔸 Slave ID validation
     if (isNaN(SlaveId) || SlaveId < 1 || SlaveId > 247) {
       toast.error("Slave ID must be between 1 and 247");
       return false;
@@ -158,7 +165,7 @@ export default function ConfigureDevice() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-[80vh] bg-background text-foreground">
+    <div className="flex justify-center items-center min-h-[80vh] bg-background text-foreground p-4">
       <Card className="w-full max-w-2xl shadow-lg border border-border bg-card">
         <CardHeader className="flex flex-row items-center gap-2">
           <Settings2 className="h-5 w-5 text-primary" />
