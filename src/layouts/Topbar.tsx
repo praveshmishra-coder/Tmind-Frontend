@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Bell, User, Menu } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { getCurrentUser } from "@/api/userApi";
 
 interface TopbarProps {
   onToggleSidebar?: () => void;
@@ -18,6 +20,19 @@ interface TopbarProps {
 
 export default function Topbar({ onToggleSidebar }: TopbarProps) {
   const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const data = await getCurrentUser();
+        setUser(data);
+      } catch (err) {
+        console.error("Failed to fetch user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleLogout = () => {
     navigate("/");
@@ -25,9 +40,8 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
 
   return (
     <header className="sticky top-0 z-40 h-16 flex items-center justify-between px-4 sm:px-6 bg-card backdrop-blur-md border-b border-border shadow-sm transition-colors">
-      {/* Left side: Hamburger + Title */}
+      {/* Left: Hamburger + Title */}
       <div className="flex items-center gap-3">
-        {/* Hamburger for small screens */}
         <Button
           variant="ghost"
           size="icon"
@@ -37,52 +51,17 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
           <Menu className="h-6 w-6 text-foreground" />
         </Button>
 
-        {/* Dynamic Title (Tmind for small screen, full title for large) */}
         <h1 className="text-lg font-semibold text-foreground tracking-tight">
           <span className="lg:hidden">Tmind</span>
           <span className="hidden lg:inline">Tata Machine Intelligence Device</span>
         </h1>
       </div>
 
-      {/* Right side actions */}
+      {/* Right: User Menu + Theme Toggle */}
       <div className="flex items-center gap-3">
         <ThemeToggle />
 
-        {/* Notifications
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative hover:bg-accent/30 transition-colors rounded-full"
-            >
-              <Bell className="h-5 w-5 text-foreground" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs font-medium shadow">
-                3
-              </Badge>
-            </Button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent
-            align="end"
-            className="w-80 bg-card border border-border shadow-lg rounded-lg p-2"
-          >
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {[
-              { title: "High Temperature Alert", desc: "Asset PLC-001 exceeds threshold" },
-              { title: "Device Offline", desc: "Gateway-03 disconnected" },
-              { title: "Maintenance Due", desc: "Asset M-204 scheduled today" },
-            ].map((n, i) => (
-              <DropdownMenuItem key={i} className="flex flex-col gap-1 px-2 py-2">
-                <p className="text-sm font-medium">{n.title}</p>
-                <p className="text-xs text-muted-foreground">{n.desc}</p>
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu> */}
-
-        {/* User Menu */}
+        {/* User Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -93,7 +72,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
                 <User className="h-4 w-4 text-primary-foreground" />
               </div>
               <span className="text-sm font-medium text-foreground hidden sm:inline">
-                Admin User
+                {user ? user.username : "Loading..."}
               </span>
             </Button>
           </DropdownMenuTrigger>
@@ -101,9 +80,12 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
           <DropdownMenuContent align="end" className="w-48 bg-card border border-border">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate("/profile")}>Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/profile")}>
+              Profile
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/settings")}>
-              Settings</DropdownMenuItem>
+              Settings
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleLogout}

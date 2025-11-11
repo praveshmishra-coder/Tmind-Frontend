@@ -130,7 +130,7 @@ export default function Devices() {
                   <td className="p-4">{d.description}</td>
                   <td className="p-4 flex justify-center gap-2 flex-wrap">
                     <Button
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={() => navigate(`/devices/edit/${d.deviceId}`)}
                       className="flex items-center gap-1"
@@ -154,7 +154,7 @@ export default function Devices() {
                       <HdmiPort className="h-4 w-4" /> Ports
                     </Button>
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       size="sm"
                       className="flex items-center gap-1"
                       onClick={() => {
