@@ -16,14 +16,14 @@ export default function PortSettings() {
   const navigate = useNavigate();
 
   const ports = [
-    { id: 1, name: "Voltage", unit: "V", icon: <Zap className="h-5 w-5 text-yellow-500" /> },
-    { id: 2, name: "Current", unit: "A", icon: <Plug className="h-5 w-5 text-blue-500" /> },
-    { id: 3, name: "Temperature", unit: "°C", icon: <Thermometer className="h-5 w-5 text-red-500" /> },
-    { id: 4, name: "Frequency", unit: "Hz", icon: <Radio className="h-5 w-5 text-purple-500" /> },
-    { id: 5, name: "Vibration", unit: "mm/s", icon: <Activity className="h-5 w-5 text-green-500" /> },
-    { id: 6, name: "Flow Rate", unit: "L/min", icon: <Droplets className="h-5 w-5 text-cyan-500" /> },
-    { id: 7, name: "RPM", unit: "rpm", icon: <RefreshCcw className="h-5 w-5 text-orange-500" /> },
-    { id: 8, name: "Torque", unit: "Nm", icon: <Wrench className="h-5 w-5 text-gray-600" /> },
+    { id: 0, name: "Voltage", unit: "V", icon: <Zap className="h-5 w-5 text-yellow-500" /> },
+    { id: 1, name: "Current", unit: "A", icon: <Plug className="h-5 w-5 text-blue-500" /> },
+    { id: 2, name: "Temperature", unit: "°C", icon: <Thermometer className="h-5 w-5 text-red-500" /> },
+    { id: 3, name: "Frequency", unit: "Hz", icon: <Radio className="h-5 w-5 text-purple-500" /> },
+    { id: 4, name: "Vibration", unit: "mm/s", icon: <Activity className="h-5 w-5 text-green-500" /> },
+    { id: 5, name: "Flow Rate", unit: "L/min", icon: <Droplets className="h-5 w-5 text-cyan-500" /> },
+    { id: 6, name: "RPM", unit: "rpm", icon: <RefreshCcw className="h-5 w-5 text-orange-500" /> },
+    { id: 7, name: "Torque", unit: "Nm", icon: <Wrench className="h-5 w-5 text-gray-600" /> },
   ];
 
   return (

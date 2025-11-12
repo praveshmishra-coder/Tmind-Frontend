@@ -51,25 +51,36 @@ const Login: React.FC = () => {
 
   // Validation
   const validate = () => {
-    const newErrors: typeof errors = {};
-    if (mode === "signup" && !/^[A-Za-z0-9]{3,}$/.test(username)) {
-      newErrors.username = "Username must be at least 3 characters (letters or numbers only).";
-    }
-    if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email)) {
-      newErrors.email = "Invalid email format.";
-    }
+  const newErrors: typeof errors = {};
+
+  // Username validation only for signup
+  if (mode === "signup" && !/^[A-Za-z0-9]{3,}$/.test(username)) {
+    newErrors.username = "Username must be at least 3 characters (letters or numbers only).";
+  }
+
+  // Email validation (for both login & signup)
+  if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email)) {
+    newErrors.email = "Invalid email format.";
+  }
+
+  // ✅ Password validation only for signup (skip for login)
+  if (mode === "signup") {
     const passwordRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(password)) {
       newErrors.password =
         "Password must include uppercase, lowercase, number, and symbol (min 8 chars).";
     }
-    if (step === "otp" && !/^\d{6}$/.test(otp)) {
-      newErrors.otp = "OTP must be 6 digits.";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  }
+
+  // OTP validation only in OTP step
+  if (step === "otp" && !/^\d{6}$/.test(otp)) {
+    newErrors.otp = "OTP must be 6 digits.";
+  }
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
 
   // Handle Login / Signup / OTP
   const handleSubmit = async (e: React.FormEvent) => {
