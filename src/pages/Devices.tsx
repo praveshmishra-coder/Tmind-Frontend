@@ -28,6 +28,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { useAuth } from "@/context/authContext"; // ✅ Import AuthContext
 
 interface Device {
   deviceId: string;
@@ -44,7 +45,7 @@ interface Device {
 
 type SelectedDevice = { deviceId: string; name: string };
 
-const SESSION_KEY = "selectedDeviceIds"; // now stores JSON: SelectedDevice[]
+const SESSION_KEY = "selectedDeviceIds";
 
 export default function Devices() {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -59,25 +60,20 @@ export default function Devices() {
   const [totalPages, setTotalPages] = useState(1);
 
   const navigate = useNavigate();
+  const { user } = useAuth(); // ✅ Get logged-in user and role
 
-  // --- sessionSelectedDevices state is initialized from sessionStorage safely
-  //ye function bascially sting data se object main convert karke return kar raha hai 
+  // --- helper to safely read selected devices from sessionStorage
   function readSelectedDevices(): SelectedDevice[] {
     try {
       const raw = sessionStorage.getItem(SESSION_KEY);
-      // console.log(raw);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
-      // console.log(parsed);
       if (!Array.isArray(parsed)) return [];
-      // sanitize objects, keep only deviceId & name
       return parsed
         .map((x) => {
           if (x && typeof x === "object") {
             const id = String((x as any).deviceId ?? (x as any).id ?? "");
-            // console.log(id)
             const name = String((x as any).name ?? (x as any).displayName ?? "");
-            // console.log(name)
             if (id) return { deviceId: id, name };
           }
           return null;
@@ -88,12 +84,10 @@ export default function Devices() {
     }
   }
 
-  //ye wala saaare subcribe wale data store karega 
   const [sessionSelectedDevices, setSessionSelectedDevices] = useState<SelectedDevice[]>(
     () => readSelectedDevices()
   );
-// console.log(sessionSelectedDevices)
-  // Keep state in sync with other tabs (storage event)
+
   useEffect(() => {
     function onStorage(e: StorageEvent) {
       if (e.key === SESSION_KEY) {
@@ -104,13 +98,11 @@ export default function Devices() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  // Debounce search input
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearch(searchTerm), 500);
     return () => clearTimeout(handler);
   }, [searchTerm]);
 
-  // Fetch devices with pagination & search
   useEffect(() => {
     const fetchDevices = async () => {
       try {
@@ -128,7 +120,6 @@ export default function Devices() {
     fetchDevices();
   }, [pageNumber, pageSize, debouncedSearch]);
 
-  // Delete device API call
   const handleDelete = async () => {
     if (!selectedDevice) return;
     try {
@@ -146,40 +137,32 @@ export default function Devices() {
     }
   };
 
-  // Generate page numbers for CN UI pagination
   const pageNumbers = [];
-  for (let i = 1; i <= totalPages; i++) {
-    pageNumbers.push(i);
-  }
+  for (let i = 1; i <= totalPages; i++) pageNumbers.push(i);
 
-  // Toggle handler (updates sessionStorage + component state)
-  // Accepts deviceId and name, stores object { deviceId, name }.
-  //jaise ji subscibe dabapoo woh session storage main add ho jata hai 
   const toggleSelectedDevice = useCallback((name: string, deviceId: string) => {
     let current = readSelectedDevices();
-    console.log(current);
     const exists = current.some((sd) => sd.deviceId === deviceId);
-
     if (exists) {
       current = current.filter((sd) => sd.deviceId !== deviceId);
     } else {
       current = [...current, { deviceId, name }];
     }
-
     try {
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(current));
     } catch (e) {
       console.warn("Failed to write sessionStorage", e);
     }
-
     setSessionSelectedDevices(current);
     return !exists;
   }, []);
 
-  // helper: check if device id is selected
   function isDeviceSelected(deviceId: string) {
     return sessionSelectedDevices.some((sd) => sd.deviceId === deviceId);
   }
+
+  // ✅ Check if the user is Admin
+  const isAdmin = user?.role === "Admin";
 
   return (
     <div className="p-6 space-y-8">
@@ -189,12 +172,16 @@ export default function Devices() {
           <h1 className="text-3xl font-bold text-foreground">Devices</h1>
           <p className="text-muted-foreground">Manage all connected devices</p>
         </div>
-        <Button
-          onClick={() => navigate("/devices/add")}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          + Add Device
-        </Button>
+
+        {/* ✅ Only Admin can see Add Device */}
+        {isAdmin && (
+          <Button
+            onClick={() => navigate("/devices/add")}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            + Add Device
+          </Button>
+        )}
       </div>
 
       {/* Search */}
@@ -211,13 +198,9 @@ export default function Devices() {
         </div>
       </div>
 
-      {/* Loading / Error */}
-      {loading && (
-        <div className="text-center text-muted-foreground">Loading devices...</div>
-      )}
+      {loading && <div className="text-center text-muted-foreground">Loading devices...</div>}
       {error && <div className="text-center text-destructive">{error}</div>}
 
-      {/* Device Table */}
       {!loading && !error && (
         <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
           <table className="w-full text-sm text-foreground">
@@ -232,30 +215,49 @@ export default function Devices() {
               {devices.map((d) => {
                 const isSelected = isDeviceSelected(d.deviceId);
                 return (
-                  <tr
-                    key={d.deviceId}
-                    className="border-t border-border hover:bg-muted/20 transition-colors"
-                  >
+                  <tr key={d.deviceId} className="border-t border-border hover:bg-muted/20 transition-colors">
                     <td className="p-4 font-medium">{d.name}</td>
                     <td className="p-4">{d.description}</td>
                     <td className="p-4 flex justify-center gap-2 flex-wrap">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate(`/devices/edit/${d.deviceId}`)}
-                        className="flex items-center gap-1"
-                      >
-                        <Settings className="h-4 w-4" /> Edit
-                      </Button>
-                      {!d.deviceConfiguration && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate(`/devices/config/${d.deviceId}`)}
-                        className="flex items-center gap-1"
-                      >
-                        <Wrench className="h-4 w-4" /> Config
-                      </Button>)}
+
+                      {/* ✅ Admin-only buttons */}
+                      {isAdmin && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/devices/edit/${d.deviceId}`)}
+                            className="flex items-center gap-1"
+                          >
+                            <Settings className="h-4 w-4" /> Edit
+                          </Button>
+
+                          {!d.deviceConfiguration && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/devices/config/${d.deviceId}`)}
+                              className="flex items-center gap-1"
+                            >
+                              <Wrench className="h-4 w-4" /> Config
+                            </Button>
+                          )}
+
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-1"
+                            onClick={() => {
+                              setSelectedDevice(d);
+                              setOpenDialog(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" /> Delete
+                          </Button>
+                        </>
+                      )}
+
+                      {/* ✅ Everyone can view ports / subscribe */}
                       <Button
                         variant="outline"
                         size="sm"
@@ -264,19 +266,7 @@ export default function Devices() {
                       >
                         <HdmiPort className="h-4 w-4" /> Ports
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-1"
-                        onClick={() => {
-                          setSelectedDevice(d);
-                          setOpenDialog(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" /> Delete
-                      </Button>
 
-                      {/* Toggle Subscribe/Unsubscribe */}
                       <Button
                         variant={isSelected ? "destructive" : "outline"}
                         size="sm"
@@ -297,6 +287,7 @@ export default function Devices() {
                   </tr>
                 );
               })}
+
               {devices.length === 0 && (
                 <tr>
                   <td colSpan={3} className="text-center p-6 text-muted-foreground">
@@ -309,7 +300,7 @@ export default function Devices() {
         </div>
       )}
 
-      {/* CN UI Pagination */}
+      {/* Pagination */}
       {!loading && !error && totalPages > 1 && (
         <Pagination className="justify-center mt-6">
           <PaginationContent>
@@ -359,9 +350,7 @@ export default function Devices() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <DialogContent className="sm:max-w-md border border-border shadow-2xl rounded-2xl p-6 bg-card
-               animate-in fade-in-0 zoom-in-95 duration-200
-               flex flex-col items-center justify-center text-center mx-auto">
+        <DialogContent className="sm:max-w-md border border-border shadow-2xl rounded-2xl p-6 bg-card animate-in fade-in-0 zoom-in-95 duration-200 flex flex-col items-center justify-center text-center mx-auto">
           <div className="flex flex-col items-center text-center space-y-4 w-full ">
             <div className="bg-red-100 dark:bg-red-900/40 p-3 rounded-full">
               <AlertTriangle className="h-12 w-12 text-red-600 dark:text-red-400" />

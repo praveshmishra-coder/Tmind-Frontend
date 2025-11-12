@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
-import authApi from "@/api/authApi";
+import { useAuth } from "@/context/authContext";
 
 interface TopbarProps {
   onToggleSidebar?: () => void;
@@ -20,6 +20,7 @@ interface TopbarProps {
 
 export default function Topbar({ onToggleSidebar }: TopbarProps) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const location = useLocation();
 
   // ✅ Read login state from location or fallback
@@ -45,22 +46,14 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
   }, []);
 
   // ✅ Logout: clear localStorage & navigate
-    const handleLogout = async () => {
-    try{
-      const response=await authApi.post("/User/logout");
-      console.log("Logout response:", response.data);
-      toast.success(response.data.message || "Logged out successfully");
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("user");
-      setUser(null);
-      navigate("/");
-    }
-    catch(err){
-      toast.error("Logout failed");
-      console.error("Logout API call failed:", err);
-    }
-    
+  const handleLogout = async () => {
+      try {
+        await logout();
+        toast.success("Logged out successfully");
+        navigate("/");
+      } catch {
+        toast.error("Logout failed");
+      }
   };
 
   const handleLogin = () => {

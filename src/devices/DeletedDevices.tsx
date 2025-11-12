@@ -4,6 +4,7 @@ import { RotateCcw, Search } from "lucide-react";
 import { getDeletedDeviced, retriveDeviceById } from "@/api/deviceApi";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import {useAuth} from "@/context/authContext";
 
 interface Device {
   deviceId: string;
@@ -23,6 +24,8 @@ export default function DeletedDevices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const {user} = useAuth();
 
   // ✅ Fetch deleted devices
   useEffect(() => {
@@ -68,6 +71,8 @@ export default function DeletedDevices() {
     d.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const isAdmin = user?.role === 'Admin';
+
   return (
     <div className="p-6 space-y-8">
       {/* Header */}
@@ -106,7 +111,7 @@ export default function DeletedDevices() {
               <tr>
                 <th className="p-4 font-semibold">Device Name</th>
                 <th className="p-4 font-semibold">Description</th>
-                <th className="p-4 font-semibold text-center">Actions</th>
+                {isAdmin && <th className="p-4 font-semibold text-center">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -118,7 +123,7 @@ export default function DeletedDevices() {
                   >
                     <td className="p-4 font-medium">{d.name}</td>
                     <td className="p-4">{d.description}</td>
-                    <td className="p-4 flex justify-center">
+                    {isAdmin && <td className="p-4 flex justify-center">
                       <Button
                         variant="secondary"
                         size="sm"
@@ -127,7 +132,7 @@ export default function DeletedDevices() {
                       >
                         <RotateCcw className="h-4 w-4" /> Retrieve
                       </Button>
-                    </td>
+                    </td>}
                   </tr>
                 ))
               ) : (
