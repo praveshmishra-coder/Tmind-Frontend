@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Settings2, ArrowLeft } from "lucide-react";
+import { Settings2, ArrowLeft, AlertTriangle } from "lucide-react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { getDeviceById, updateDevice } from "@/api/deviceApi";
 import { toast, ToastContainer } from "react-toastify";
@@ -14,6 +14,7 @@ export default function ConfigureDevice() {
   const navigate = useNavigate();
   const { deviceId } = useParams<{ deviceId: string }>();
   const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   const [deviceDetails, setDeviceDetails] = useState({
     name: "",
@@ -35,6 +36,8 @@ export default function ConfigureDevice() {
   // 🔹 Fetch device details
   useEffect(() => {
     if (!deviceId) return;
+
+    let toastShown = false;
 
     const fetchDevice = async () => {
       try {
@@ -61,9 +64,19 @@ export default function ConfigureDevice() {
                 },
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("❌ Failed to fetch device:", error);
-        toast.error("Error fetching device details. Please try again.");
+
+        // Prevent double toasts in React Strict Mode
+        if (!toastShown) {
+          toastShown = true;
+          if (error.response?.status === 404) {
+            setNotFound(true);
+            toast.error("Device not found!");
+          } else {
+            toast.error("Error fetching device details. Please try again.");
+          }
+        }
       }
     };
 
@@ -164,6 +177,23 @@ export default function ConfigureDevice() {
     }
   };
 
+  // 🟥 Show "Device Not Found" message if invalid ID
+  if (notFound) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] text-center p-6">
+        <AlertTriangle className="text-red-500 w-12 h-12 mb-3" />
+        <h2 className="text-xl font-semibold mb-2">Device Not Found</h2>
+        <p className="text-muted-foreground mb-4">
+          The device you are trying to configure doesn’t exist or may have been deleted.
+        </p>
+        <Button variant="outline" onClick={() => navigate("/devices")}>
+          <ArrowLeft className="w-4 h-4 mr-2" /> Go Back
+        </Button>
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-center items-center min-h-[80vh] bg-background text-foreground p-4">
       <Card className="w-full max-w-2xl shadow-lg border border-border bg-card">
@@ -242,10 +272,7 @@ export default function ConfigureDevice() {
 
               <div className="grid gap-2">
                 <Label htmlFor="Endian">Endian</Label>
-                <Select
-                  value={formData.protocolSettings.Endian}
-                  onValueChange={handleEndianChange}
-                >
+                <Select value={formData.protocolSettings.Endian} onValueChange={handleEndianChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select Endian" />
                   </SelectTrigger>
