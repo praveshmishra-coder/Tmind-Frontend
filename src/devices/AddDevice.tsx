@@ -84,7 +84,7 @@ export default function AddDeviceForm() {
         err?.response?.data?.message ||
         err?.response?.data?.data?.message ||
         "Failed to create device. Please try again.";
-      toast.error(message, { position: "top-right", autoClose: 3000 });
+      // toast.error(message, { position: "top-right", autoClose: 3000 });
     } finally {
       setLoading(false);
     }

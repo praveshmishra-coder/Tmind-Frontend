@@ -171,7 +171,7 @@ export default function ConfigureDevice() {
       setTimeout(() => navigate("/devices"), 1000);
     } catch (error) {
       console.error("Error updating configuration:", error);
-      toast.error("Failed to update configuration. Check console for details.");
+      // toast.error("Failed to update configuration.");
     } finally {
       setLoading(false);
     }
@@ -260,14 +260,26 @@ export default function ConfigureDevice() {
 
               <div className="grid gap-2">
                 <Label htmlFor="SlaveId">Slave ID</Label>
-                <Input
-                  id="SlaveId"
-                  name="SlaveId"
-                  type="number"
-                  value={formData.protocolSettings.SlaveId}
-                  onChange={handleProtocolChange}
-                  required
-                />
+                <Select
+                  value={formData.protocolSettings.SlaveId?.toString() || ""}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      protocolSettings: {
+                        ...prev.protocolSettings,
+                        SlaveId: value,
+                      },
+                    }))
+                  }
+                >
+                  <SelectTrigger id="SlaveId">
+                    <SelectValue placeholder="Select Slave ID" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background text-foreground">
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid gap-2">

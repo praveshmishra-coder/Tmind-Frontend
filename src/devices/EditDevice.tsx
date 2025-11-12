@@ -207,7 +207,7 @@ useEffect(() => {
       setTimeout(() => navigate("/devices"), 1000);
     } catch (error) {
       console.error("❌ Error updating device:", error);
-      toast.error("Failed to update device. Check console for details.");
+      // toast.error("Failed to update device.");
     } finally {
       setLoading(false);
     }
@@ -351,18 +351,29 @@ useEffect(() => {
                       required
                     />
                   </div>
-
                   <div className="grid gap-2">
-                    <Label>Slave ID</Label>
-                    <Input
-                      name="SlaveId"
-                      type="number"
-                      value={formData.protocolSettings.SlaveId}
-                      onChange={handleProtocolChange}
-                      required
-                    />
+                    <Label htmlFor="SlaveId">Slave ID</Label>
+                    <Select
+                      value={formData.protocolSettings.SlaveId?.toString() || ""}
+                      onValueChange={(value) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          protocolSettings: {
+                            ...prev.protocolSettings,
+                            SlaveId: value,
+                          },
+                        }))
+                      }
+                    >
+                      <SelectTrigger id="SlaveId">
+                        <SelectValue placeholder="Select Slave ID" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-background text-foreground">
+                        <SelectItem value="1">1</SelectItem>
+                        <SelectItem value="2">2</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-
                   <div className="grid gap-2">
                     <Label>Endian</Label>
                     <Select
