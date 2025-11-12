@@ -61,18 +61,23 @@ export default function Devices() {
   const navigate = useNavigate();
 
   // --- sessionSelectedDevices state is initialized from sessionStorage safely
+  //ye function bascially sting data se object main convert karke return kar raha hai 
   function readSelectedDevices(): SelectedDevice[] {
     try {
       const raw = sessionStorage.getItem(SESSION_KEY);
+      // console.log(raw);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
+      // console.log(parsed);
       if (!Array.isArray(parsed)) return [];
       // sanitize objects, keep only deviceId & name
       return parsed
         .map((x) => {
           if (x && typeof x === "object") {
             const id = String((x as any).deviceId ?? (x as any).id ?? "");
+            // console.log(id)
             const name = String((x as any).name ?? (x as any).displayName ?? "");
+            // console.log(name)
             if (id) return { deviceId: id, name };
           }
           return null;
@@ -83,10 +88,11 @@ export default function Devices() {
     }
   }
 
+  //ye wala saaare subcribe wale data store karega 
   const [sessionSelectedDevices, setSessionSelectedDevices] = useState<SelectedDevice[]>(
     () => readSelectedDevices()
   );
-
+// console.log(sessionSelectedDevices)
   // Keep state in sync with other tabs (storage event)
   useEffect(() => {
     function onStorage(e: StorageEvent) {
@@ -148,8 +154,10 @@ export default function Devices() {
 
   // Toggle handler (updates sessionStorage + component state)
   // Accepts deviceId and name, stores object { deviceId, name }.
+  //jaise ji subscibe dabapoo woh session storage main add ho jata hai 
   const toggleSelectedDevice = useCallback((name: string, deviceId: string) => {
     let current = readSelectedDevices();
+    console.log(current);
     const exists = current.some((sd) => sd.deviceId === deviceId);
 
     if (exists) {

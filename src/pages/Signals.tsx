@@ -51,25 +51,26 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
   const persistTimerRef = useRef<number | null>(null);
 
   // ===== Persistence helpers: serialize/deserialize DevicesMap =====
-  function serializeDevicesMap(dm: DevicesMap) {
-    const out: Record<string, any> = {};
-    for (const [deviceId, dev] of dm.entries()) {
-      out[deviceId] = {
-        lastUpdate: dev.lastUpdate,
-        ports: {},
-      };
-      for (const [portIndex, p] of dev.ports.entries()) {
-        out[deviceId].ports[portIndex] = {
-          history: p.history.slice(-MAX_HISTORY),
-          last: p.last,
-          registerAddress: p.registerAddress,
-          unit: p.unit,
-          signalType: p.signalType,
-        };
+      function serializeDevicesMap(dm: DevicesMap) {
+        const out: Record<string, any> = {};
+        for (const [deviceId, dev] of dm.entries()) {
+          out[deviceId] = {
+            lastUpdate: dev.lastUpdate,
+            ports: {},
+          };
+          for (const [portIndex, p] of dev.ports.entries()) {
+            out[deviceId].ports[portIndex] = {
+              history: p.history.slice(-MAX_HISTORY),
+              last: p.last,
+              registerAddress: p.registerAddress,
+              unit: p.unit,
+              signalType: p.signalType,
+            };
+          }
+        }
+        return JSON.stringify(out);
       }
-    }
-    return JSON.stringify(out);
-  }
+      // console.log(serializeDevicesMap(dm));
 
   function deserializeDevicesMap(raw: string | null): DevicesMap {
     const dm: DevicesMap = new Map();
@@ -154,8 +155,11 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
     // restore stored selected devices (id+name) into the deviceNames map and ensure panels exist
     const selected = readSelectedDevices();
     if (selected.length) {
+      
       const namesMap = new Map<string, string>();
+      console.log(namesMap)
       const initialPanels = new Map<string, DeviceState>();
+      console.log(initialPanels)
       for (const s of selected) {
         namesMap.set(s.deviceId, s.name || s.deviceId);
         if (!initialPanels.has(s.deviceId)) {
@@ -192,6 +196,7 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
     // telemetry handler
     conn.off("TelemetryUpdate");
     conn.on("TelemetryUpdate", (payload: TelemetryDto[] | any) => {
+      console.log(payload)
       if (!Array.isArray(payload) || payload.length === 0) return;
       const first = payload[0];
       const deviceId: string = (first.deviceId ?? first.DeviceId) as string;
