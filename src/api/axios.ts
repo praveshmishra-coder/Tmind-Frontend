@@ -1,4 +1,3 @@
-// src/api/axios.ts
 import axios from "axios";
 import type {
   AxiosInstance,
@@ -7,27 +6,24 @@ import type {
 } from "axios";
 import { toast } from "react-toastify";
 
-// Base URL from environment
 const baseURL = import.meta.env.VITE_API_URL || "https://localhost:7034";
 
 const api: AxiosInstance = axios.create({
   baseURL,
-  withCredentials: true, // ready for cookies or auth
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
   },
 });
 
-// ==========================
-// Request Interceptor
-// ==========================
+
+// REQUEST INTERCEPTOR
+
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Add headers or tokens later here
-    // Example:
-    // const token = localStorage.getItem("token");
-    // if (token) config.headers.Authorization = `Bearer ${token}`;
+    const token = localStorage.getItem("access_token");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
   },
   (error) => {
@@ -36,37 +32,58 @@ api.interceptors.request.use(
   }
 );
 
-// ==========================
-// Response Interceptor
-// ==========================
+
+// RESPONSE INTERCEPTOR (Refresh Token Logic)
+
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error) => {
-    console.error("API Error:", error);
+  async (error) => {
+    const originalRequest = error.config;
+    const status = error.response?.status;
 
-    let message = "Something went wrong! Please try again.";
+    // Handle expired token (401)
+    if (status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        // call refresh endpoint
+        const refreshResponse = await axios.post(
+          "https://localhost:7023/api/User/refresh-token",
+          {},
+          { withCredentials: true }
+        );
 
-    // If backend sends structured error
-    if (error.response?.data) {
-      const data = error.response.data;
+        const newAccessToken = refreshResponse.data?.access_token;
 
-      if (typeof data === "string") {
-        message = data;
-      } else if (data.message) {
-        message = data.message;
-      } else if (data.error) {
-        message = data.error;
+        if (newAccessToken) {
+          localStorage.setItem("access_token", newAccessToken);
+          api.defaults.headers.Authorization = `Bearer ${newAccessToken}`;
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return api(originalRequest); // retry original request
+        }
+      } catch (refreshError) {
+        // If refresh fails → clear tokens and redirect to login
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user");
+        // window.location.href = "/login";
+        return Promise.reject(refreshError);
       }
     }
 
-    // Handle by status code
-    const status = error.response?.status;
+    
+    // Generic Error Messages
+    
+    let message = "Something went wrong! Please try again.";
+    if (error.response?.data) {
+      const data = error.response.data;
+      if (typeof data === "string") message = data;
+      else if (data.message) message = data.message;
+      else if (data.error) message = data.error;
+    }
+
     switch (status) {
       case 400:
         message = message || "Bad Request! Please check your input.";
-        break;
-      case 401:
-        message = "Unauthorized! Please log in again.";
         break;
       case 403:
         message = "Access denied! You don’t have permission.";
@@ -82,9 +99,7 @@ api.interceptors.response.use(
         break;
     }
 
-    // Show toast message
     toast.error(message);
-
     return Promise.reject(error);
   }
 );
