@@ -28,6 +28,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (err) {
         console.log("Refresh token failed, redirecting to Register");
+        localStorage.removeItem("user");
         window.location.href = "/";
         return Promise.reject(err);
       }
