@@ -75,7 +75,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
 
         <h1 className="text-lg font-semibold text-foreground tracking-tight">
           <span className="lg:hidden">Tmind</span>
-          <span className="hidden lg:inline">Tata Machine Intelligence Device</span>
+          <span className="hidden lg:inline">Tata Manufacturing Intelligence and Network Devices</span>
         </h1>
       </div>
 
