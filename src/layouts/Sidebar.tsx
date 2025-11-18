@@ -26,10 +26,10 @@ export default function Sidebar() {
      
       <div className="h-12 flex items-center justify-center border-b border-sidebar-border px-4 mb-6">
       <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded flex items-center justify-center font-bold text-primary-foreground">
-              T
+            <div className="w-12 h-12 mb-2  bg-primary rounded flex items-center justify-center font-bold text-primary-foreground">
+              <img className="mb-2 rounded" src="https://www.purppledesigns.com/wp-content/uploads/2023/11/download-4.png" alt="" />
             </div>
-            <span className="font-bold text-lg text-sidebar-foreground">Tmind</span>
+            <span className="font-bold text-2xl mb-2 text-sidebar-foreground">Tmind</span>
       </div>
       </div>
 

@@ -49,29 +49,28 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
   const [isRetrying, setIsRetrying] = useState(false);
   const prevDeviceIdsRef = useRef<string[]>([]);
   const persistTimerRef = useRef<number | null>(null);
-  const [noSelectedIDs,setNoSelectedIDs]=useState<boolean>(false);
+  const [noSelectedIDs, setNoSelectedIDs] = useState<boolean>(false);
 
   // ===== Persistence helpers: serialize/deserialize DevicesMap =====
-      function serializeDevicesMap(dm: DevicesMap) {
-        const out: Record<string, any> = {};
-        for (const [deviceId, dev] of dm.entries()) {
-          out[deviceId] = {
-            lastUpdate: dev.lastUpdate,
-            ports: {},
-          };
-          for (const [portIndex, p] of dev.ports.entries()) {
-            out[deviceId].ports[portIndex] = {
-              history: p.history.slice(-MAX_HISTORY),
-              last: p.last,
-              registerAddress: p.registerAddress,
-              unit: p.unit,
-              signalType: p.signalType,
-            };
-          }
-        }
-        return JSON.stringify(out);
+  function serializeDevicesMap(dm: DevicesMap) {
+    const out: Record<string, any> = {};
+    for (const [deviceId, dev] of dm.entries()) {
+      out[deviceId] = {
+        lastUpdate: dev.lastUpdate,
+        ports: {},
+      };
+      for (const [portIndex, p] of dev.ports.entries()) {
+        out[deviceId].ports[portIndex] = {
+          history: p.history.slice(-MAX_HISTORY),
+          last: p.last,
+          registerAddress: p.registerAddress,
+          unit: p.unit,
+          signalType: p.signalType,
+        };
       }
-      // console.log(serializeDevicesMap(dm));
+    }
+    return JSON.stringify(out);
+  }
 
   function deserializeDevicesMap(raw: string | null): DevicesMap {
     const dm: DevicesMap = new Map();
@@ -87,7 +86,7 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
           const p = ports[key];
           portsMap.set(idx, {
             history: Array.isArray(p.history) ? p.history.slice(-MAX_HISTORY) : [],
-            last: typeof p.last === "number" ? p.last : (p.history && p.history.length ? p.history[p.history.length-1] : 0),
+            last: typeof p.last === "number" ? p.last : (p.history && p.history.length ? p.history[p.history.length - 1] : 0),
             registerAddress: typeof p.registerAddress === "number" ? p.registerAddress : 0,
             unit: typeof p.unit === "string" ? p.unit : "",
             signalType: typeof p.signalType === "string" ? p.signalType : "",
@@ -119,6 +118,13 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
   function readSelectedDevices(): SelectedDevice[] {
     try {
       const raw = sessionStorage.getItem(SESSION_KEY);
+      // If it's an empty string, remove the specific key and return empty array
+      if (raw === "") {
+        try {
+          sessionStorage.removeItem(SESSION_KEY);
+        } catch {}
+        return [];
+      }
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [];
@@ -145,32 +151,107 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
     try { sessionStorage.removeItem(SESSION_KEY); } catch {}
   }
 
+  // New helper: clear selection (unsubscribe, remove keys, reset UI)
+  async function clearSelectionAndReset(redirectToDevices = false) {
+    // Best-effort unsubscribe from server for currently known device ids
+    const ids = readSelectedDeviceIds();
+    for (const id of ids) {
+      try {
+        await connRef.current?.invoke("UnsubscribeFromDevice", id);
+      } catch (err) {
+        console.warn("Failed to unsubscribe during clear:", id, err);
+      }
+    }
 
-  // Track and handle device unsubscriptions
+    // Remove only the keys we manage
+    try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+    try { sessionStorage.removeItem(TELEMETRY_CACHE_KEY); } catch {}
+
+    // Reset local UI state immediately so the panels vanish
+    setDevices(new Map());
+    setDeviceNames(new Map());
+    prevDeviceIdsRef.current = [];
+    setNoSelectedIDs(true);
+
+    if (redirectToDevices) {
+      window.location.href = "/devices";
+    }
+  }
+
+  // -------------------
+  // MOUNT: load selected + telemetry (selected-first)
+  // -------------------
+  useEffect(() => {
+    const selected = readSelectedDevices();
+    // seed prevDeviceIdsRef so the interval unsubscription logic has an initial baseline
+    prevDeviceIdsRef.current = selected.map(s => s.deviceId);
+
+    if (!selected.length) {
+      // No selected devices -> ensure UI is empty and do NOT rehydrate telemetry panels
+      setDevices(new Map());
+      setDeviceNames(new Map());
+      setNoSelectedIDs(true);
+      return;
+    }
+
+    // If we have selected devices, optionally restore telemetry but only for selected ids
+    const cached = sessionStorage.getItem(TELEMETRY_CACHE_KEY);
+    if (cached) {
+      const dm = deserializeDevicesMap(cached);
+      if (dm && dm.size) {
+        // keep only selected ids to avoid showing panels for unselected devices
+        const filtered = new Map<string, DeviceState>();
+        for (const s of selected) {
+          if (dm.has(s.deviceId)) filtered.set(s.deviceId, dm.get(s.deviceId)!);
+          else filtered.set(s.deviceId, { ports: new Map<number, PortState>(), lastUpdate: null });
+        }
+        setDevices(filtered);
+      } else {
+        // create empty panels for selected devices if no telemetry cached
+        const initialPanels = new Map<string, DeviceState>();
+        for (const s of selected) initialPanels.set(s.deviceId, { ports: new Map<number, PortState>(), lastUpdate: null });
+        setDevices(initialPanels);
+      }
+    } else {
+      const initialPanels = new Map<string, DeviceState>();
+      for (const s of selected) initialPanels.set(s.deviceId, { ports: new Map<number, PortState>(), lastUpdate: null });
+      setDevices(initialPanels);
+    }
+
+    // set device names from selected list
+    setDeviceNames(prev => {
+      const next = new Map(prev);
+      for (const s of selected) next.set(s.deviceId, s.name || s.deviceId);
+      return next;
+    });
+    setNoSelectedIDs(false);
+    // run once on mount
+  }, []);
+
+  // Track and handle device unsubscriptions (interval compares prevDeviceIdsRef <-> session storage)
   useEffect(() => {
     const checkInterval = setInterval(() => {
       const currentStoredIds = readSelectedDeviceIds();
-      const prevIds = prevDeviceIdsRef.current;//these is made to store the last vlaues and compare them with the ucrrent 
-      console.log(prevIds);
+      const prevIds = prevDeviceIdsRef.current;
+      // If nothing is selected and nothing was previously selected, do nothing
+      if (prevIds.length === 0 && currentStoredIds.length === 0) {
+        return;
+      }
+
       // Find devices that were previously loaded but are no longer in storage
       const removed = prevIds.filter(id => !currentStoredIds.includes(id));
-      
+
       if (removed.length > 0 && connRef.current) {
-        console.log("Detected unselected devices:", removed);
-        
         removed.forEach(async (id) => {
           try {
-            console.log("Unsubscribing from device:", id);
             await connRef.current?.invoke("UnsubscribeFromDevice", id);
-            console.log("Successfully unsubscribed from device:", id);
-            
             // Remove from local state
             setDevices(prev => {
               const next = new Map(prev);
               next.delete(id);
               return next;
             });
-            
+
             setDeviceNames(prev => {
               const next = new Map(prev);
               next.delete(id);
@@ -180,57 +261,19 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
             console.error("Failed to unsubscribe from device:", id, err);
           }
         });
-        
-        // Update the ref with current stored IDs
-        prevDeviceIdsRef.current = currentStoredIds;
       }
+
+      // Always keep prev ref in sync with current stored IDs
+      prevDeviceIdsRef.current = currentStoredIds;
     }, 1000); // Check every second
-    
+
     return () => clearInterval(checkInterval);
   }, []);
 
-    useEffect(() => {
+  // keep prevDeviceIdsRef.current in sync when devices state changes (helps initial load logic)
+  useEffect(() => {
     prevDeviceIdsRef.current = [...devices.keys()];
   }, [devices]);
-
-  // On mount: restore telemetry AND device names from sessionStorage BEFORE SignalR starts subscribing.
-  useEffect(() => {
-    const cached = sessionStorage.getItem(TELEMETRY_CACHE_KEY);
-    if (cached) {
-      const dm = deserializeDevicesMap(cached);
-      if (dm && dm.size) setDevices(dm);
-    }
-
-    // restore stored selected devices (id+name) into the deviceNames map and ensure panels exist
-    const selected = readSelectedDevices();
-    if (selected.length) {
-      
-      const namesMap = new Map<string, string>();
-      console.log(namesMap)
-      const initialPanels = new Map<string, DeviceState>();
-      console.log(initialPanels)
-      for (const s of selected) {
-        namesMap.set(s.deviceId, s.name || s.deviceId);
-        if (!initialPanels.has(s.deviceId)) {
-          initialPanels.set(s.deviceId, { ports: new Map<number, PortState>(), lastUpdate: null });
-        }
-      }
-      // merge with existing loaded telemetry panels (do not overwrite telemetry)
-      setDeviceNames(prev => {
-        const next = new Map(prev);
-        for (const [k, v] of namesMap.entries()) next.set(k, v);
-        return next;
-      });
-      setDevices(prev => {
-        const next = new Map(prev);
-        for (const [id, st] of initialPanels.entries()) {
-          if (!next.has(id)) next.set(id, st);
-        }
-        return next;
-      });
-    }
-    // run once
-  }, []);
 
   // attach handlers and start connection + auto-subscribe
   useEffect(() => {
@@ -245,7 +288,6 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
     // telemetry handler
     conn.off("TelemetryUpdate");
     conn.on("TelemetryUpdate", (payload: TelemetryDto[] | any) => {
-      console.log(payload)
       if (!Array.isArray(payload) || payload.length === 0) return;
       const first = payload[0];
       const deviceId: string = (first.deviceId ?? first.DeviceId) as string;
@@ -309,9 +351,10 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
     (async () => {
       const storedIds = readSelectedDeviceIds();
       if (!storedIds.length) {
-        // nothing to subscribe — redirect back to devices (no need to clear storage)
+        // nothing to subscribe — clear UI and show message
+        setDevices(new Map());
+        setDeviceNames(new Map());
         setNoSelectedIDs(true);
-        // window.location.href = "/devices";
         return;
       }
 
@@ -357,12 +400,13 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
 
     return () => {
       try { conn.off("TelemetryUpdate"); } catch {}
-      // DO NOT clear session storage here — user intent is preserved across navigation.
-      // Just stop the connection.
       conn.stop().catch(() => {});
       connRef.current = null;
       setConnection(null);
+      // Important: do not clear session storage here — user intent is preserved across navigation.
+      // Reset local state when the component unmounts so UI doesn't linger if you navigate away.
       setDevices(new Map());
+      setDeviceNames(new Map());
     };
   }, [hubUrl]);
 
@@ -446,88 +490,86 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
   }
 
   // UI
- return (
-  <div className="p-4 space-y-4">
-    {startupError ? (
-      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">
-        <div className="mb-2 text-sm text-yellow-900">{startupError}</div>
-        {startupErrorDetail ? (
-          <div className="mb-2 text-xs text-red-800">
-            Details: {startupErrorDetail}
-          </div>
-        ) : null}
-        <div className="flex gap-2">
-          <Button onClick={() => handleRetry()} disabled={isRetrying}>
-            {isRetrying ? "Retrying..." : "Retry"}
-          </Button>
-          <Button
-            onClick={() => {
-              clearSelectedDeviceIds();
-              window.location.href = "/devices";
-            }}
-            variant="secondary"
-          >
-            Back to devices (clear selection)
-          </Button>
-        </div>
-      </div>
-    ) : (
-      // ✅ Here's your conditional message block
-      <div className="text-sm text-muted-foreground">
-        {noSelectedIDs
-          ? "Subscribe to a device from the Devices page."
-          : "Showing signals for subscribed devices."}
-      </div>
-    )}
-
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {[...devices.entries()].map(([deviceId, dev]) => (
-        <Card key={deviceId} className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-medium">Device Signals value</div>
-                <div className="text-sm font-medium">
-                  Device Name: {getDeviceDisplayName(deviceId)}
-                </div>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-muted-foreground">
-                    <th>Port</th>
-                    <th>Register</th>
-                    <th>Signal</th>
-                    <th>Value</th>
-                    <th>Unit</th>
-                    <th>History</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...dev.ports.entries()].map(([portIndex, p]) => (
-                    <tr key={portIndex}>
-                      <td className="py-1">{portIndex}</td>
-                      <td className="py-1">{p.registerAddress}</td>
-                      <td className="py-1">{p.signalType}</td>
-                      <td className="py-1 font-mono">
-                        {typeof p.last === "number"
-                          ? p.last.toFixed(6)
-                          : "-"}
-                      </td>
-                      <td className="py-1">{p.unit}</td>
-                      <td className="py-1">{renderSparkline(p.history)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+  return (
+    <div className="p-4 space-y-4">
+      {startupError ? (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">
+          <div className="mb-2 text-sm text-yellow-900">{startupError}</div>
+          {startupErrorDetail ? (
+            <div className="mb-2 text-xs text-red-800">
+              Details: {startupErrorDetail}
             </div>
-          </CardContent>
-        </Card>
-      ))}
+          ) : null}
+          <div className="flex gap-2">
+            <Button onClick={() => handleRetry()} disabled={isRetrying}>
+              {isRetrying ? "Retrying..." : "Retry"}
+            </Button>
+            <Button
+              onClick={() => {
+                clearSelectionAndReset(true);
+              }}
+              variant="secondary"
+            >
+              Back to devices (clear selection)
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="text-sm text-muted-foreground">
+          {noSelectedIDs
+            ? "Subscribe to a device from the Devices page."
+            : "Showing signals for subscribed devices."}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[...devices.entries()].map(([deviceId, dev]) => (
+          <Card key={deviceId} className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium">Device Signals value</div>
+                  <div className="text-sm font-medium">
+                    Device Name: {getDeviceDisplayName(deviceId)}
+                  </div>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-muted-foreground">
+                      <th>Port</th>
+                      <th>Register</th>
+                      <th>Signal</th>
+                      <th>Value</th>
+                      <th>Unit</th>
+                      <th>History</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...dev.ports.entries()].map(([portIndex, p]) => (
+                      <tr key={portIndex}>
+                        <td className="py-1">{portIndex}</td>
+                        <td className="py-1">{p.registerAddress}</td>
+                        <td className="py-1">{p.signalType}</td>
+                        <td className="py-1 font-mono">
+                          {typeof p.last === "number"
+                            ? p.last.toFixed(6)
+                            : "-"}
+                        </td>
+                        <td className="py-1">{p.unit}</td>
+                        <td className="py-1">{renderSparkline(p.history)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
 }

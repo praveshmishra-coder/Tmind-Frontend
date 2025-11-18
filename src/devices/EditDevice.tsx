@@ -55,6 +55,8 @@ useEffect(() => {
         const res = await getDeviceById(deviceId);
         console.log("🔹 Fetched device:", res);
 
+        
+
         if (res) {
           setDeviceDetails({
             name: res.name || "",
@@ -81,6 +83,10 @@ useEffect(() => {
         // Prevent double toasts in React Strict Mode
         if (!toastShown) {
           toastShown = true;
+          if(error.response?.status === 401){
+            toast.error("unauthorized! Please login again.");
+            navigate("/login");
+          }
           if (error.response?.status === 404) {
             toast.error("Device not found!");
             navigate("/devices");
@@ -138,12 +144,14 @@ useEffect(() => {
   }
 
   // 🔸 IP Address validation
-  const ipRegex =
-    /^(25[0-5]|2[0-4]\d|1?\d{1,2})(\.(25[0-5]|2[0-4]\d|1?\d{1,2})){3}$/;
-  if (!ipRegex.test(IpAddress)) {
-    toast.error("Invalid IP Address format (e.g., 192.168.1.1)");
-    return false;
-  }
+const ipOrLocalhostRegex =
+  /^(https?:\/\/)?(localhost|((25[0-5]|2[0-4]\d|1?\d{1,2})(\.(25[0-5]|2[0-4]\d|1?\d{1,2})){3}))$/;
+
+  if (!ipOrLocalhostRegex.test(IpAddress)) {
+  toast.error("Invalid IP Address (e.g., 192.168.1.1 or http://localhost)");
+  return false;
+}
+
 
   // 🔸 Port validation
   if (isNaN(Port) || Port < 1 || Port > 65535) {
@@ -205,6 +213,10 @@ useEffect(() => {
       toast.success("Device updated successfully!");
       setTimeout(() => navigate("/devices"), 1000);
     } catch (err: any) {
+      if(err.response?.status === 401){
+        toast.error("unauthorized! Please login again.");
+        navigate("/login");
+      }
       console.error("Error editing device:", err);
 
       // Extract proper backend message
