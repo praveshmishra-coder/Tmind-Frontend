@@ -34,15 +34,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     await authApi.post("/User/Login", { email, password });
+    const currentUser = await getCurrentUser();
+    setUser(currentUser);
+    localStorage.setItem("user", JSON.stringify(currentUser));
   };
 
  
   const verifyOtp = async (email: string, otp: string) => {
     const response = await authApi.post("/User/OtpVerify", { email, otp });
 
-    const currentUser = await getCurrentUser();
-    setUser(currentUser);
-    localStorage.setItem("user", JSON.stringify(currentUser));
+    // const currentUser = await getCurrentUser();
+    // setUser(currentUser);
+    // localStorage.setItem("user", JSON.stringify(currentUser));
   };
 
  
