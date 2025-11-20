@@ -3,9 +3,9 @@ import {
   ChevronRight,
   ChevronDown,
   Building2,
-  Factory,
   Layers,
   Wrench,
+  Settings2,
   Plus,
 } from "lucide-react";
 import { type Asset } from "@/types/asset";
@@ -32,36 +32,29 @@ const AssetTreeNode = ({
   searchTerm: string;
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const hasChildren = asset.children && asset.children.length > 0;
+  const hasChildren = asset.children.length > 0;
 
-const getIcon = () => {
-  switch (asset.type) {
-    case "Company":
-      return Building2;
-    case "Plant":
-      return Factory;
-    case "Department":
-      return Building2; // or any icon you prefer
-    case "Line":
-      return Layers;
-    case "Machine":
-      return Wrench;
-    case "SubMachine":
-      return Wrench; // or a smaller tool icon
-    default:
-      return Layers; // fallback to avoid undefined
-  }
-};
+  const getIcon = () => {
+    switch (asset.type) {
+      case "Department":
+        return Building2;
+      case "Line":
+        return Layers;
+      case "Machine":
+        return Wrench;
+      case "SubMachine":
+        return Settings2;
+      default:
+        return Layers;
+    }
+  };
 
   const Icon = getIcon();
   const isSelected = selectedId === asset.id;
 
   const matchesSearch =
     searchTerm === "" ||
-    asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    asset.children?.some((c) =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    asset.name.toLowerCase().includes(searchTerm.toLowerCase());
 
   if (!matchesSearch) return null;
 
@@ -69,7 +62,7 @@ const getIcon = () => {
     <div>
       <div
         className={cn(
-          "flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent rounded-sm transition-colors",
+          "flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-accent rounded-sm",
           isSelected && "bg-primary/10 text-primary font-medium",
           asset.isDeleted && "opacity-50"
         )}
@@ -94,15 +87,11 @@ const getIcon = () => {
 
         <Icon className="h-4 w-4" />
         <span className="text-sm">{asset.name}</span>
-
-        {asset.isDeleted && (
-          <span className="text-xs text-muted-foreground">(Deleted)</span>
-        )}
       </div>
 
       {hasChildren && isExpanded && (
         <div className="ml-6">
-          {asset.children?.map((child) => (
+          {asset.children.map((child) => (
             <AssetTreeNode
               key={child.id}
               asset={child}
@@ -127,13 +116,11 @@ export const AssetTree = ({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold">Asset Hierarchy</h2>
           <Button size="sm" className="h-8 gap-1" onClick={onAddRoot}>
-            <Plus className="h-4 w-4" />
-            Add Root
+            <Plus className="h-4 w-4" /> Add Root
           </Button>
         </div>
 
@@ -145,7 +132,6 @@ export const AssetTree = ({
         />
       </div>
 
-      {/* Tree Body */}
       <div className="flex-1 overflow-auto p-2">
         {assets.map((asset) => (
           <AssetTreeNode

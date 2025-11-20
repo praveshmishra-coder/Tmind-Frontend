@@ -1,17 +1,12 @@
-export type AssetType = 'Company' | 'Plant' | 'Line' | 'Machine';
+
 
 export interface Asset {
   id: string;
   name: string;
-  type: AssetType;
-  parentId: string | null;
+  type: "Department" | "Line" | "Machine" | "SubMachine";
   depth: number;
-  path: string;
-  description: string;
-  createdAt: string;
   isDeleted: boolean;
-  deviceId?: string;
-  children?: Asset[];
+  children: Asset[];
 }
 
 export interface Device {
