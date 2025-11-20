@@ -27,7 +27,7 @@ export default function DashboardLayout() {
 
       <div className="flex flex-col flex-1">
         <Topbar onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-2 md:p-2">
           <Outlet />
         </main>
       </div>

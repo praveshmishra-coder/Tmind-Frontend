@@ -2,7 +2,7 @@ import React, { useState,DragEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
-export default function UploadCsv() {
+export default function UploadAssetCsv() {
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
@@ -45,7 +45,7 @@ export default function UploadCsv() {
     alert(`CSV file "${file.name}" submitted!`);
 
     setFile(null);
-    navigate("/devices");
+    navigate("/assets");
   };
 
   return (

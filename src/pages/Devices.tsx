@@ -30,7 +30,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useAuth } from "@/context/AuthContext"; 
-
+type AssetType = 'Company' | 'Plant' | 'Line' | 'Machine';
 interface Device {
   deviceId: string;
   name: string;
@@ -57,7 +57,7 @@ export default function Devices() {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize] = useState(3);
+  const [pageSize] = useState(6);
   const [totalPages, setTotalPages] = useState(1);
 
   const navigate = useNavigate();
@@ -167,7 +167,7 @@ export default function Devices() {
   const isAdmin = user?.role === "Admin";
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-2 space-y-2">
    
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
