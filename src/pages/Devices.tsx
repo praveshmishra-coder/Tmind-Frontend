@@ -30,7 +30,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useAuth } from "@/context/AuthContext"; 
-
+type AssetType = 'Company' | 'Plant' | 'Line' | 'Machine';
 interface Device {
   deviceId: string;
   name: string;
