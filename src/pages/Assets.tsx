@@ -246,6 +246,7 @@ export default function Assets() {
           </Card>
         </div>
       </div>
+      
     </div>
   );
 }

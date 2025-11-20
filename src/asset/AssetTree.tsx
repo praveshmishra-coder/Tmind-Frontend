@@ -268,8 +268,12 @@ export const AssetTree = ({ assets, selectedId, onSelect, onEdit, onDelete }: As
 
       {/* Add Root Modal */}
       {showAddRootModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-[999]">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-[400px]">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center">
+          {/* 🔹 Background Blur */}
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
+
+          {/* 🔹 Modal Box */}
+          <div className="relative bg-white rounded-lg shadow-xl p-6 w-[400px]">
             <Addroot onClose={() => setShowAddRootModal(false)} />
           </div>
         </div>

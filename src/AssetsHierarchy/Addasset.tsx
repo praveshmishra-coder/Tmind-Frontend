@@ -81,13 +81,13 @@ export default function AddAsset({ parentAsset, onClose }: AddAssetProps) {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-[999]">
-      <div className="w-[400px] max-h-[80vh] overflow-auto">
-        <Card className="w-full h-full">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-center">
-              Add {parentAsset ? "Sub-Asset" : "Root Asset"}
-            </CardTitle>
+ <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/30 backdrop-blur-sm">
+    <div className="w-[400px] max-h-[80vh] overflow-auto">
+      <Card className="w-full h-full">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-center">
+            Add {parentAsset ? "Sub-Asset" : "Root Asset"}
+          </CardTitle>
           </CardHeader>
 
           <CardContent>
