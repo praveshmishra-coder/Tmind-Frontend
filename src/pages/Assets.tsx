@@ -237,9 +237,8 @@ const [assets, setAssets] = useState<Asset[]>([
         {/* LEFT : Asset Tree */}
         <Card className="glass-card">
           <CardHeader>
-            <CardTitle className="text-foreground text-sm">Hierarchy Tree</CardTitle>
+            <CardTitle className="text-foreground text-lg">Hierarchy Tree</CardTitle>
           </CardHeader>
-
           <CardContent className="p-2">
             {loading ? (
               <p className="text-muted-foreground p-2">Loading...</p>

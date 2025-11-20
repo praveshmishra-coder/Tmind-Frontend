@@ -15,6 +15,7 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import DeletedDevices from "./devices/DeletedDevices";
 import Profile from "./pages/Profile";
+import Addroot from "./AssetsHierarchy/Addroot";
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/deleted-devices" element={<DeletedDevices />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/add-root" element={<Addroot />} />
         </Route>
 
         {/* Redirect unknown routes to login */}
