@@ -5,8 +5,8 @@ import {
   Building2,
   Layers,
   Wrench,
-  Settings2,
   Plus,
+  Factory,
 } from "lucide-react";
 import { type Asset } from "@/types/asset";
 import { cn } from "@/lib/utils";
@@ -34,26 +34,26 @@ const AssetTreeNode = ({
   searchTerm: string;
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const hasChildren = asset.children.length > 0;
+  const hasChildren = asset.children?.length > 0; // ✅ safe check
 
-const getIcon = () => {
-  switch (asset.type) {
-    case "Company":
-      return Building2;
-    case "Plant":
-      return Factory;
-    case "Department":
-      return Building2; // or any icon you prefer
-    case "Line":
-      return Layers;
-    case "Machine":
-      return Wrench;
-    case "SubMachine":
-      return Wrench; // or a smaller tool icon
-    default:
-      return Layers; // fallback to avoid undefined
-  }
-};
+  const getIcon = () => {
+    switch (asset.type) {
+      case "Company":
+        return Building2;
+      case "Plant":
+        return Factory;
+      case "Department":
+        return Building2;
+      case "Line":
+        return Layers;
+      case "Machine":
+        return Wrench;
+      case "SubMachine":
+        return Wrench;
+      default:
+        return Layers;
+    }
+  };
 
   const Icon = getIcon();
   const isSelected = selectedId === asset.id;
@@ -97,7 +97,7 @@ const getIcon = () => {
 
       {hasChildren && isExpanded && (
         <div className="ml-6">
-          {asset.children.map((child) => (
+          {asset.children!.map((child) => (
             <AssetTreeNode
               key={child.id}
               asset={child}
@@ -118,16 +118,18 @@ export const AssetTree = ({
   onSelect,
 }: AssetTreeProps) => {
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Popup state
-  const [showAddRootModal, setShowAddRootModal] = useState(false);
+  const [showAddRootModal, setShowAddRootModal] = useState(false); // popup state
 
   return (
     <div className="h-full flex flex-col">
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold">Asset Hierarchy</h2>
-          <Button size="sm" className="h-8 gap-1" onClick={onAddRoot}>
+          <Button
+            size="sm"
+            className="h-8 gap-1"
+            onClick={() => setShowAddRootModal(true)} // ✅ fixed onAddRoot
+          >
             <Plus className="h-4 w-4" />
             Add Root
           </Button>
@@ -157,10 +159,7 @@ export const AssetTree = ({
       {showAddRootModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[999]">
           <div className="bg-white rounded-lg shadow-xl p-6 w-[400px]">
-
-            {/* ❗ Correct Component Name */}
             <Addroot onClose={() => setShowAddRootModal(false)} />
-
           </div>
         </div>
       )}

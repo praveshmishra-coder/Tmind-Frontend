@@ -21,7 +21,6 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        
         <Route path="/" element={<Login />} />
 
         <Route element={<DashboardLayout />}>
@@ -30,15 +29,20 @@ export default function App() {
           <Route path="/devices" element={<Devices />} />
           <Route path="/devices/add" element={<AddDeviceForm />} />
           <Route path="/devices/edit/:deviceId" element={<EditDeviceForm />} />
-          <Route path="/devices/config/:deviceId" element={<ConfigureDeviceForm/>} />
-          <Route path="/devices/ports" element={<PortSettings/>} />
-          <Route path="/devices/upload" element={<UploadCsv/>} />
+          <Route path="/devices/config/:deviceId" element={<ConfigureDeviceForm />} />
+          <Route path="/devices/ports" element={<PortSettings />} />
+          <Route path="/devices/upload" element={<UploadCsv />} />
           <Route path="/signals" element={<Signals />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/deleted-devices" element={<DeletedDevices />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/add-root" element={<Addroot />} />
+
+          {/* ✅ FIX: Addroot route with dummy onClose */}
+          <Route
+            path="/add-root"
+            element={<Addroot onClose={() => {}} />}
+          />
         </Route>
 
         {/* Redirect unknown routes to login */}
