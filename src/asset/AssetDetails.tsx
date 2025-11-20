@@ -92,11 +92,11 @@ export default function AssetDetails({
                 </Button>
               )} */}
 
-              {assetType === "SubMachine" && (
-                <Button onClick={onAssignDevice} size="sm" variant="outline">
-                  <Link2 className="h-4 w-4 mr-2" /> Assign Device
-                </Button>
-              )}
+              {selectedAsset && (selectedAsset.depth === 4 || selectedAsset.depth === 5) && (
+  <Button onClick={onAssignDevice} size="sm" variant="outline">
+    <Link2 className="h-4 w-4 mr-2" /> Assign Device
+  </Button>
+)}
             </div>
           </>
         )}

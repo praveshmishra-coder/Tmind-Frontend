@@ -1,12 +1,14 @@
 const levelToType = (level: number): string => {
   switch (level) {
     case 1:
-      return "Department";
+      return "Plant";
     case 2:
-      return "Line";
+      return "Department";
     case 3:
-      return "Machine";
+      return "Line";
     case 4:
+      return "Machine";
+    case 5:
       return "SubMachine";
     default:
       return "Unknown";
