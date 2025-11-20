@@ -3,6 +3,8 @@ import * as signalR from "@microsoft/signalr";
 import type { HubConnection } from "@microsoft/signalr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Database, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 type TelemetryDto = {
   deviceId: string;
@@ -15,12 +17,17 @@ type TelemetryDto = {
   timestamp: string;
 };
 
-type PortState = {
+type RegisterState = {
+  registerAddress: number;
+  signalType: string;
+  unit: string;
   history: number[];
   last: number;
-  registerAddress: number;
-  unit: string;
-  signalType: string;
+};
+
+type PortState = {
+  portIndex: number;
+  registers: Map<number, RegisterState>;
 };
 
 type DeviceState = {
@@ -31,17 +38,18 @@ type DeviceState = {
 type DevicesMap = Map<string, DeviceState>;
 type SelectedDevice = { deviceId: string; name: string };
 
-const SESSION_KEY = "selectedDeviceIds"; // stores SelectedDevice[] now
-const CONNECT_TIMEOUT_MS = 7000; // ms - tweak if you want longer
-const TELEMETRY_CACHE_KEY = "telemetryCache"; // <- persistence key
-const MAX_HISTORY = 100; // keep last N points per port
-const PERSIST_DEBOUNCE_MS = 1000; // batch writes to sessionStorage
+const SESSION_KEY = "selectedDeviceIds";
+const CONNECT_TIMEOUT_MS = 7000;
+const TELEMETRY_CACHE_KEY = "telemetryCache";
+const MAX_HISTORY = 100;
+const PERSIST_DEBOUNCE_MS = 1000;
 
-export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" }: { hubUrl?: string }) {
+export default function Signals({ hubUrl = "http://localhost:5000/devices/hubs/modbus" }: { hubUrl?: string }) {
   const [connection, setConnection] = useState<HubConnection | null>(null);
   const [devices, setDevices] = useState<DevicesMap>(() => new Map());
-  // deviceNames maps deviceId -> display name (from session storage)
   const [deviceNames, setDeviceNames] = useState<Map<string, string>>(() => new Map());
+  const [expandedDevices, setExpandedDevices] = useState<Set<string>>(new Set());
+  const [expandedPorts, setExpandedPorts] = useState<Set<string>>(new Set());
   const connRef = useRef<HubConnection | null>(null);
   const [startupError, setStartupError] = useState<string | null>(null);
   const [startupErrorDetail, setStartupErrorDetail] = useState<string | null>(null);
@@ -50,7 +58,9 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
   const persistTimerRef = useRef<number | null>(null);
   const [noSelectedIDs, setNoSelectedIDs] = useState<boolean>(false);
 
-  // ===== Persistence helpers: serialize/deserialize DevicesMap =====
+  let navigate = useNavigate();
+
+  // Persistence helpers
   function serializeDevicesMap(dm: DevicesMap) {
     const out: Record<string, any> = {};
     for (const [deviceId, dev] of dm.entries()) {
@@ -58,14 +68,20 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
         lastUpdate: dev.lastUpdate,
         ports: {},
       };
-      for (const [portIndex, p] of dev.ports.entries()) {
+      for (const [portIndex, port] of dev.ports.entries()) {
         out[deviceId].ports[portIndex] = {
-          history: p.history.slice(-MAX_HISTORY),
-          last: p.last,
-          registerAddress: p.registerAddress,
-          unit: p.unit,
-          signalType: p.signalType,
+          portIndex: port.portIndex,
+          registers: {},
         };
+        for (const [regAddr, reg] of port.registers.entries()) {
+          out[deviceId].ports[portIndex].registers[regAddr] = {
+            registerAddress: reg.registerAddress,
+            signalType: reg.signalType,
+            unit: reg.unit,
+            history: reg.history.slice(-MAX_HISTORY),
+            last: reg.last,
+          };
+        }
       }
     }
     return JSON.stringify(out);
@@ -80,18 +96,35 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
         const devObj = parsed[deviceId];
         const portsMap = new Map<number, PortState>();
         const ports = devObj.ports || {};
-        for (const key of Object.keys(ports)) {
-          const idx = Number(key);
-          const p = ports[key];
-          portsMap.set(idx, {
-            history: Array.isArray(p.history) ? p.history.slice(-MAX_HISTORY) : [],
-            last: typeof p.last === "number" ? p.last : (p.history && p.history.length ? p.history[p.history.length - 1] : 0),
-            registerAddress: typeof p.registerAddress === "number" ? p.registerAddress : 0,
-            unit: typeof p.unit === "string" ? p.unit : "",
-            signalType: typeof p.signalType === "string" ? p.signalType : "",
+        
+        for (const portKey of Object.keys(ports)) {
+          const portIndex = Number(portKey);
+          const portObj = ports[portKey];
+          const registersMap = new Map<number, RegisterState>();
+          const registers = portObj.registers || {};
+          
+          for (const regKey of Object.keys(registers)) {
+            const regAddr = Number(regKey);
+            const reg = registers[regKey];
+            registersMap.set(regAddr, {
+              registerAddress: reg.registerAddress,
+              signalType: reg.signalType || "",
+              unit: reg.unit || "",
+              history: Array.isArray(reg.history) ? reg.history.slice(-MAX_HISTORY) : [],
+              last: typeof reg.last === "number" ? reg.last : 0,
+            });
+          }
+          
+          portsMap.set(portIndex, {
+            portIndex,
+            registers: registersMap,
           });
         }
-        dm.set(deviceId, { ports: portsMap, lastUpdate: devObj.lastUpdate ?? Date.now() });
+        
+        dm.set(deviceId, { 
+          ports: portsMap, 
+          lastUpdate: devObj.lastUpdate ?? Date.now() 
+        });
       }
     } catch (e) {
       console.warn("Failed to deserialize telemetry cache", e);
@@ -113,15 +146,11 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
     }, PERSIST_DEBOUNCE_MS);
   }
 
-  // helpers for session selected devices (objects with name)
   function readSelectedDevices(): SelectedDevice[] {
     try {
       const raw = sessionStorage.getItem(SESSION_KEY);
-      // If it's an empty string, remove the specific key and return empty array
       if (raw === "") {
-        try {
-          sessionStorage.removeItem(SESSION_KEY);
-        } catch {}
+        try { sessionStorage.removeItem(SESSION_KEY); } catch {}
         return [];
       }
       if (!raw) return [];
@@ -146,13 +175,7 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
     return readSelectedDevices().map(d => d.deviceId);
   }
 
-  function clearSelectedDeviceIds() {
-    try { sessionStorage.removeItem(SESSION_KEY); } catch {}
-  }
-
-  // New helper: clear selection (unsubscribe, remove keys, reset UI)
   async function clearSelectionAndReset(redirectToDevices = false) {
-    // Best-effort unsubscribe from server for currently known device ids
     const ids = readSelectedDeviceIds();
     for (const id of ids) {
       try {
@@ -162,11 +185,9 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
       }
     }
 
-    // Remove only the keys we manage
     try { sessionStorage.removeItem(SESSION_KEY); } catch {}
     try { sessionStorage.removeItem(TELEMETRY_CACHE_KEY); } catch {}
 
-    // Reset local UI state immediately so the panels vanish
     setDevices(new Map());
     setDeviceNames(new Map());
     prevDeviceIdsRef.current = [];
@@ -177,28 +198,22 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
     }
   }
 
-  // -------------------
-  // MOUNT: load selected + telemetry (selected-first)
-  // -------------------
+  // Mount: load selected + telemetry
   useEffect(() => {
     const selected = readSelectedDevices();
-    // seed prevDeviceIdsRef so the interval unsubscription logic has an initial baseline
     prevDeviceIdsRef.current = selected.map(s => s.deviceId);
 
     if (!selected.length) {
-      // No selected devices -> ensure UI is empty and do NOT rehydrate telemetry panels
       setDevices(new Map());
       setDeviceNames(new Map());
       setNoSelectedIDs(true);
       return;
     }
 
-    // If we have selected devices, optionally restore telemetry but only for selected ids
     const cached = sessionStorage.getItem(TELEMETRY_CACHE_KEY);
     if (cached) {
       const dm = deserializeDevicesMap(cached);
       if (dm && dm.size) {
-        // keep only selected ids to avoid showing panels for unselected devices
         const filtered = new Map<string, DeviceState>();
         for (const s of selected) {
           if (dm.has(s.deviceId)) filtered.set(s.deviceId, dm.get(s.deviceId)!);
@@ -206,7 +221,6 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
         }
         setDevices(filtered);
       } else {
-        // create empty panels for selected devices if no telemetry cached
         const initialPanels = new Map<string, DeviceState>();
         for (const s of selected) initialPanels.set(s.deviceId, { ports: new Map<number, PortState>(), lastUpdate: null });
         setDevices(initialPanels);
@@ -217,40 +231,33 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
       setDevices(initialPanels);
     }
 
-    // set device names from selected list
     setDeviceNames(prev => {
       const next = new Map(prev);
       for (const s of selected) next.set(s.deviceId, s.name || s.deviceId);
       return next;
     });
     setNoSelectedIDs(false);
-    // run once on mount
   }, []);
 
-  // Track and handle device unsubscriptions (interval compares prevDeviceIdsRef <-> session storage)
+  // Track device unsubscriptions
   useEffect(() => {
     const checkInterval = setInterval(() => {
       const currentStoredIds = readSelectedDeviceIds();
       const prevIds = prevDeviceIdsRef.current;
-      // If nothing is selected and nothing was previously selected, do nothing
-      if (prevIds.length === 0 && currentStoredIds.length === 0) {
-        return;
-      }
+      
+      if (prevIds.length === 0 && currentStoredIds.length === 0) return;
 
-      // Find devices that were previously loaded but are no longer in storage
       const removed = prevIds.filter(id => !currentStoredIds.includes(id));
 
       if (removed.length > 0 && connRef.current) {
         removed.forEach(async (id) => {
           try {
             await connRef.current?.invoke("UnsubscribeFromDevice", id);
-            // Remove from local state
             setDevices(prev => {
               const next = new Map(prev);
               next.delete(id);
               return next;
             });
-
             setDeviceNames(prev => {
               const next = new Map(prev);
               next.delete(id);
@@ -262,42 +269,45 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
         });
       }
 
-      // Always keep prev ref in sync with current stored IDs
       prevDeviceIdsRef.current = currentStoredIds;
-    }, 1000); // Check every second
+    }, 1000);
 
     return () => clearInterval(checkInterval);
   }, []);
 
-  // keep prevDeviceIdsRef.current in sync when devices state changes (helps initial load logic)
   useEffect(() => {
     prevDeviceIdsRef.current = [...devices.keys()];
   }, [devices]);
 
-  // attach handlers and start connection + auto-subscribe
+  // SignalR connection setup
   useEffect(() => {
     const conn = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl)
       .withAutomaticReconnect()
       .build();
 
+    
+
     connRef.current = conn;
     setConnection(conn);
 
-    // telemetry handler
+    // Setup TelemetryUpdate handler
     conn.off("TelemetryUpdate");
     conn.on("TelemetryUpdate", (payload: TelemetryDto[] | any) => {
       if (!Array.isArray(payload) || payload.length === 0) return;
+      
       const first = payload[0];
-      const deviceId: string = (first.deviceId ?? first.DeviceId) as string;
+      const deviceId = (first.deviceId ?? first.DeviceId) as string;
       if (!deviceId) return;
+
+      console.log(`TelemetryUpdate for ${deviceId}:`, payload);
 
       setDevices(prev => {
         const next = new Map(prev);
         const dev = next.get(deviceId) ?? { ports: new Map<number, PortState>(), lastUpdate: Date.now() };
 
         for (const itemRaw of payload) {
-          const item: Partial<TelemetryDto> = {
+          const item = {
             deviceId: itemRaw.deviceId ?? itemRaw.DeviceId,
             devicePortId: itemRaw.devicePortId ?? itemRaw.DevicePortId,
             portIndex: itemRaw.portIndex ?? itemRaw.PortIndex,
@@ -308,49 +318,53 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
             timestamp: itemRaw.timestamp ?? itemRaw.Timestamp
           };
 
-          const pIndex = Number(item.portIndex ?? -1);
-          if (pIndex < 0) continue;
-
-          const value = Number(item.value ?? 0);
+          const portIndex = Number(item.portIndex ?? -1);
           const registerAddress = Number(item.registerAddress ?? 0);
+          const value = Number(item.value ?? 0);
           const unit = String(item.unit ?? "");
           const signalType = String(item.signalType ?? "");
 
-          const existing = dev.ports.get(pIndex);
-          if (existing) {
-            existing.history.push(value);
-            if (existing.history.length > MAX_HISTORY) existing.history.shift();
-            existing.last = value;
-            existing.registerAddress = registerAddress;
-            existing.unit = unit;
-            existing.signalType = signalType;
-            dev.ports.set(pIndex, existing);
-          } else {
-            dev.ports.set(pIndex, {
-              history: [value],
-              last: value,
-              registerAddress,
-              unit,
-              signalType
-            });
+          if (portIndex < 0 || registerAddress === 0) continue;
+
+          // Get or create port
+          let port = dev.ports.get(portIndex);
+          if (!port) {
+            port = { portIndex, registers: new Map<number, RegisterState>() };
+            dev.ports.set(portIndex, port);
           }
+
+          // Get or create register
+          let register = port.registers.get(registerAddress);
+          if (!register) {
+            register = {
+              registerAddress,
+              signalType,
+              unit,
+              history: [],
+              last: value,
+            };
+            port.registers.set(registerAddress, register);
+          }
+
+          // Update register
+          register.history.push(value);
+          if (register.history.length > MAX_HISTORY) register.history.shift();
+          register.last = value;
+          register.unit = unit;
+          register.signalType = signalType;
         }
 
         dev.lastUpdate = Date.now();
         next.set(deviceId, dev);
-
-        // schedule persistence after updating state
         persistTelemetry(next);
-
         return next;
       });
     });
 
-    // Start connection with timeout and auto-subscribe flow
+    // Start connection and auto-subscribe
     (async () => {
       const storedIds = readSelectedDeviceIds();
       if (!storedIds.length) {
-        // nothing to subscribe — clear UI and show message
         setDevices(new Map());
         setDeviceNames(new Map());
         setNoSelectedIDs(true);
@@ -358,33 +372,41 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
       }
 
       const startPromise = conn.start();
-      const timeoutPromise = new Promise<never>((_, rej) => setTimeout(() => rej(new Error("connect-timeout")), CONNECT_TIMEOUT_MS));
+      const timeoutPromise = new Promise<never>((_, rej) => 
+        setTimeout(() => rej(new Error("connect-timeout")), CONNECT_TIMEOUT_MS)
+      );
+      
       try {
         await Promise.race([startPromise, timeoutPromise]);
-        // connection started: clear any previous startup error
         setStartupError(null);
         setStartupErrorDetail(null);
+        console.log("SignalR connected");
       } catch (startErr: any) {
-        // Show a friendly error UI and let the user retry or clear selection manually
-        console.error("SignalR failed to start (auto-subscribe). Will not clear stored device ids.", startErr);
+        
+         if (String(startErr).includes("401")) {
+           navigate("/")
+           }
+
+        console.error("SignalR failed to start", startErr);
         setStartupError("Failed to connect to realtime server. Check server/network and press Retry or go back to device list.");
-        setStartupErrorDetail(String(startErr && startErr.message ? startErr.message : startErr));
+        setStartupErrorDetail(String(startErr?.message || startErr));
         return;
       }
 
-      // connection started, subscribe to each stored id
+      // Subscribe to devices
       for (const id of storedIds) {
         try {
           await conn.invoke("SubscribeToDevice", id);
-          // ensure UI has panel for device and name is present if available in session
+          console.log("Subscribed to device:", id);
+          
           setDevices(prev => {
             const next = new Map(prev);
             if (!next.has(id)) next.set(id, { ports: new Map<number, PortState>(), lastUpdate: null });
             return next;
           });
-          // ensure name mapping exists from sessionStorage (if user stored it)
+          
           const stored = readSelectedDevices().find(s => s.deviceId === id);
-          if (stored && stored.name) {
+          if (stored?.name) {
             setDeviceNames(prev => {
               const next = new Map(prev);
               next.set(id, stored.name);
@@ -392,42 +414,31 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
             });
           }
         } catch (subErr) {
-          console.warn("Failed to auto-subscribe to device", id, subErr);
+          console.warn("Failed to subscribe to device", id, subErr);
         }
       }
     })();
 
-    return () => {
-      try { conn.off("TelemetryUpdate"); } catch {}
-      conn.stop().catch(() => {});
-      connRef.current = null;
-      setConnection(null);
-      // Important: do not clear session storage here — user intent is preserved across navigation.
-      // Reset local state when the component unmounts so UI doesn't linger if you navigate away.
-      setDevices(new Map());
-      setDeviceNames(new Map());
-    };
-  }, [hubUrl]);
-
-  // onclose handler — do NOT clear session storage automatically.
-  useEffect(() => {
-    const conn = connRef.current;
-    if (!conn) return;
-    const onclose = async (err?: any) => {
+    // Setup onclose handler
+    conn.onclose((err?: any) => {
       console.warn("SignalR connection closed", err);
       const stored = readSelectedDeviceIds();
       if (stored.length) {
         setStartupError("Realtime connection closed. You can Retry or go back to device list.");
         setStartupErrorDetail(String(err ?? ""));
       }
-    };
-    conn.onclose(onclose);
-    return () => {
-      try { conn.off("close", onclose as any); } catch {}
-    };
-  }, [connection]);
+    });
 
-  // Retry handler: try to start connection again and resubscribe
+    return () => {
+      try { conn.off("TelemetryUpdate"); } catch {}
+      conn.stop().catch(() => {});
+      connRef.current = null;
+      setConnection(null);
+      setDevices(new Map());
+      setDeviceNames(new Map());
+    };
+  }, [hubUrl]);
+
   async function handleRetry() {
     if (!connRef.current) return;
     setIsRetrying(true);
@@ -436,10 +447,11 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
 
     try {
       const startPromise = connRef.current.start();
-      const timeoutPromise = new Promise<never>((_, rej) => setTimeout(() => rej(new Error("connect-timeout")), CONNECT_TIMEOUT_MS));
+      const timeoutPromise = new Promise<never>((_, rej) => 
+        setTimeout(() => rej(new Error("connect-timeout")), CONNECT_TIMEOUT_MS)
+      );
       await Promise.race([startPromise, timeoutPromise]);
 
-      // started — resubscribe
       const ids = readSelectedDeviceIds();
       for (const id of ids) {
         try {
@@ -456,23 +468,41 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
       setStartupError(null);
       setStartupErrorDetail(null);
     } catch (err: any) {
+  
       console.error("Retry failed", err);
       setStartupError("Retry failed — still cannot connect. Check server/network and try again.");
-      setStartupErrorDetail(String(err && err.message ? err.message : err));
+      setStartupErrorDetail(String(err?.message || err));
     } finally {
       setIsRetrying(false);
     }
   }
 
-  // helper to show the display name (fallback to id)
   function getDeviceDisplayName(deviceId: string) {
     return deviceNames.get(deviceId) ?? deviceId;
   }
 
-  // render sparkline helper
+  function toggleDevice(deviceId: string) {
+    setExpandedDevices(prev => {
+      const next = new Set(prev);
+      if (next.has(deviceId)) next.delete(deviceId);
+      else next.add(deviceId);
+      return next;
+    });
+  }
+
+  function togglePort(deviceId: string, portIndex: number) {
+    const key = `${deviceId}:${portIndex}`;
+    setExpandedPorts(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
   function renderSparkline(values: number[] | undefined) {
     if (!values || values.length === 0) return null;
-    const w = 120, h = 36, len = values.length;
+    const w = 100, h = 30, len = values.length;
     const min = Math.min(...values), max = Math.max(...values);
     const range = (max === min) ? (Math.abs(max) || 1) : (max - min);
     const points = values.map((v, i) => {
@@ -482,92 +512,189 @@ export default function Signals({ hubUrl = "https://localhost:7034/hubs/modbus" 
     }).join(" ");
 
     return (
-      <svg width={w} height={h} className="inline-block align-middle" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-        <polyline points={points} fill="none" strokeWidth={1.5} className="stroke-sky-600" strokeLinecap="round" strokeLinejoin="round" />
+      <svg width={w} height={h} className="inline-block" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+        <polyline points={points} fill="none" strokeWidth={2} className="stroke-blue-500" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   }
 
-  // UI
   return (
-    <div className="p-4 space-y-4">
-      {startupError ? (
-        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">
-          <div className="mb-2 text-sm text-yellow-900">{startupError}</div>
-          {startupErrorDetail ? (
-            <div className="mb-2 text-xs text-red-800">
-              Details: {startupErrorDetail}
-            </div>
-          ) : null}
-          <div className="flex gap-2">
-            <Button onClick={() => handleRetry()} disabled={isRetrying}>
-              {isRetrying ? "Retrying..." : "Retry"}
-            </Button>
-            <Button
-              onClick={() => {
-                clearSelectionAndReset(true);
-              }}
-              variant="secondary"
-            >
-              Back to devices (clear selection)
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+              <Database className="w-8 h-8 text-blue-600" />
+              Device Signals Monitor
+            </h1>
+            <p className="text-slate-600 mt-1">Real-time telemetry organized by ports and registers</p>
           </div>
         </div>
-      ) : (
-        <div className="text-sm text-muted-foreground">
-          {noSelectedIDs
-            ? "Subscribe to a device from the Devices page."
-            : "Showing signals for subscribed devices."}
-        </div>
-      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[...devices.entries()].map(([deviceId, dev]) => (
-          <Card key={deviceId} className="shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium">Device Signals value</div>
-                  <div className="text-sm font-medium">
-                    Device Name: {getDeviceDisplayName(deviceId)}
-                  </div>
+        {startupError && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg shadow-sm">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium text-yellow-900">Connection Error</p>
+                <p className="text-sm text-yellow-700 mt-1">{startupError}</p>
+                {startupErrorDetail && (
+                  <p className="text-xs text-yellow-600 mt-2">Details: {startupErrorDetail}</p>
+                )}
+                <div className="flex gap-2 mt-3">
+                  <Button onClick={handleRetry} disabled={isRetrying} size="sm">
+                    {isRetrying ? "Retrying..." : "Retry Connection"}
+                  </Button>
+                  <Button onClick={() => clearSelectionAndReset(true)} variant="outline" size="sm">
+                    Back to Devices
+                  </Button>
                 </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-muted-foreground">
-                      <th>Port</th>
-                      <th>Register</th>
-                      <th>Signal</th>
-                      <th>Value</th>
-                      <th>Unit</th>
-                      <th>History</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...dev.ports.entries()].map(([portIndex, p]) => (
-                      <tr key={portIndex}>
-                        <td className="py-1">{portIndex}</td>
-                        <td className="py-1">{p.registerAddress}</td>
-                        <td className="py-1">{p.signalType}</td>
-                        <td className="py-1 font-mono">
-                          {typeof p.last === "number"
-                            ? p.last.toFixed(6)
-                            : "-"}
-                        </td>
-                        <td className="py-1">{p.unit}</td>
-                        <td className="py-1">{renderSparkline(p.history)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {noSelectedIDs && (
+          <Card className="border-slate-200 shadow-lg">
+            <CardContent className="py-16">
+              <div className="text-center text-slate-500">
+                <Database className="w-20 h-20 mx-auto mb-4 text-slate-300" />
+                <p className="text-xl font-medium text-slate-700">No Devices Selected</p>
+                <p className="text-sm mt-2">Subscribe to devices from the Devices page to view real-time signals</p>
               </div>
             </CardContent>
           </Card>
-        ))}
+        )}
+
+        <div className="space-y-4">
+          {[...devices.entries()].map(([deviceId, dev]) => {
+            const isDeviceExpanded = expandedDevices.has(deviceId);
+            const portCount = dev.ports.size;
+            const totalRegisters = [...dev.ports.values()].reduce((sum, port) => sum + port.registers.size, 0);
+
+            return (
+              <Card key={deviceId} className="border-slate-200 shadow-lg overflow-hidden">
+                <CardHeader 
+                  className="cursor-pointer hover:bg-slate-50 transition-colors border-b bg-gradient-to-r from-slate-50 to-blue-50"
+                  onClick={() => toggleDevice(deviceId)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {isDeviceExpanded ? (
+                        <ChevronDown className="w-5 h-5 text-slate-600" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-slate-600" />
+                      )}
+                      <div>
+                        <CardTitle className="text-xl font-semibold text-slate-900">
+                          {getDeviceDisplayName(deviceId)}
+                        </CardTitle>
+                        <p className="text-sm text-slate-600 mt-1">
+                          {portCount} port{portCount !== 1 ? 's' : ''} • {totalRegisters} register{totalRegisters !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                      <span className="text-sm text-slate-600">Live</span>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                {isDeviceExpanded && (
+                  <CardContent className="p-0">
+                    {dev.ports.size === 0 ? (
+                      <div className="p-8 text-center text-slate-500">
+                        <p>No telemetry data received yet</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-slate-200">
+                        {[...dev.ports.entries()].map(([portIndex, port]) => {
+                          const isPortExpanded = expandedPorts.has(`${deviceId}:${portIndex}`);
+                          const registerCount = port.registers.size;
+
+                          return (
+                            <div key={portIndex}>
+                              <div
+                                className="p-4 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors"
+                                onClick={() => togglePort(deviceId, portIndex)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    {isPortExpanded ? (
+                                      <ChevronDown className="w-4 h-4 text-slate-600" />
+                                    ) : (
+                                      <ChevronRight className="w-4 h-4 text-slate-600" />
+                                    )}
+                                    <div>
+                                      <h3 className="font-semibold text-slate-900">Port {portIndex}</h3>
+                                      <p className="text-xs text-slate-600 mt-0.5">
+                                        {registerCount} register{registerCount !== 1 ? 's' : ''}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {isPortExpanded && (
+                                <div className="p-6 bg-white">
+                                  <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                      <thead className="bg-gradient-to-r from-slate-100 to-slate-50">
+                                        <tr>
+                                          <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                            Register Address
+                                          </th>
+                                          <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                            Signal Type
+                                          </th>
+                                          <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                            Current Value
+                                          </th>
+                                          <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                            Unit
+                                          </th>
+                                          <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                                            Trend
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-slate-200">
+                                        {[...port.registers.entries()].map(([regAddr, reg]) => (
+                                          <tr key={regAddr} className="hover:bg-slate-50 transition-colors">
+                                            <td className="px-4 py-4 text-sm font-mono font-medium text-slate-900">
+                                              {reg.registerAddress}
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-slate-700">
+                                              {reg.signalType || "—"}
+                                            </td>
+                                            <td className="px-4 py-4 text-sm font-mono font-semibold text-blue-600">
+                                              {typeof reg.last === "number" ? reg.last.toFixed(2) : "—"}
+                                            </td>
+                                            <td className="px-4 py-4 text-sm text-slate-700">
+                                              {reg.unit || "—"}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                              {renderSparkline(reg.history)}
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                )}
+              </Card>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

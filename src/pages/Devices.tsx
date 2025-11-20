@@ -263,7 +263,7 @@ export default function Devices() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/devices/ports`)}
+                        onClick={() => navigate(`/devices/ports/${d.deviceId}`)}
                         className="flex items-center gap-1"
                       >
                         <HdmiPort className="h-4 w-4" /> Ports
