@@ -1,4 +1,4 @@
-import React, { useEffect, useState, DragEvent } from "react";
+import React, { useEffect, useState, type DragEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AssetTree } from "@/asset/AssetTree";

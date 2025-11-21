@@ -175,7 +175,7 @@ export default function Devices() {
           <p className="text-muted-foreground">Manage all connected devices</p>
         </div>
 
-   
+        <div className="flex flex-row gap-2">
         {isAdmin && (
           <Button
             onClick={() => navigate("/devices/add")}
@@ -184,6 +184,16 @@ export default function Devices() {
             + Add Device
           </Button>
         )}
+
+        {isAdmin && (
+          <Button
+            onClick={() => navigate("/devices/upload")}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            + Import Bulk
+          </Button>
+        )}
+        </div>
       </div>
 
       {/* Search */}
