@@ -11,9 +11,10 @@ import { insertAsset } from "@/api/assetApi";
 
 interface AddRootProps {
   onClose: () => void;
+  onAdd?: (newAsset: any) => void; // <--- optional callback to parent
 }
 
-export default function AddRoot({ onClose }: AddRootProps) {
+export default function AddRoot({ onClose, onAdd }: AddRootProps) {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -40,23 +41,35 @@ export default function AddRoot({ onClose }: AddRootProps) {
     setLoading(true);
 
     try {
-      // MATCHING BACKEND FIELDS
       const payload = {
-        parentId: null,   // root has no parent
+        parentId: null, // root has no parent
         name: name.trim(),
-        level: 0          // root level always 0
+        level: 0, // root level always 0
       };
 
       console.log("API Payload:", payload);
 
+      // Call backend API
       const response = await insertAsset(payload);
 
       toast.success(`Root asset "${payload.name}" added successfully!`);
-
       console.log("Insert API Response:", response);
 
-      setName("");
+      // Notify parent to update AssetTree
+      if (onAdd) {
+        // Add backend asset object returned by API or construct one
+        const newAsset = {
+          assetId: response.assetId || Math.random().toString(36).substring(2, 9),
+          name: payload.name,
+          childrens: [],
+          parentId: null,
+          level: 0,
+          isDeleted: false,
+        };
+        onAdd(newAsset);
+      }
 
+      setName("");
       setTimeout(() => onClose(), 700);
     } catch (err) {
       console.error("Error adding root asset:", err);

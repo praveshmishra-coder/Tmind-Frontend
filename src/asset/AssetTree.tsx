@@ -8,7 +8,6 @@ import {
   Plus,
   Edit,
   Trash2,
-  Settings2,
 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -20,11 +19,11 @@ import ConfigureAsset from "../AssetsHierarchy/ConfigureAsset";
 import Editasset from "../AssetsHierarchy/Editasset";
 import DeleteAsset from "@/AssetsHierarchy/DeleteAsset";
 
-import levelToType from "./mapBackendAsset"; // keep this (it uses level)
+import levelToType from "./mapBackendAsset"; // keeps level logic
 import { deleteAsset } from "@/api/assetApi";
 import { toast } from "react-toastify";
 
-interface BackendAsset {
+export interface BackendAsset {
   assetId: string;
   name: string;
   childrens: BackendAsset[];
@@ -40,6 +39,7 @@ interface AssetTreeNodeProps {
   selectedId: string | null;
   onSelect: (asset: BackendAsset) => void;
   onDelete?: (asset: BackendAsset) => void;
+  onAdd?: (asset: BackendAsset) => void;
   searchTerm: string;
 
   setShowAddAssetModal: (v: boolean) => void;
@@ -60,17 +60,14 @@ const AssetTreeNode = ({
   selectedId,
   onSelect,
   onDelete,
+  onAdd,
   searchTerm,
-
   setShowAddAssetModal,
   setAssetForAdd,
-
   setShowConfigureModal,
   setAssetForConfig,
-
   setShowEditModal,
   setAssetForEdit,
-
   setOpenDeleteDialog,
   setAssetToDelete,
 }: AssetTreeNodeProps) => {
@@ -85,11 +82,7 @@ const AssetTreeNode = ({
 
   const assetType = levelToType(asset.level);
   const Icon =
-    assetType === "Department"
-      ? Building2
-      : assetType === "Line"
-      ? Layers
-      : Wrench;
+    assetType === "Department" ? Building2 : assetType === "Line" ? Layers : Wrench;
 
   const actions = [
     {
@@ -125,10 +118,7 @@ const AssetTreeNode = ({
           isSelected ? "bg-primary/10 text-primary font-medium" : ""
         } ${asset.isDeleted ? "opacity-50" : ""}`}
       >
-        <div
-          className="flex items-center gap-2 flex-1"
-          onClick={() => onSelect(asset)}
-        >
+        <div className="flex items-center gap-2 flex-1" onClick={() => onSelect(asset)}>
           {hasChildren ? (
             <button
               onClick={(e) => {
@@ -178,6 +168,7 @@ const AssetTreeNode = ({
               selectedId={selectedId}
               onSelect={onSelect}
               onDelete={onDelete}
+              onAdd={onAdd}
               searchTerm={searchTerm}
               setShowAddAssetModal={setShowAddAssetModal}
               setAssetForAdd={setAssetForAdd}
@@ -202,11 +193,13 @@ export const AssetTree = ({
   selectedId,
   onSelect,
   onDelete,
+  onAdd,
 }: {
   assets: BackendAsset[];
   selectedId: string | null;
   onSelect: (a: BackendAsset) => void;
   onDelete?: (a: BackendAsset) => void;
+  onAdd?: (a: BackendAsset) => void;
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -262,6 +255,7 @@ export const AssetTree = ({
             selectedId={selectedId}
             onSelect={onSelect}
             onDelete={onDelete}
+            onAdd={onAdd}
             searchTerm={searchTerm}
             setShowAddAssetModal={setShowAddAssetModal}
             setAssetForAdd={setAssetForAdd}
@@ -277,11 +271,18 @@ export const AssetTree = ({
 
       {/* Modals */}
       {showAddRootModal && (
-        <Addroot onClose={() => setShowAddRootModal(false)} />
+        <Addroot
+          onClose={() => setShowAddRootModal(false)}
+          onAdd={(newAsset) => onAdd?.(newAsset)}
+        />
       )}
 
       {showAddAssetModal && assetForAdd && (
-        <Addasset parentAsset={assetForAdd} onClose={() => setShowAddAssetModal(false)} />
+        <Addasset
+          parentAsset={assetForAdd}
+          onClose={() => setShowAddAssetModal(false)}
+          onAdd={(newAsset) => onAdd?.(newAsset)}
+        />
       )}
 
       {showConfigureModal && assetForConfig && (

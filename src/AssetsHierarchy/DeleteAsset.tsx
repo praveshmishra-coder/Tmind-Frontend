@@ -14,7 +14,7 @@ interface DeleteAssetProps {
   asset: any;        // { assetId, name, level, isDeleted }
   open: boolean;
   onClose: () => void;
-  onDeleted?: () => void; // refresh tree
+  onDeleted?: (deletedAsset: any) => void; // <-- notify parent
 }
 
 export default function DeleteAsset({ asset, open, onClose, onDeleted }: DeleteAssetProps) {
@@ -30,7 +30,9 @@ export default function DeleteAsset({ asset, open, onClose, onDeleted }: DeleteA
         autoClose: 2000,
       });
 
-      if (onDeleted) onDeleted();
+      // Notify parent to remove from tree
+      if (onDeleted) onDeleted(asset);
+
       onClose();
     } catch (err: any) {
       toast.error(

@@ -11,9 +11,10 @@ import { insertAsset } from "@/api/assetApi";
 interface AddAssetProps {
   parentAsset?: any; // backend: { assetId, name, ... }
   onClose: () => void;
+  onAdd?: (newAsset: any) => void; // <--- new callback to parent
 }
 
-export default function AddAsset({ parentAsset, onClose }: AddAssetProps) {
+export default function AddAsset({ parentAsset, onClose, onAdd }: AddAssetProps) {
   const [formData, setFormData] = useState({
     name: "",
   });
@@ -50,19 +51,35 @@ export default function AddAsset({ parentAsset, onClose }: AddAssetProps) {
     setLoading(true);
 
     try {
-      // ⭐ Backend Required Fields Only
+      // Backend required fields
       const payload = {
         name: formData.name.trim(),
-        parentId: parentAsset?.assetId || null, // IMPORTANT: use backend field
+        parentId: parentAsset?.assetId || null,
+        level: parentAsset ? parentAsset.level + 1 : 0, // compute level
       };
 
       console.log("Insert Asset Payload:", payload);
 
-      await insertAsset(payload);
+      // Call backend API
+      const response = await insertAsset(payload);
 
       toast.success(`Asset "${payload.name}" created successfully!`);
 
-      setTimeout(() => onClose(), 800);
+      // Notify parent to update AssetTree
+      if (onAdd) {
+        const newAsset = {
+          assetId: response.assetId || Math.random().toString(36).substring(2, 9),
+          name: payload.name,
+          childrens: [],
+          parentId: payload.parentId,
+          level: payload.level,
+          isDeleted: false,
+        };
+        onAdd(newAsset);
+      }
+
+      setFormData({ name: "" });
+      setTimeout(() => onClose(), 700);
     } catch (err: any) {
       console.error("Error creating asset:", err);
 
@@ -104,15 +121,12 @@ export default function AddAsset({ parentAsset, onClose }: AddAssetProps) {
               {parentAsset && (
                 <div className="grid gap-2">
                   <Label>Parent Asset</Label>
-                  <Input
-                    value={parentAsset.name}
-                    disabled
-                  />
+                  <Input value={parentAsset.name} disabled />
                 </div>
               )}
 
               <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={onClose}>
+                <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
                   Cancel
                 </Button>
 

@@ -8,7 +8,6 @@ import { AssetTree } from "@/asset/AssetTree";
 import AssetDetails from "@/asset/AssetDetails";
 import AssignDevice from "@/asset/AssignDevice";
 
-import { type Asset } from "@/types/asset";
 import { getAssetHierarchy } from "@/api/assetApi";
 
 import {
@@ -20,21 +19,43 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
+// -------------------- Types --------------------
+export type BackendAsset = {
+  assetId: string;
+  name: string;
+  childrens: BackendAsset[];
+  parentId: string | null;
+  level: number;
+  isDeleted: boolean;
+};
+
+// -------------------- Helper Functions --------------------
+const removeAssetById = (assets: BackendAsset[], id: string): BackendAsset[] => {
+  return assets
+    .filter(a => a.assetId !== id)
+    .map(a => ({
+      ...a,
+      childrens: removeAssetById(a.childrens || [], id),
+    }));
+};
+
+// -------------------- Component --------------------
 export default function Assets() {
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  // State
+  const [assets, setAssets] = useState<BackendAsset[]>([]);
+  const [selectedAsset, setSelectedAsset] = useState<BackendAsset | null>(null);
 
   const [assignedDevice, setAssignedDevice] = useState<any>(null);
   const [showAssignDevice, setShowAssignDevice] = useState(false);
 
   const [loading, setLoading] = useState(true);
-
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
   const navigate = useNavigate();
 
+  // -------------------- Load Assets --------------------
   useEffect(() => {
     loadAssets();
   }, []);
@@ -42,8 +63,8 @@ export default function Assets() {
   const loadAssets = async () => {
     try {
       setLoading(true);
-      const backendData = await getAssetHierarchy();
-      setAssets(backendData); 
+      const backendData: BackendAsset[] = await getAssetHierarchy();
+      setAssets(backendData);
     } catch (err) {
       console.error("Failed to load assets:", err);
     } finally {
@@ -51,11 +72,13 @@ export default function Assets() {
     }
   };
 
+  // -------------------- Assign Device --------------------
   const onAssignDevice = () => {
     if (!selectedAsset) return;
     setShowAssignDevice(true);
   };
 
+  // -------------------- CSV Handlers --------------------
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
@@ -95,8 +118,10 @@ export default function Assets() {
     loadAssets();
   };
 
+  // -------------------- Render --------------------
   return (
     <div className="p-3">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-foreground mb-1">
@@ -107,12 +132,12 @@ export default function Assets() {
           </p>
         </div>
 
-        <Button onClick={() => setShowUploadModal(true)}>
-          + Import Bulk
-        </Button>
+        <Button onClick={() => setShowUploadModal(true)}>+ Import Bulk</Button>
       </div>
 
+      {/* Main Grid */}
       <div className="grid grid-cols-12 gap-6 mt-6">
+        {/* Asset Tree */}
         <div className="col-span-12 lg:col-span-5">
           <Card className="h-[600px] flex flex-col">
             <CardContent className="p-2 flex-1 overflow-auto">
@@ -121,14 +146,19 @@ export default function Assets() {
               ) : (
                 <AssetTree
                   assets={assets}
-                  selectedId={selectedAsset?.id || null}
+                  selectedId={selectedAsset?.assetId || null}
                   onSelect={setSelectedAsset}
+                  onDelete={(deletedAsset) =>
+                    setAssets((prev) => removeAssetById(prev, deletedAsset.assetId))
+                  }
+                  onAdd={(newAsset) => setAssets((prev) => [...prev, newAsset])}
                 />
               )}
             </CardContent>
           </Card>
         </div>
 
+        {/* Asset Details */}
         <div className="col-span-12 lg:col-span-7">
           <Card className="h-[600px] flex flex-col">
             <CardHeader>
@@ -147,6 +177,7 @@ export default function Assets() {
         </div>
       </div>
 
+      {/* Assign Device Modal */}
       {showAssignDevice && selectedAsset && (
         <AssignDevice
           open={showAssignDevice}
@@ -159,6 +190,7 @@ export default function Assets() {
         />
       )}
 
+      {/* CSV Upload Modal */}
       <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
         <DialogContent className="sm:max-w-md p-6 bg-card rounded-2xl border shadow-xl">
           <DialogHeader>
