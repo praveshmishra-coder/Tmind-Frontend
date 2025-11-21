@@ -26,7 +26,7 @@ import {
 import Addroot from "../AssetsHierarchy/Addroot";
 import Addasset from "../AssetsHierarchy/Addasset";
 import ConfigureAsset from "../AssetsHierarchy/ConfigureAsset";
-import Editasset from "../AssetsHierarchy/Editasset";
+import Editasset from "../AssetsHierarchy/EditAsset";
 import levelToType from "./mapBackendAsset";
 
 interface AssetTreeProps {
@@ -240,7 +240,7 @@ export const AssetTree = ({ assets, selectedId, onSelect, onEdit, onDelete }: As
     <div className="h-full flex flex-col">
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">Asset Hierarchy</h2>
+          <h2 className="text-lg font-semibold">Asset Tree</h2>
           <Button size="sm" className="h-8 gap-1" onClick={() => setShowAddRootModal(true)}>
             <Plus className="h-4 w-4" /> Add Root
           </Button>
