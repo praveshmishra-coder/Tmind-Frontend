@@ -1,28 +1,25 @@
-// src/utils/mapBackendToFrontend.ts
-
 import { type Asset } from "@/types/asset";
-import levelToType from "@/asset/mapBackendAsset";
 
-export function transformBackendAsset(
-  backendAsset: any,
-  parentPath: string = ""
-): Asset {
-  const path = parentPath ? `${parentPath} / ${backendAsset.name}` : backendAsset.name;
-
-  return {
-    id: backendAsset.assetId,
-    name: backendAsset.name,
-    type: levelToType(backendAsset.level),
-    description: "", // backend has no description
-    path,
-    depth: backendAsset.level,
-    isDeleted: backendAsset.isDeleted,
-    children: (backendAsset.childrens || []).map((child: any) =>
-      transformBackendAsset(child, path)
-    ),
-  };
+interface BackendAsset {
+  assetId: string;
+  name: string;
+  childrens: BackendAsset[];
+  parentId: string | null;
+  level: number;
+  isDeleted: boolean;
 }
 
-export function transformHierarchy(list: any[]): Asset[] {
-  return list.map((item) => transformBackendAsset(item));
+export function transformHierarchy(data: BackendAsset[]): Asset[] {
+  const mapNode = (node: BackendAsset): Asset => {
+    return {
+      id: node.assetId,
+      name: node.name,
+      level: node.level,
+      isDeleted: node.isDeleted,
+      parentId: node.parentId,
+      children: node.childrens?.map(mapNode) || [],   // FIX
+    };
+  };
+
+  return data.map(mapNode);
 }

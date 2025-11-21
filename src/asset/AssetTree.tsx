@@ -78,7 +78,7 @@ const AssetTreeNode = ({
     searchTerm === "" || asset.name.toLowerCase().includes(searchTerm.toLowerCase());
   if (!matchesSearch) return null;
 
-  const assetType = levelToType(asset.depth);
+  const assetType = levelToType(asset.level);
 
   const Icon = (() => {
     switch (assetType) {
@@ -94,8 +94,8 @@ const AssetTreeNode = ({
     }
   })();
 
-  // Action buttons depending on depth
-  const actions = asset.depth >= 4
+  // actions based on level NOT depth
+  const actions = asset.level >= 4
     ? [
         {
           icon: <Settings2 className="h-4 w-4" />,
@@ -196,7 +196,7 @@ const AssetTreeNode = ({
 
       {hasChildren && isExpanded && (
         <div className="ml-6">
-          {asset.children!.map((child) => (
+          {asset.children.map((child) => (
             <AssetTreeNode
               key={child.id}
               asset={child}

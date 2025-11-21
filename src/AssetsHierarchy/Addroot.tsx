@@ -6,6 +6,9 @@ import { Label } from "@/components/ui/label";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// >>> IMPORT THE API <<<
+import { insertAsset } from "@/api/assetApi";
+
 interface AddRootProps {
   onClose: () => void;
 }
@@ -17,6 +20,7 @@ export default function AddRoot({ onClose }: AddRootProps) {
   const validateName = (value: string) => {
     const trimmed = value.trim();
     const regex = /^[A-Za-z][A-Za-z0-9_\- ]{2,99}$/;
+
     if (!trimmed) {
       toast.error("Asset name is required.");
       return false;
@@ -35,18 +39,26 @@ export default function AddRoot({ onClose }: AddRootProps) {
 
     setLoading(true);
     try {
-      const payload = { name: name.trim() };
-      console.log("Adding root asset:", payload);
+      const payload = {
+        parentId: null, // root asset → no parent
+        name: name.trim(),
+        level: 0, // root always level 0
+      };
 
-      // TODO: call your API here
-      // await createRootAsset(payload);
+      console.log("API Payload:", payload);
+
+      const response = await insertAsset(payload);
 
       toast.success(`Root asset "${payload.name}" added successfully!`, {
         position: "top-right",
         autoClose: 3000,
       });
 
+      console.log("Insert API Response:", response);
+
       setName("");
+
+      // Automatically close modal
       setTimeout(() => onClose(), 800);
     } catch (err: any) {
       console.error("Error adding root asset:", err);
@@ -81,9 +93,10 @@ export default function AddRoot({ onClose }: AddRootProps) {
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <Button variant="outline" onClick={onClose}>
+                <Button variant="outline" onClick={onClose} disabled={loading}>
                   Cancel
                 </Button>
+
                 <Button onClick={handleAdd} disabled={loading}>
                   {loading ? "Adding..." : "Add"}
                 </Button>
@@ -91,7 +104,11 @@ export default function AddRoot({ onClose }: AddRootProps) {
             </div>
           </CardContent>
 
-          <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar
+          />
         </Card>
       </div>
     </div>

@@ -11,11 +11,9 @@
 export interface Asset {
   id: string;
   name: string;
-  type: string;
-  description: string;
-  path: string;
-  depth: number;
-  isDeleted: boolean;
+  level: number;
+  parentId?: string | null;
+  isDeleted?: boolean;
   children: Asset[];
 }
 

@@ -1,77 +1,78 @@
-const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
+import apiAsset from "./axiosAsset";
 
-export async function getAssetHierarchy() {
-  await wait(300); // mock API delay
+/* --------------------------------------------------------
+    ASSET TYPES
+-------------------------------------------------------- */
 
-  return [
-    {
-      assetId: "dept-1",
-      name: "Manufacturing Plant",
-      level: 1,
-      isDeleted: false,
-      childrens: [
-        {
-          assetId: "line-1",
-          name: "Assembly Line A",
-          level: 2,
-          isDeleted: false,
-          childrens: [
-            {
-              assetId: "machine-1",
-              name: "Hydraulic Press",
-              level: 3,
-              isDeleted: false,
-              childrens: [
-                {
-                  assetId: "sub-1",
-                  name: "Pressure Sensor",
-                  level: 4,
-                  isDeleted: false,
-                  childrens: [],
-                },
-                {
-                  assetId: "sub-2",
-                  name: "Cooling Unit",
-                  level: 4,
-                  isDeleted: false,
-                  childrens: [],
-                },
-              ],
-            },
-            {
-              assetId: "machine-2",
-              name: "Welding Robot",
-              level: 3,
-              isDeleted: false,
-              childrens: [
-                {
-                  assetId: "sub-3",
-                  name: "Weld Nozzle",
-                  level: 4,
-                  isDeleted: false,
-                  childrens: [],
-                },
-              ],
-            },
-          ],
-        },
-
-        {
-          assetId: "line-2",
-          name: "Assembly Line B",
-          level: 2,
-          isDeleted: false,
-          childrens: [
-            {
-              assetId: "machine-3",
-              name: "CNC Machine",
-              level: 3,
-              isDeleted: false,
-              childrens: [],
-            },
-          ],
-        },
-      ],
-    },
-  ];
+export interface Asset {
+  assetId: string;
+  name: string;
+  level: number;
+  isDeleted: boolean;
+  childrens: Asset[];
 }
+
+export interface InsertAssetRequest {
+  parentId: string | null;
+  name: string;
+  level: number;
+}
+
+export interface UpdateAssetConfigPayload {
+  signalName: string;
+  signalAddress: string;
+  signalType: string;
+}
+
+/* --------------------------------------------------------
+    ASSET HIERARCHY APIS
+-------------------------------------------------------- */
+
+// GET ALL ASSET HIERARCHY
+export const getAssetHierarchy = async () => {
+  const res = await apiAsset.get("/AssetHierarchy/GetAssetHierarchy");
+  return res.data; // backend returns array
+};
+
+// INSERT NEW ASSET
+export const insertAsset = async (payload: InsertAssetRequest) => {
+  const res = await apiAsset.post("/AssetHierarchy/InsertAsset", payload);
+  return res.data;
+};
+
+// GET CHILDREN ASSETS BY PARENT ID
+export const getAssetsByParentId = async (parentId: string) => {
+  const res = await apiAsset.get(`/AssetHierarchy/GetByParentId/${parentId}`);
+  return res.data;
+};
+
+// DELETE ASSET
+export const deleteAsset = async (assetId: string) => {
+  const res = await apiAsset.delete(`/AssetHierarchy/DeleteAsset/${assetId}`);
+  return res.data;
+};
+
+/* --------------------------------------------------------
+    ASSET CONFIG APIS
+-------------------------------------------------------- */
+
+// ADD ASSET CONFIG
+export const addAssetConfig = async (payload: any) => {
+  const res = await apiAsset.post("/AssetConfig", payload);
+  return res.data;
+};
+
+// GET SIGNALS + CONFIG FOR AN ASSET
+export const getAssetConfig = async (assetId: string) => {
+  const res = await apiAsset.get(`/AssetConfig/${assetId}`);
+  return res.data;
+};
+
+// UPDATE SIGNAL CONFIG FOR AN ASSET
+export const updateAssetConfig = async (
+  assetId: string,
+  payload: UpdateAssetConfigPayload
+) => {
+  const res = await apiAsset.put(`/AssetConfig/${assetId}`, payload);
+  return res.data;
+};
