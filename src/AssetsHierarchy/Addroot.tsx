@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-// >>> IMPORT THE API <<<
+// Backend API
 import { insertAsset } from "@/api/assetApi";
 
 interface AddRootProps {
@@ -38,31 +38,29 @@ export default function AddRoot({ onClose }: AddRootProps) {
     if (!validateName(name)) return;
 
     setLoading(true);
+
     try {
+      // MATCHING BACKEND FIELDS
       const payload = {
-        parentId: null, // root asset → no parent
+        parentId: null,   // root has no parent
         name: name.trim(),
-        level: 0, // root always level 0
+        level: 0          // root level always 0
       };
 
       console.log("API Payload:", payload);
 
       const response = await insertAsset(payload);
 
-      toast.success(`Root asset "${payload.name}" added successfully!`, {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.success(`Root asset "${payload.name}" added successfully!`);
 
       console.log("Insert API Response:", response);
 
       setName("");
 
-      // Automatically close modal
-      setTimeout(() => onClose(), 800);
-    } catch (err: any) {
+      setTimeout(() => onClose(), 700);
+    } catch (err) {
       console.error("Error adding root asset:", err);
-      toast.error("Failed to add root asset. Try again.", { autoClose: 4000 });
+      toast.error("Failed to add root asset. Try again.");
     } finally {
       setLoading(false);
     }
@@ -71,7 +69,7 @@ export default function AddRoot({ onClose }: AddRootProps) {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/30 backdrop-blur-sm">
       <div className="w-[400px] max-h-[80vh] overflow-auto">
-        <Card className="w-full h-full">
+        <Card>
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-center">
               Add Root Asset
@@ -104,11 +102,7 @@ export default function AddRoot({ onClose }: AddRootProps) {
             </div>
           </CardContent>
 
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar
-          />
+          <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
         </Card>
       </div>
     </div>

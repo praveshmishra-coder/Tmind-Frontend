@@ -11,7 +11,7 @@ import { deleteAsset } from "@/api/assetApi";
 import { toast } from "react-toastify";
 
 interface DeleteAssetProps {
-  asset: any;         // { id, name }
+  asset: any;        // { assetId, name, level, isDeleted }
   open: boolean;
   onClose: () => void;
   onDeleted?: () => void; // refresh tree
@@ -22,7 +22,8 @@ export default function DeleteAsset({ asset, open, onClose, onDeleted }: DeleteA
 
   const handleDelete = async () => {
     try {
-      await deleteAsset(asset.id);
+      // 🔥 Backend now uses asset.assetId
+      await deleteAsset(asset.assetId);
 
       toast.success(`Asset "${asset.name}" deleted successfully!`, {
         position: "top-right",
@@ -30,7 +31,6 @@ export default function DeleteAsset({ asset, open, onClose, onDeleted }: DeleteA
       });
 
       if (onDeleted) onDeleted();
-
       onClose();
     } catch (err: any) {
       toast.error(
@@ -58,6 +58,17 @@ export default function DeleteAsset({ asset, open, onClose, onDeleted }: DeleteA
             Are you sure you want to delete{" "}
             <span className="font-medium">{asset.name}</span>?
           </p>
+
+          {/* Optional: show level or deleted status */}
+          {asset.level !== undefined && (
+            <p className="text-xs text-muted-foreground">
+              Level: {asset.level}
+            </p>
+          )}
+
+          {asset.isDeleted && (
+            <p className="text-xs text-red-500">This asset is already deleted.</p>
+          )}
 
           <DialogFooter className="flex w-full justify-between pt-4">
             <Button variant="outline" onClick={onClose} className="w-[45%]">

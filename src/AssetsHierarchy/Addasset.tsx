@@ -9,7 +9,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { insertAsset } from "@/api/assetApi";
 
 interface AddAssetProps {
-  parentAsset?: any; // { assetId, name }
+  parentAsset?: any; // backend: { assetId, name, ... }
   onClose: () => void;
 }
 
@@ -50,10 +50,10 @@ export default function AddAsset({ parentAsset, onClose }: AddAssetProps) {
     setLoading(true);
 
     try {
-      // ⭐ FINAL PAYLOAD (EXACTLY AS YOUR BACKEND WANTS)
+      // ⭐ Backend Required Fields Only
       const payload = {
         name: formData.name.trim(),
-        parentId: parentAsset?.id,
+        parentId: parentAsset?.assetId || null, // IMPORTANT: use backend field
       };
 
       console.log("Insert Asset Payload:", payload);
@@ -104,7 +104,10 @@ export default function AddAsset({ parentAsset, onClose }: AddAssetProps) {
               {parentAsset && (
                 <div className="grid gap-2">
                   <Label>Parent Asset</Label>
-                  <Input value={parentAsset.name} disabled />
+                  <Input
+                    value={parentAsset.name}
+                    disabled
+                  />
                 </div>
               )}
 
