@@ -65,12 +65,12 @@ export default function Assets() {
 
   const onEdit = () => {
     if (!selectedAsset) return;
-    navigate(`/assets/edit/${selectedAsset.assetId}`);
+    navigate(`/assets/edit/${selectedAsset.id}`);
   };
 
   const onAddChild = () => {
     if (!selectedAsset) return;
-    navigate(`/assets/add?parentId=${selectedAsset.assetId}`);
+    navigate(`/assets/add?parentId=${selectedAsset.id}`);
   };
 
   const onDelete = () => {
@@ -169,7 +169,7 @@ export default function Assets() {
               ) : (
                 <AssetTree
                   assets={assets}
-                  selectedId={selectedAsset?.assetId || null}
+                  selectedId={selectedAsset?.id || null}
                   onSelect={setSelectedAsset}
                 />
               )}
@@ -188,9 +188,6 @@ export default function Assets() {
               <AssetDetails
                 selectedAsset={selectedAsset}
                 assignedDevice={assignedDevice}
-                onEdit={onEdit}
-                onAddChild={onAddChild}
-                onDelete={onDelete}
                 onRestore={onRestore}
                 onAssignDevice={onAssignDevice}
               />
