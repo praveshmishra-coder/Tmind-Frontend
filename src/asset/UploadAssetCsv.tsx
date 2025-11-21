@@ -1,51 +1,52 @@
-import React, { useState,DragEvent } from "react";
+import React, { useState, DragEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function UploadAssetCsv() {
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
-
   const navigate = useNavigate();
 
-  // Handle file drop
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile.type === "text/csv") {
-        setFile(droppedFile);
-      } else {
-        alert("Please upload a CSV file only.");
-      }
-    }
-  };
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (!droppedFile) return;
 
-  // Handle file select via input
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const selectedFile = e.target.files[0];
-      if (selectedFile.type === "text/csv") {
-        setFile(selectedFile);
-      } else {
-        alert("Please upload a CSV file only.");
-      }
-    }
-  };
-
-  // Handle submit 
-  const handleSubmit = () => {
-    if (!file) {
-      alert("Please select a CSV file first.");
+    if (droppedFile.type !== "text/csv") {
+      toast.error("Please upload a CSV file only!");
       return;
     }
 
-    console.log("CSV file submitted:", file.name);
-    alert(`CSV file "${file.name}" submitted!`);
+    setFile(droppedFile);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    if (selectedFile.type !== "text/csv") {
+      toast.error("Please upload a CSV file only!");
+      return;
+    }
+
+    setFile(selectedFile);
+  };
+
+  const handleSubmit = () => {
+    if (!file) {
+      toast.error("Please select a CSV file first!");
+      return;
+    }
+
+    toast.success(`CSV file "${file.name}" submitted successfully!`);
 
     setFile(null);
-    navigate("/assets");
+
+    // Navigate after short delay to let toast show
+    setTimeout(() => navigate("/assets"), 1000);
   };
 
   return (

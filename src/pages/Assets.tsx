@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, DragEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AssetTree } from "@/asset/AssetTree";
@@ -8,11 +8,16 @@ import AssetDetails from "@/asset/AssetDetails";
 import { getAssetHierarchy } from "@/api/assetApi";
 import { transformHierarchy } from "@/asset/mapBackendToFrontend";
 
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from "@/components/ui/dialog";
+
 export default function Assets() {
   const [assets, setAssets] = useState<Asset[]>([]);
-
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   const navigate = useNavigate();
 
@@ -25,7 +30,6 @@ export default function Assets() {
     try {
       const backendData = await getAssetHierarchy();
       const mapped = transformHierarchy(backendData);
-
       setAssets(mapped);
     } catch (e) {
       console.error("Failed to load assets", e);
@@ -55,6 +59,43 @@ export default function Assets() {
     navigate(`/assets/assign-device/${selectedAsset.id}`);
   };
 
+  // CSV Upload Handlers
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile.type === "text/csv") {
+        setCsvFile(droppedFile);
+      } else {
+        alert("Please upload a CSV file only.");
+      }
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFile = e.target.files[0];
+      if (selectedFile.type === "text/csv") {
+        setCsvFile(selectedFile);
+      } else {
+        alert("Please upload a CSV file only.");
+      }
+    }
+  };
+
+  const handleCsvSubmit = () => {
+    if (!csvFile) {
+      alert("Please select a CSV file first.");
+      return;
+    }
+    console.log("CSV file submitted:", csvFile.name);
+    alert(`CSV file "${csvFile.name}" submitted!`);
+    setCsvFile(null);
+    setShowUploadModal(false);
+    loadAssets(); // refresh tree if needed
+  };
+
   return (
     <div className="p-3">
       {/* Header */}
@@ -67,7 +108,7 @@ export default function Assets() {
         </div>
 
         <Button
-          onClick={() => navigate("/assets/add")}
+          onClick={() => setShowUploadModal(true)}
           className="bg-primary text-primary-foreground hover:bg-primary/90"
         >
           + Import Bulk
@@ -76,7 +117,6 @@ export default function Assets() {
 
       {/* Layout */}
       <div className="grid grid-cols-12 gap-6 mt-6">
-        {/* LEFT: Asset Tree */}
         <div className="col-span-12 lg:col-span-5">
           <Card className="glass-card h-[600px] flex flex-col">
             <CardContent className="p-2 flex-1 overflow-auto">
@@ -87,14 +127,12 @@ export default function Assets() {
                   assets={assets}
                   selectedId={selectedAsset?.id || null}
                   onSelect={setSelectedAsset}
-                  onAddRoot={() => navigate("/assets/add")}
                 />
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* RIGHT: Asset Details */}
         <div className="col-span-12 lg:col-span-7">
           <Card className="glass-card h-[600px] flex flex-col">
             <CardHeader>
@@ -113,7 +151,52 @@ export default function Assets() {
           </Card>
         </div>
       </div>
-      
+
+      {/* Upload CSV Modal */}
+      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+        <DialogContent className="sm:max-w-md border border-border shadow-2xl rounded-2xl p-6 bg-card">
+          <DialogHeader>
+            <DialogTitle>Upload CSV</DialogTitle>
+          </DialogHeader>
+
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            className={`w-full h-48 border-2 rounded-lg flex flex-col items-center justify-center p-4 cursor-pointer transition-colors relative ${
+              dragOver ? "border-primary bg-primary/10" : "border-border bg-card"
+            }`}
+          >
+            {csvFile ? (
+              <p className="text-center font-medium">{csvFile.name}</p>
+            ) : (
+              <p className="text-center text-muted-foreground">
+                Drag & drop a CSV file here or click to select
+              </p>
+            )}
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleFileSelect}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+          </div>
+
+          <DialogFooter className="flex justify-end mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowUploadModal(false)}
+              className="mr-2"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleCsvSubmit}>Submit CSV</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
