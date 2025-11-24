@@ -25,12 +25,6 @@ export default function DeleteAsset({ asset, open, onClose, onDeleted }: DeleteA
       // 🔥 Backend now uses asset.assetId
       await deleteAsset(asset.assetId);
 
-      toast.success(`Asset "${asset.name}" deleted successfully!`, {
-        position: "top-right",
-        autoClose: 2000,
-      });
-
-      // Notify parent to remove from tree
       if (onDeleted) onDeleted(asset);
 
       onClose();

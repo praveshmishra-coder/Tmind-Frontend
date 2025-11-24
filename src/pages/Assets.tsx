@@ -19,6 +19,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
+import { toast } from "react-toastify";
+
 // -------------------- Types --------------------
 export type BackendAsset = {
   assetId: string;
@@ -37,6 +39,21 @@ const removeAssetById = (assets: BackendAsset[], id: string): BackendAsset[] => 
       ...a,
       childrens: removeAssetById(a.childrens || [], id),
     }));
+};
+
+const addAssetToTree = (
+  list: BackendAsset[],
+  parentId: string | null,
+  newAsset: BackendAsset
+): BackendAsset[] => {
+  // If no parent → add to root
+  if (!parentId) return [...list, newAsset];
+
+  return list.map(asset =>
+    asset.assetId === parentId
+      ? { ...asset, childrens: [...asset.childrens, newAsset] }
+      : { ...asset, childrens: addAssetToTree(asset.childrens, parentId, newAsset) }
+  );
 };
 
 // -------------------- Component --------------------
@@ -67,6 +84,7 @@ export default function Assets() {
       setAssets(backendData);
     } catch (err) {
       console.error("Failed to load assets:", err);
+      toast.error("Failed to load assets. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -79,6 +97,14 @@ export default function Assets() {
   };
 
   // -------------------- CSV Handlers --------------------
+  const validateCsv = (file: File) => {
+    if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
+      toast.error("Please upload a valid CSV file.");
+      return false;
+    }
+    return true;
+  };
+
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
@@ -86,33 +112,29 @@ export default function Assets() {
     const file = e.dataTransfer.files?.[0];
     if (!file) return;
 
-    if (file.type !== "text/csv") {
-      alert("Please upload a CSV file only.");
-      return;
-    }
+    if (!validateCsv(file)) return;
 
     setCsvFile(file);
+    toast.info(`Selected: ${file.name}`);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== "text/csv") {
-      alert("Please upload a CSV file only.");
-      return;
-    }
+    if (!validateCsv(file)) return;
 
     setCsvFile(file);
+    toast.info(`Selected: ${file.name}`);
   };
 
   const handleCsvSubmit = () => {
     if (!csvFile) {
-      alert("Please select a CSV file.");
+      toast.warning("Please select a CSV file first.");
       return;
     }
 
-    alert(`CSV uploaded: ${csvFile.name}`);
+    toast.success(`✅ CSV uploaded: ${csvFile.name}`);
     setShowUploadModal(false);
     setCsvFile(null);
     loadAssets();
@@ -148,10 +170,14 @@ export default function Assets() {
                   assets={assets}
                   selectedId={selectedAsset?.assetId || null}
                   onSelect={setSelectedAsset}
-                  onDelete={(deletedAsset) =>
-                    setAssets((prev) => removeAssetById(prev, deletedAsset.assetId))
-                  }
-                  onAdd={(newAsset) => setAssets((prev) => [...prev, newAsset])}
+                  onDelete={(deletedAsset) => {
+                    setAssets((prev) => removeAssetById(prev, deletedAsset.assetId));
+                    toast.success(`✅ "${deletedAsset.name}" deleted successfully`);
+                  }}
+                  onAdd={(newAsset) => {
+                    setAssets((prev) => addAssetToTree(prev, newAsset.parentId, newAsset));
+                    // toast.success(`✅ "${newAsset.name}" created`);
+                  }}
                 />
               )}
             </CardContent>
@@ -186,6 +212,7 @@ export default function Assets() {
           onAssign={(device) => {
             setAssignedDevice(device);
             setShowAssignDevice(false);
+            toast.success("✅ Device assigned successfully");
           }}
         />
       )}

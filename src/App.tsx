@@ -16,7 +16,9 @@ import Settings from "./pages/Settings";
 import DeletedDevices from "./devices/DeletedDevices";
 import Profile from "./pages/Profile";
 import AddPortForm from "./pages/AddPortsForm";
-import { TooltipProvider } from "@/components/ui/tooltip"; // from your shadcn tooltip file
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";  
 
 export default function App() {
   return (
@@ -46,6 +48,11 @@ export default function App() {
           {/* Redirect unknown routes to login */}
           {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
         </Routes>
+          <ToastContainer
+          position="top-right"
+          autoClose={2000}
+          theme="light"
+          />
       </Router>
     </TooltipProvider>
   );
