@@ -159,7 +159,7 @@ export default function Assets() {
       </div>
 
       {/* Main Grid */}
-      <div className="grid grid-cols-12 gap-6 mt-6">
+      <div className="grid grid-cols-12 gap-2 mt-6">
         {/* Asset Tree */}
         <div className="col-span-12 lg:col-span-5">
           <Card className="h-[600px] flex flex-col">
