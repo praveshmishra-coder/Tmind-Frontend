@@ -174,29 +174,11 @@ export default function Devices() {
           <p className="text-muted-foreground">Manage all connected devices</p>
         </div>
 
-        <div className="flex flex-row gap-2">
-        {isAdmin && (
-          <Button
-            onClick={() => navigate("/devices/add")}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            + Add Device
-          </Button>
-        )}
-
-        {isAdmin && (
-          <Button
-            onClick={() => navigate("/devices/upload")}
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            + Import Bulk
-          </Button>
-        )}
-        </div>
+        
       </div>
 
       {/* Search */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center sm:justify-between gap-3">
         <div className="relative w-full sm:w-1/3">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
@@ -207,7 +189,26 @@ export default function Devices() {
             className="w-full pl-9 pr-4 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
-      </div>
+          <div className="flex flex-row gap-2">
+          {isAdmin && (
+            <Button
+              onClick={() => navigate("/devices/add")}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              + Add Device
+            </Button>
+          )}
+
+          {isAdmin && (
+            <Button
+              onClick={() => navigate("/devices/upload")}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              + Import Bulk
+            </Button>
+          )}
+          </div>
+        </div>
 
       {loading && <div className="text-center text-muted-foreground">Loading devices...</div>}
       {error && <div className="text-center text-destructive">{error}</div>}

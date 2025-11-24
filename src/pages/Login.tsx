@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext"; 
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import {toast} from "react-toastify";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -180,7 +179,6 @@ const Login: React.FC = () => {
           </p>
         )}
       </form>
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
     </div>
   );
 };

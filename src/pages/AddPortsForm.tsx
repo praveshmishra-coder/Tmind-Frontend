@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Plus, Save, X, Edit2, Trash2, Database, Loader, Settings2, Cable } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "react-toastify";
 
 export type RegisterPayload = {
   registerId?: string;
