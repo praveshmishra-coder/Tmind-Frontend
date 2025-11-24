@@ -23,6 +23,11 @@ import "react-toastify/dist/ReactToastify.css";
 export default function App() {
   return (
     <TooltipProvider>
+         <ToastContainer
+          position="top-right"
+          autoClose={2000}
+          theme="light"
+          />
       <Router>
         <Routes>
 
@@ -48,11 +53,7 @@ export default function App() {
           {/* Redirect unknown routes to login */}
           {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
         </Routes>
-          <ToastContainer
-          position="top-right"
-          autoClose={2000}
-          theme="light"
-          />
+       
       </Router>
     </TooltipProvider>
   );

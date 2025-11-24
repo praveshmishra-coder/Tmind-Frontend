@@ -7,8 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Settings2, ArrowLeft, AlertTriangle } from "lucide-react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { getDeviceById, updateDevice } from "@/api/deviceApi";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 export default function ConfigureDevice() {
   const navigate = useNavigate();
@@ -299,7 +298,6 @@ export default function ConfigureDevice() {
         </CardContent>
       </Card>
 
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
     </div>
   );
 }

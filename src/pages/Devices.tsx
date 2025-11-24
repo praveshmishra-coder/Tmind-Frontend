@@ -19,7 +19,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import {
   Pagination,
   PaginationContent,

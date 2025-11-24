@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Search } from "lucide-react";
 import { getDeletedDeviced, retriveDeviceById } from "@/api/deviceApi";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import {useAuth} from "@/context/AuthContext";
 
 interface Device {
@@ -150,8 +149,6 @@ export default function DeletedDevices() {
         </div>
       )}
 
-      {/* Toast */}
-      <ToastContainer />
     </div>
   );
 }

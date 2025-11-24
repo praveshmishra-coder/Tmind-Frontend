@@ -19,8 +19,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Settings2, Cpu, Save, ArrowLeft,AlertTriangle} from "lucide-react";
 import { getDeviceById, updateDevice } from "@/api/deviceApi";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 export default function EditDeviceForm() {
   const navigate = useNavigate();
@@ -410,8 +409,6 @@ const ipOrLocalhostRegex =
         </CardContent>
       </Card>
 
-      {/* Toast */}
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
     </div>
   );
 }

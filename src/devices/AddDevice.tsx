@@ -6,8 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { createDevice } from "@/api/deviceApi";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 export default function AddDeviceForm() {
   const navigate = useNavigate();
@@ -150,8 +149,6 @@ export default function AddDeviceForm() {
           </form>
         </CardContent>
       </Card>
-
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
     </div>
   );
 }
