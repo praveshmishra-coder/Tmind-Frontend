@@ -2,44 +2,45 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Plus, Trash2, RotateCcw, Link2 } from "lucide-react";
-import { type Asset } from "@/types/asset";
-import levelToType from "./mapBackendAsset"; // ✅ default mapping
+import { Link2 } from "lucide-react";
+import levelToType from "./mapBackendAsset";
 
 interface AssetDetailsProps {
-  selectedAsset: Asset | null;
-  onEdit: () => void;
-  onAddChild: () => void;
-  onDelete: () => void;
-  onRestore: () => void;
+  selectedAsset: any | null;
+  assignedDevice: any | null;
   onAssignDevice: () => void;
+  onRestore: () => void;
 }
 
 export default function AssetDetails({
   selectedAsset,
-  onEdit,
-  onAddChild,
-  onDelete,
-  onRestore,
+  assignedDevice,
   onAssignDevice,
+  onRestore,
 }: AssetDetailsProps) {
-  const assetType = selectedAsset ? levelToType(selectedAsset.depth) : "";
+  const assetType = selectedAsset ? levelToType(selectedAsset.level) : "";
+  const subAssetCount = selectedAsset?.childrens?.length || 0;
 
   return (
     <Card className="glass-card">
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between w-full">
           <div>
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               {selectedAsset?.name || "No Asset Selected"}
             </CardTitle>
 
+            {/* Sub Assets moved to first line */}
+            {selectedAsset && (
+              <p className="text-muted-foreground text-sm mt-1">
+                Sub Assets: <span className="font-medium">{subAssetCount}</span>
+              </p>
+            )}
+
             {selectedAsset && selectedAsset.isDeleted && (
-              <div className="flex items-center mt-1">
-                <Badge variant="destructive" className="ml-2">
-                  Deleted
-                </Badge>
-              </div>
+              <Badge variant="destructive" className="mt-1">
+                Deleted
+              </Badge>
             )}
           </div>
         </div>
@@ -52,52 +53,47 @@ export default function AssetDetails({
           </div>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground mb-4">{selectedAsset.path}</p>
+            {/* DETAILS */}
+            <div className="grid grid-cols-2 gap-y-4 text-sm mb-4">
 
-            <div className="grid grid-cols-2 gap-y-4 text-sm">
               <div>
                 <p className="text-muted-foreground text-sm mb-1">Type</p>
                 <p className="font-medium">{assetType}</p>
               </div>
 
               <div>
-                <p className="text-muted-foreground text-xs mb-1">Depth</p>
-                <p className="font-medium">{selectedAsset.depth}</p>
-              </div>
-
-              <div className="col-span-2">
-                <p className="text-muted-foreground text-xs mb-1">Description</p>
-                <p className="font-medium">{selectedAsset.description}</p>
+                <p className="text-muted-foreground text-xs mb-1">Level</p>
+                <p className="font-medium">{selectedAsset.level}</p>
               </div>
             </div>
 
+            {/* ACTION BUTTONS */}
             <div className="flex flex-wrap gap-2 pt-4 mt-4 border-t">
-              {/* {assetType !== "SubMachine" && (
-                <Button onClick={onAddChild} size="sm" variant="outline">
-                  <Plus className="h-4 w-4 mr-2" /> Add Sub-Asset
+              {selectedAsset.isDeleted && (
+                <Button onClick={onRestore} size="sm" variant="outline">
+                  Restore
                 </Button>
               )}
 
-              <Button onClick={onEdit} size="sm" variant="outline">
-                <Edit className="h-4 w-4 mr-2" /> Edit Asset
-              </Button> */}
-
-              {/* {selectedAsset.isDeleted ? (
-                <Button onClick={onRestore} size="sm" variant="outline">
-                  <RotateCcw className="h-4 w-4 mr-2" /> Restore
+              {(selectedAsset.level === 3 || selectedAsset.level === 4) && (
+                <Button
+                  onClick={onAssignDevice}
+                  size="sm"
+                  variant={assignedDevice ? "default" : "outline"}
+                  className={assignedDevice ? "bg-green-600 text-white" : ""}
+                >
+                  <Link2 className="h-4 w-4 mr-2" />
+                  {assignedDevice ? "Device Assigned" : "Assign Device"}
                 </Button>
-              ) : (
-                <Button onClick={onDelete} size="sm" variant="outline">
-                  <Trash2 className="h-4 w-4 mr-2" /> Delete
-                </Button>
-              )} */}
-
-              {selectedAsset && (selectedAsset.depth === 4 || selectedAsset.depth === 5) && (
-  <Button onClick={onAssignDevice} size="sm" variant="outline">
-    <Link2 className="h-4 w-4 mr-2" /> Assign Device
-  </Button>
-)}
+              )}
             </div>
+
+            {/* ASSIGNED DEVICE INFO */}
+            {assignedDevice && (
+              <div className="mt-4 p-3 border rounded-md bg-green-50 text-green-700 text-sm">
+                <strong>Assigned Device:</strong> {assignedDevice.name}
+              </div>
+            )}
           </>
         )}
       </CardContent>

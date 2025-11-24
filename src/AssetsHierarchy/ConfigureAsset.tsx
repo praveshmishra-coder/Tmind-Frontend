@@ -70,4 +70,8 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
       </div>
     </div>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> main

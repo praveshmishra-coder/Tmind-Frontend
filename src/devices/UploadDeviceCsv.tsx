@@ -1,8 +1,8 @@
-import React, { useState,DragEvent } from "react";
+import React, { useState, type DragEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
-export default function UploadCsv() {
+export default function UploadDeviceCsv() {
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
@@ -34,7 +34,7 @@ export default function UploadCsv() {
     }
   };
 
-  // Handle submit 
+  // Handle submit (frontend only)
   const handleSubmit = () => {
     if (!file) {
       alert("Please select a CSV file first.");
@@ -44,6 +44,7 @@ export default function UploadCsv() {
     console.log("CSV file submitted:", file.name);
     alert(`CSV file "${file.name}" submitted!`);
 
+    // Reset and navigate
     setFile(null);
     navigate("/devices");
   };

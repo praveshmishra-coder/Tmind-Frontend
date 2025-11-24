@@ -1,254 +1,240 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, type DragEvent } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { AssetTree } from "@/asset/AssetTree";
-import { type Asset } from "@/types/asset";
 import { Button } from "@/components/ui/button";
+
+import { AssetTree } from "@/asset/AssetTree";
 import AssetDetails from "@/asset/AssetDetails";
+import AssignDevice from "@/asset/AssignDevice";
 
+import { getAssetHierarchy } from "@/api/assetApi";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+
+// -------------------- Types --------------------
+export type BackendAsset = {
+  assetId: string;
+  name: string;
+  childrens: BackendAsset[];
+  parentId: string | null;
+  level: number;
+  isDeleted: boolean;
+};
+
+// -------------------- Helper Functions --------------------
+const removeAssetById = (assets: BackendAsset[], id: string): BackendAsset[] => {
+  return assets
+    .filter(a => a.assetId !== id)
+    .map(a => ({
+      ...a,
+      childrens: removeAssetById(a.childrens || [], id),
+    }));
+};
+
+// -------------------- Component --------------------
 export default function Assets() {
-  const [assets, setAssets] = useState<Asset[]>([
-    {
-      id: "p1",
-      name: "Tata Motors Mumbai Plant",
-      type: "Plant",
-      description: "Main manufacturing plant",
-      path: "Tata Motors Mumbai Plant",
-      depth: 1,
-      isDeleted: false,
-      children: [
-        {
-          id: "d1",
-          name: "Manufacturing Department",
-          type: "Department",
-          description: "Handles automobile manufacturing operations",
-          path: "Tata Motors Mumbai Plant / Manufacturing",
-          depth: 2,
-          isDeleted: false,
-          children: [
-            {
-              id: "l1",
-              name: "Assembly Line 1",
-              type: "Line",
-              description: "Primary assembly line",
-              path: "Tata Motors Mumbai Plant / Manufacturing / Assembly Line 1",
-              depth: 3,
-              isDeleted: false,
-              children: [
-                {
-                  id: "m1",
-                  name: "Machine 1",
-                  type: "Machine",
-                  description: "Sample machine",
-                  path: "Tata Motors Mumbai Plant / Manufacturing / Assembly Line 1 / Machine 1",
-                  depth: 4,
-                  isDeleted: false,
-                  children: [
-                    {
-                      id: "sm1",
-                      name: "Sub Machine 1",
-                      type: "SubMachine",
-                      description: "Sample sub machine",
-                      path: "Tata Motors Mumbai Plant / Manufacturing / Assembly Line 1 / Machine 1 / Sub Machine 1",
-                      depth: 5,
-                      isDeleted: false,
-                      children: [],
-                    },
-                  ],
-                },
-              ],
-            },
-            {
-              id: "l2",
-              name: "Assembly Line 2",
-              type: "Line",
-              description: "Secondary assembly line",
-              path: "Tata Motors Mumbai Plant / Manufacturing / Assembly Line 2",
-              depth: 3,
-              isDeleted: false,
-              children: [],
-            },
-            {
-              id: "l3",
-              name: "Assembly Line 3",
-              type: "Line",
-              description: "Tertiary assembly line",
-              path: "Tata Motors Mumbai Plant / Manufacturing / Assembly Line 3",
-              depth: 3,
-              isDeleted: false,
-              children: [],
-            },
-          ],
-        },
-        {
-          id: "d2",
-          name: "Painting Department",
-          type: "Department",
-          description: "Paint shop operations",
-          path: "Tata Motors Mumbai Plant / Painting",
-          depth: 2,
-          isDeleted: false,
-          children: [
-            {
-              id: "pl1",
-              name: "Paint Line 1",
-              type: "Line",
-              description: "Base coat paint line",
-              path: "Tata Motors Mumbai Plant / Painting / Paint Line 1",
-              depth: 3,
-              isDeleted: false,
-              children: [
-                {
-                  id: "pm1",
-                  name: "Paint Machine 1",
-                  type: "Machine",
-                  description: "Sample paint machine",
-                  path: "Tata Motors Mumbai Plant / Painting / Paint Line 1 / Paint Machine 1",
-                  depth: 4,
-                  isDeleted: false,
-                  children: [
-                    {
-                      id: "psm1",
-                      name: "Paint Sub Machine 1",
-                      type: "SubMachine",
-                      description: "Sample paint sub machine",
-                      path: "Tata Motors Mumbai Plant / Painting / Paint Line 1 / Paint Machine 1 / Paint Sub Machine 1",
-                      depth: 5,
-                      isDeleted: false,
-                      children: [],
-                    },
-                  ],
-                },
-              ],
-            },
-            {
-              id: "pl2",
-              name: "Paint Line 2",
-              type: "Line",
-              description: "Color coating line",
-              path: "Tata Motors Mumbai Plant / Painting / Paint Line 2",
-              depth: 3,
-              isDeleted: false,
-              children: [],
-            },
-            {
-              id: "pl3",
-              name: "Paint Line 3",
-              type: "Line",
-              description: "Finishing paint line",
-              path: "Tata Motors Mumbai Plant / Painting / Paint Line 3",
-              depth: 3,
-              isDeleted: false,
-              children: [],
-            },
-          ],
-        },
-      ],
-    },
-  ]);
+  // State
+  const [assets, setAssets] = useState<BackendAsset[]>([]);
+  const [selectedAsset, setSelectedAsset] = useState<BackendAsset | null>(null);
 
-  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [assignedDevice, setAssignedDevice] = useState<any>(null);
+  const [showAssignDevice, setShowAssignDevice] = useState(false);
+
   const [loading, setLoading] = useState(true);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   const navigate = useNavigate();
 
+  // -------------------- Load Assets --------------------
   useEffect(() => {
     loadAssets();
   }, []);
 
   const loadAssets = async () => {
-    setLoading(true);
     try {
-      // fetch assets here if needed
-    } catch (e) {
-      console.error("Failed to load assets", e);
+      setLoading(true);
+      const backendData: BackendAsset[] = await getAssetHierarchy();
+      setAssets(backendData);
+    } catch (err) {
+      console.error("Failed to load assets:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const onEdit = () => {
-    if (!selectedAsset) return;
-    navigate(`/assets/edit/${selectedAsset.id}`);
-  };
-  const onAddChild = () => {
-    if (!selectedAsset) return;
-    navigate(`/assets/add?parentId=${selectedAsset.id}`);
-  };
-  const onDelete = () => {
-    if (!selectedAsset) return;
-    alert("Soft delete triggered (dummy)");
-  };
-  const onRestore = () => {
-    if (!selectedAsset) return;
-    alert("Restore triggered (dummy)");
-  };
+  // -------------------- Assign Device --------------------
   const onAssignDevice = () => {
     if (!selectedAsset) return;
-    navigate(`/assets/assign-device/${selectedAsset.id}`);
+    setShowAssignDevice(true);
   };
 
+  // -------------------- CSV Handlers --------------------
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "text/csv") {
+      alert("Please upload a CSV file only.");
+      return;
+    }
+
+    setCsvFile(file);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== "text/csv") {
+      alert("Please upload a CSV file only.");
+      return;
+    }
+
+    setCsvFile(file);
+  };
+
+  const handleCsvSubmit = () => {
+    if (!csvFile) {
+      alert("Please select a CSV file.");
+      return;
+    }
+
+    alert(`CSV uploaded: ${csvFile.name}`);
+    setShowUploadModal(false);
+    setCsvFile(null);
+    loadAssets();
+  };
+
+  // -------------------- Render --------------------
   return (
     <div className="p-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-foreground mb-1">Asset Hierarchy</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-1">
+            Asset Hierarchy
+          </h1>
           <p className="text-sm text-muted-foreground">
             Explore structure of plants, departments, machines & sub-machines.
           </p>
         </div>
 
-        <Button
-          onClick={() => navigate("/assets/add")}
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          + Import Bulk
-        </Button>
+        <Button onClick={() => setShowUploadModal(true)}>+ Import Bulk</Button>
       </div>
 
-      {/* Layout */}
+      {/* Main Grid */}
       <div className="grid grid-cols-12 gap-6 mt-6">
-        {/* LEFT: Asset Tree */}
-        <div className="col-span-12 lg:col-span-7">
-          <Card className="glass-card h-[600px] flex flex-col">
-            <CardHeader>
-              <CardTitle className="text-foreground text-lg">Hierarchy Tree</CardTitle>
-            </CardHeader>
+        {/* Asset Tree */}
+        <div className="col-span-12 lg:col-span-5">
+          <Card className="h-[600px] flex flex-col">
             <CardContent className="p-2 flex-1 overflow-auto">
               {loading ? (
-                <p className="text-muted-foreground p-2">Loading...</p>
+                <p className="text-muted-foreground p-2">Loading assets...</p>
               ) : (
                 <AssetTree
                   assets={assets}
-                  selectedId={selectedAsset?.id || null}
+                  selectedId={selectedAsset?.assetId || null}
                   onSelect={setSelectedAsset}
-                  onAddRoot={() => navigate("/assets/add")}
+                  onDelete={(deletedAsset) =>
+                    setAssets((prev) => removeAssetById(prev, deletedAsset.assetId))
+                  }
+                  onAdd={(newAsset) => setAssets((prev) => [...prev, newAsset])}
                 />
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* RIGHT: Asset Details */}
-        <div className="col-span-12 lg:col-span-5">
-          <Card className="glass-card h-[600px] flex flex-col">
+        {/* Asset Details */}
+        <div className="col-span-12 lg:col-span-7">
+          <Card className="h-[600px] flex flex-col">
             <CardHeader>
-              <CardTitle className="text-foreground text-lg">Asset Details</CardTitle>
+              <CardTitle className="text-lg">Asset Details</CardTitle>
             </CardHeader>
+
             <CardContent className="p-2 flex-1 overflow-auto">
               <AssetDetails
                 selectedAsset={selectedAsset}
-                onEdit={onEdit}
-                onAddChild={onAddChild}
-                onDelete={onDelete}
-                onRestore={onRestore}
+                assignedDevice={assignedDevice}
+                onRestore={() => {}}
                 onAssignDevice={onAssignDevice}
               />
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Assign Device Modal */}
+      {showAssignDevice && selectedAsset && (
+        <AssignDevice
+          open={showAssignDevice}
+          asset={selectedAsset}
+          onClose={() => setShowAssignDevice(false)}
+          onAssign={(device) => {
+            setAssignedDevice(device);
+            setShowAssignDevice(false);
+          }}
+        />
+      )}
+
+      {/* CSV Upload Modal */}
+      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+        <DialogContent className="sm:max-w-md p-6 bg-card rounded-2xl border shadow-xl">
+          <DialogHeader>
+            <DialogTitle>Upload CSV</DialogTitle>
+            <DialogDescription>
+              Drag & drop a CSV file or click to select.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+            className={`w-full h-48 border-2 rounded-lg flex flex-col items-center justify-center p-4 cursor-pointer ${
+              dragOver ? "border-primary bg-primary/10" : "border-border bg-card"
+            }`}
+          >
+            {csvFile ? (
+              <p className="font-medium">{csvFile.name}</p>
+            ) : (
+              <p className="text-muted-foreground">
+                Drag & drop a CSV file or click to select
+              </p>
+            )}
+
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleFileSelect}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowUploadModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCsvSubmit}>Submit CSV</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

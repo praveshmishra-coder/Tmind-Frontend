@@ -5,32 +5,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-// import { createAsset } from "@/api/assetApi";
+
+import { insertAsset } from "@/api/assetApi";
 
 interface AddAssetProps {
-  parentAsset?: any;
+  parentAsset?: any; // backend: { assetId, name, ... }
   onClose: () => void;
+  onAdd?: (newAsset: any) => void; // <--- new callback to parent
 }
 
-export default function AddAsset({ parentAsset, onClose }: AddAssetProps) {
+export default function AddAsset({ parentAsset, onClose, onAdd }: AddAssetProps) {
   const [formData, setFormData] = useState({
     name: "",
-    parentAsset: parentAsset?.id || "",
   });
 
   const [loading, setLoading] = useState(false);
 
   const validateForm = () => {
-    const { name } = formData;
-    const trimmedName = name.trim();
-    const nameRegex = /^[A-Za-z][A-Za-z0-9_\- ]{2,99}$/;
+    const trimmed = formData.name.trim();
+    const regex = /^[A-Za-z][A-Za-z0-9_\- ]{2,99}$/;
 
-    if (!trimmedName) {
+    if (!trimmed) {
       toast.error("Asset Name is required.");
       return false;
     }
 
-    if (!nameRegex.test(trimmedName)) {
+    if (!regex.test(trimmed)) {
       toast.error(
         "Asset Name must start with a letter, be 3–100 chars, and may contain letters, numbers, spaces, underscores, or hyphens."
       );
@@ -41,8 +41,7 @@ export default function AddAsset({ parentAsset, onClose }: AddAssetProps) {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,77 +51,82 @@ export default function AddAsset({ parentAsset, onClose }: AddAssetProps) {
     setLoading(true);
 
     try {
+      // Backend required fields
       const payload = {
         name: formData.name.trim(),
-        parentAsset: formData.parentAsset || null,
+        parentId: parentAsset?.assetId || null,
+        level: parentAsset ? parentAsset.level + 1 : 0, // compute level
       };
 
-      console.log("Creating asset with:", payload);
+      console.log("Insert Asset Payload:", payload);
 
-      // const response = await createAsset(payload);
+      // Call backend API
+      const response = await insertAsset(payload);
 
-      toast.success(`Asset "${payload.name}" created successfully!`, {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.success(`Asset "${payload.name}" created successfully!`);
 
-      setTimeout(() => onClose(), 800);
+      // Notify parent to update AssetTree
+      if (onAdd) {
+        const newAsset = {
+          assetId: response.assetId || Math.random().toString(36).substring(2, 9),
+          name: payload.name,
+          childrens: [],
+          parentId: payload.parentId,
+          level: payload.level,
+          isDeleted: false,
+        };
+        onAdd(newAsset);
+      }
+
+      setFormData({ name: "" });
+      setTimeout(() => onClose(), 700);
     } catch (err: any) {
       console.error("Error creating asset:", err);
+
       const message =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
-        "Failed to create Asset. Try again.";
+        "Failed to create asset. Try again.";
 
-      toast.error(message, { autoClose: 4000, theme: "colored" });
+      toast.error(message, { autoClose: 4000 });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-[999]">
+    <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/30 backdrop-blur-sm">
       <div className="w-[400px] max-h-[80vh] overflow-auto">
-        <Card className="w-full h-full">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-center">
-              Add {parentAsset ? "Sub-Asset" : "Root Asset"}
+            <CardTitle className="text-xl text-center font-semibold">
+              {parentAsset ? "Add Sub-Asset" : "Add Root Asset"}
             </CardTitle>
           </CardHeader>
 
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4 w-full" noValidate>
-              {/* Asset Name */}
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+              {/* Name */}
               <div className="grid gap-2">
-                <Label htmlFor="name">Asset Name *</Label>
+                <Label>Asset Name *</Label>
                 <Input
-                  id="name"
                   name="name"
-                  type="text"
-                  placeholder="Enter Asset name"
+                  placeholder="Enter Asset Name"
                   value={formData.name}
                   onChange={handleChange}
-                  required
                 />
               </div>
 
-              {/* Parent Asset */}
+              {/* Parent (readonly) */}
               {parentAsset && (
                 <div className="grid gap-2">
-                  <Label htmlFor="parentAsset">Parent Asset</Label>
-                  <Input
-                    id="parentAsset"
-                    name="parentAsset"
-                    type="text"
-                    value={parentAsset.name}
-                    disabled
-                  />
+                  <Label>Parent Asset</Label>
+                  <Input value={parentAsset.name} disabled />
                 </div>
               )}
 
-              {/* Buttons */}
               <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={onClose}>
+                <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
                   Cancel
                 </Button>
 
@@ -134,7 +138,7 @@ export default function AddAsset({ parentAsset, onClose }: AddAssetProps) {
           </CardContent>
         </Card>
 
-        <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
+        <ToastContainer />
       </div>
     </div>
   );

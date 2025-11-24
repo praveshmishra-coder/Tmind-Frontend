@@ -57,7 +57,7 @@ export default function Devices() {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize] = useState(3);
+  const [pageSize] = useState(6);
   const [totalPages, setTotalPages] = useState(1);
 
   const navigate = useNavigate();
@@ -175,7 +175,7 @@ export default function Devices() {
           <p className="text-muted-foreground">Manage all connected devices</p>
         </div>
 
-   
+        <div className="flex flex-row gap-2">
         {isAdmin && (
           <Button
             onClick={() => navigate("/devices/add")}
@@ -184,6 +184,16 @@ export default function Devices() {
             + Add Device
           </Button>
         )}
+
+        {isAdmin && (
+          <Button
+            onClick={() => navigate("/devices/upload")}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            + Import Bulk
+          </Button>
+        )}
+        </div>
       </div>
 
       {/* Search */}
@@ -263,7 +273,7 @@ export default function Devices() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/devices/ports`)}
+                        onClick={() => navigate(`/devices/ports/${d.deviceId}`)}
                         className="flex items-center gap-1"
                       >
                         <HdmiPort className="h-4 w-4" /> Ports

@@ -5,41 +5,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-// import { updateAsset, getAssetById } from "@/api/assetApi";
+
+import { updateAsset } from "@/api/assetApi";
 
 interface EditAssetProps {
-  asset: any;      // Full asset object
+  asset: any;      
   onClose: () => void;
+  onUpdated?: () => void;
 }
 
-export default function EditAsset({ asset, onClose }: EditAssetProps) {
-  const [formData, setFormData] = useState({
-    name: "",
-  });
-
+export default function EditAsset({ asset, onClose, onUpdated }: EditAssetProps) {
+  const [formData, setFormData] = useState({ name: "" });
   const [loading, setLoading] = useState(false);
 
-  // 🟦 Load existing asset details into form
+  // load existing asset
   useEffect(() => {
     if (asset) {
-      setFormData({
-        name: asset.name || "",
-      });
+      setFormData({ name: asset.name || "" });
     }
   }, [asset]);
 
-  // 🟦 Validation
+  // validate
   const validateForm = () => {
-    const { name } = formData;
-    const trimmedName = name.trim();
-    const nameRegex = /^[A-Za-z][A-Za-z0-9_\- ]{2,99}$/;
+    const trimmed = formData.name.trim();
+    const regex = /^[A-Za-z][A-Za-z0-9_\- ]{2,99}$/;
 
-    if (!trimmedName) {
+    if (!trimmed) {
       toast.error("Asset Name is required.");
       return false;
     }
 
-    if (!nameRegex.test(trimmedName)) {
+    if (!regex.test(trimmed)) {
       toast.error(
         "Asset Name must start with a letter, be 3–100 chars, and may contain letters, numbers, spaces, underscores, or hyphens."
       );
@@ -49,13 +45,12 @@ export default function EditAsset({ asset, onClose }: EditAssetProps) {
     return true;
   };
 
-  // 🟦 Handle Input
+  // input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 🟦 Submit Update
+  // submit update
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -64,27 +59,28 @@ export default function EditAsset({ asset, onClose }: EditAssetProps) {
 
     try {
       const payload = {
+        assetId: asset.assetId,
         name: formData.name.trim(),
       };
 
-      console.log("Updating asset:", asset.id, payload);
+      console.log("Update Asset payload:", payload);
 
-      // const response = await updateAsset(asset.id, payload);
+      await updateAsset(payload);
 
-      toast.success(`Asset renamed to "${payload.name}"`, {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.success("Asset updated successfully!");
+
+      if (onUpdated) onUpdated();
 
       setTimeout(() => onClose(), 800);
     } catch (err: any) {
       console.error("Error updating asset:", err);
+
       const message =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
         "Failed to update Asset. Try again.";
 
-      toast.error(message, { autoClose: 4000, theme: "colored" });
+      toast.error(message, { autoClose: 4000 });
     } finally {
       setLoading(false);
     }
@@ -93,30 +89,28 @@ export default function EditAsset({ asset, onClose }: EditAssetProps) {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/30">
       <div className="w-[400px] max-h-[80vh] overflow-auto">
-        <Card className="w-full h-full">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-xl font-semibold text-center">
+            <CardTitle className="text-xl text-center font-semibold">
               Edit Asset
             </CardTitle>
           </CardHeader>
 
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4 w-full" noValidate>
-              {/* Asset Name */}
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+
+              {/* Name */}
               <div className="grid gap-2">
-                <Label htmlFor="name">Asset Name *</Label>
+                <Label>Asset Name *</Label>
                 <Input
-                  id="name"
                   name="name"
-                  type="text"
-                  placeholder="Enter new Asset name"
                   value={formData.name}
                   onChange={handleChange}
-                  required
+                  placeholder="Enter new name"
                 />
               </div>
 
-              {/* Parent (info-only, not editable) */}
+              {/* Parent */}
               {asset?.parentName && (
                 <div className="grid gap-2">
                   <Label>Parent Asset</Label>
@@ -124,7 +118,6 @@ export default function EditAsset({ asset, onClose }: EditAssetProps) {
                 </div>
               )}
 
-              {/* Buttons */}
               <div className="flex justify-end gap-3 pt-2">
                 <Button type="button" variant="outline" onClick={onClose}>
                   Cancel
@@ -138,7 +131,7 @@ export default function EditAsset({ asset, onClose }: EditAssetProps) {
           </CardContent>
         </Card>
 
-        <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
+        <ToastContainer />
       </div>
     </div>
   );
