@@ -18,7 +18,8 @@ import Profile from "./pages/Profile";
 import AddPortForm from "./pages/AddPortsForm";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";  
+import "react-toastify/dist/ReactToastify.css"; 
+import DeletedAssets from "@/AssetsHierarchy/DeletedAssets"; 
 
 export default function App() {
   return (
@@ -48,6 +49,7 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/deleted-devices" element={<DeletedDevices />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/deleted-assets" element={<DeletedAssets />} />
           </Route>
 
           {/* Redirect unknown routes to login */}

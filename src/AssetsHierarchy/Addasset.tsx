@@ -72,10 +72,7 @@ export default function AddAsset({ parentAsset, onClose, onAdd }: AddAssetProps)
     } catch (err: any) {
       console.error("Error creating asset:", err);
 
-      const message =
-        err?.response?.data?.error ||
-        err?.response?.data?.message ||
-        "Failed to create asset. Try again.";
+      const message = err || "Failed to create asset. Please try again.";
 
       toast.error(message, { autoClose: 4000 });
     } finally {

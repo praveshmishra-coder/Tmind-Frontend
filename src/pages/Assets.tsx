@@ -90,7 +90,8 @@ export default function Assets() {
       setAssets(normalizeAssets(backendData));
     } catch (err) {
       console.error("Failed to load assets:", err);
-      toast.error("Failed to load assets. Please try again.");
+      const message = err || "Failed to load assets. Please try again.";
+      toast.error(message, { autoClose: 4000 });
     } finally {
       setLoading(false);
     }

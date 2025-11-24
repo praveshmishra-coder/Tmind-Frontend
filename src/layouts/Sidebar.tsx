@@ -17,7 +17,9 @@ const menuItems = [
   // { icon: <FileText size={18} />, label: "Reports", path: "/reports" },
   // { icon: <Settings size={18} />, label: "Settings", path: "/settings" },
   { icon: <Trash size={18} />, label: "Deleted Devices", path: "/deleted-devices" },
+  { icon: <Trash size={18} />, label: "Deleted Assets", path: "/deleted-assets" }, // <-- Added this
 ];
+
 
 export default function Sidebar() {
   return (
