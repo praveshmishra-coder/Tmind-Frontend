@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 // Backend API
 import { insertAsset } from "@/api/assetApi";
@@ -105,7 +104,6 @@ export default function AddRoot({ onClose, onAdd }: AddRootProps) {
             </div>
           </CardContent>
 
-          <ToastContainer position="top-right" autoClose={3000} hideProgressBar />
         </Card>
       </div>
     </div>

@@ -173,7 +173,6 @@ export default function Assets() {
                   onSelect={setSelectedAsset}
                   onDelete={(deletedAsset) => {
                     setAssets(prev => removeAssetById(prev, deletedAsset.assetId));
-                    toast.success(`✅ "${deletedAsset.name}" deleted successfully`);
                   }}
                   onAdd={() => {
                   loadAssets(); // ✅ refresh state from DB
