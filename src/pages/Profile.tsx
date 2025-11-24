@@ -33,7 +33,7 @@ export default function Profile() {
         <CardHeader className="flex flex-col items-center text-center space-y-2">
           <CardTitle className="text-2xl font-semibold">Your Profile</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Manage your personal account details below.
+            View your personal account details below.
           </p>
         </CardHeader>
 

@@ -141,7 +141,7 @@ const AssetTreeNode = ({
           </button>
 
           
-
+          {hasChildren === false && 
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -152,6 +152,7 @@ const AssetTreeNode = ({
           >
             <Trash2 className="h-4 w-4" />
           </button>
+  }
         </div>
       </div>
 
