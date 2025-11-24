@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { X } from "lucide-react";
 import { type Asset } from "@/types/asset";
 
@@ -17,7 +23,7 @@ const signalsList = [
   "Vibration - mm/s",
   "FlowRate - L/min",
   "RPM - rpm",
-  "Torque - N·m",
+  "Torque - N·m"
 ];
 
 export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) {
@@ -25,7 +31,7 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
 
   const handleSelect = (signal: string) => {
     if (selectedSignals.includes(signal)) {
-      setSelectedSignals(selectedSignals.filter(s => s !== signal));
+      setSelectedSignals(selectedSignals.filter((s) => s !== signal));
     } else {
       if (selectedSignals.length < 3) {
         setSelectedSignals([...selectedSignals, signal]);
@@ -40,7 +46,9 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
       <div className="bg-white rounded-lg shadow-xl p-6 w-[400px]">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">{asset.name} - Configure</h2>
-          <Button variant="ghost" size="sm" onClick={onClose}><X /></Button>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X />
+          </Button>
         </div>
 
         <div className="mt-4">
@@ -63,15 +71,16 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
           <Button variant="outline" size="sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button size="sm" onClick={() => alert(`Configured signals: ${selectedSignals.join(", ")}`)}>
+          <Button
+            size="sm"
+            onClick={() =>
+              alert(`Configured signals: ${selectedSignals.join(", ")}`)
+            }
+          >
             Save
           </Button>
         </div>
       </div>
     </div>
   );
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> main
