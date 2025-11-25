@@ -231,8 +231,8 @@ const ipOrLocalhostRegex =
 
   
   return (
-    <div className="flex justify-center items-center min-h-[85vh] bg-gradient-to-b from-background to-muted/30 text-foreground p-4">
-      <Card className="w-full max-w-2xl shadow-lg border border-border/60 bg-card/90 backdrop-blur-sm">
+    <div className="flex justify-center items-center min-h-[85vh] bg-gradient-to-b from-background to-muted/30 text-foreground p-4 ">
+      <Card className="w-full max-w-2xl shadow-lg border border-border/60 bg-card/90 backdrop-blur-sm ">
         <CardHeader className="flex flex-col items-center space-y-2 pb-2">
           <Settings2 className="h-7 w-7 text-primary" />
           <CardTitle className="text-2xl font-semibold tracking-tight">

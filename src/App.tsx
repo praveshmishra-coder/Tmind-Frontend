@@ -18,6 +18,9 @@ import Profile from "./pages/Profile";
 import AddPortForm from "./pages/AddPortsForm";
 import { TooltipProvider } from "@/components/ui/tooltip"; // from your shadcn tooltip file
 import Map_Device_To_Asset from "./asset/Map-Device-To-Asset";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css"; 
+import DeletedAsset from "./AssetsHierarchy/DeletedAssets";
 
 export default function App() {
   return (
@@ -35,6 +38,7 @@ export default function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/assets" element={<Assets />} />
+            <Route path="/deleted-assets" element={<DeletedAsset/>} />
             <Route path="/devices" element={<Devices />} />
             <Route path="/devices/add" element={<AddDeviceForm />} />
             <Route path="/devices/edit/:deviceId" element={<EditDeviceForm />} />
