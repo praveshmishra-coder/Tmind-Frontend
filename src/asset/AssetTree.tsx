@@ -22,6 +22,7 @@ import DeleteAsset from "@/AssetsHierarchy/DeleteAsset";
 import { useAuth } from "@/context/AuthContext";
 import levelToType from "./mapBackendAsset";
 import { toast } from "react-toastify";
+import ConfigureAsset from "@/AssetsHierarchy/ConfigureAsset";
 
 
 export interface BackendAsset {
@@ -65,6 +66,8 @@ interface AssetTreeNodeProps {
   setAssetForEdit: (a: BackendAsset) => void;
   setOpenDeleteDialog: (v: boolean) => void;
   setAssetToDelete: (a: BackendAsset) => void;
+  setAssetForConfig: (a: any) => void;
+  setShowConfigureModal: (a: any) => void;
   isAdmin: boolean;
 }
 
@@ -80,6 +83,8 @@ const AssetTreeNode = ({
   setOpenDeleteDialog,
   setAssetToDelete,
   isAdmin,
+  setAssetForConfig,
+  setShowConfigureModal
 }: AssetTreeNodeProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const hasChildren = asset.childrens?.length > 0;
@@ -161,6 +166,17 @@ const AssetTreeNode = ({
                 <Trash2 className="h-4 w-4" />
               </button>
             )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setAssetForConfig(asset);
+                  setShowConfigureModal(true);
+                }}
+                className="p-1 rounded hover:bg-red-200 text-red-600"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            
           </div>
         )}
       </div>
@@ -180,6 +196,8 @@ const AssetTreeNode = ({
               setAssetForEdit={setAssetForEdit}
               setOpenDeleteDialog={setOpenDeleteDialog}
               setAssetToDelete={setAssetToDelete}
+              setShowConfigureModal={setShowConfigureModal}
+              setAssetForConfig={setAssetForConfig}
               isAdmin={isAdmin}
             />
           ))}
@@ -209,6 +227,8 @@ export const AssetTree = ({ assets, selectedId, onSelect, onAdd, onDelete }: Ass
   const [assetForEdit, setAssetForEdit] = useState<BackendAsset | null>(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [assetToDelete, setAssetToDelete] = useState<BackendAsset | null>(null);
+  const [showConfigureModal, setShowConfigureModal] = useState(false);
+  const [assetForConfig, setAssetForConfig] = useState<any | null>(null);
 
   const { user, loading } = useAuth();
   const isAdmin = user?.role?.toLowerCase() === "admin";
@@ -265,6 +285,9 @@ export const AssetTree = ({ assets, selectedId, onSelect, onAdd, onDelete }: Ass
               setAssetForEdit={setAssetForEdit}
               setOpenDeleteDialog={setOpenDeleteDialog}
               setAssetToDelete={setAssetToDelete}
+              setAssetForConfig={setAssetForConfig}
+              setShowConfigureModal = {setShowConfigureModal}
+
               isAdmin={isAdmin}
             />
           ))
@@ -272,6 +295,11 @@ export const AssetTree = ({ assets, selectedId, onSelect, onAdd, onDelete }: Ass
       </div>
 
       {/* Modals */}
+
+  {showConfigureModal && assetForConfig && (
+        <ConfigureAsset asset={assetForConfig} onClose={() => setShowConfigureModal(false)} />
+      )}
+
       {showAddRootModal && <Addroot onClose={() => setShowAddRootModal(false)} onAdd={onAdd} />}
       {showAddAssetModal && assetForAdd && (
         <Addasset parentAsset={assetForAdd} onClose={() => setShowAddAssetModal(false)} onAdd={onAdd} />
