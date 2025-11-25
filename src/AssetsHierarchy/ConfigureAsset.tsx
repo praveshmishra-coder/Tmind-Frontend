@@ -20,24 +20,8 @@ interface AssetConfig {
   regsiterAdress: number;
 }
 
-const SIGNALS = [
-  { id: "6b32d08c-f0ff-4d3a-b357-0ba8be47b939", name: "Temperature", unit: "°C", register: 40001 },
-  { id: "0b1a070d-61d6-46b2-a2b0-480a28d7c3f9", name: "Pressure", unit: "kPa", register: 40003 },
-  { id: "8a8aeeff-ccc1-4777-ab0a-b5bbad72431c", name: "Voltage", unit: "V", register: 40005 },
-  { id: "916a0a0a-ebb2-424a-9905-bcff737c8c62", name: "Current", unit: "A", register: 40007 },
-  { id: "808df995-8b31-48a9-9086-1f5d6691c4f9", name: "RPM", unit: "rpm", register: 40013 },
-  { id: "835cbb32-9b02-4122-8533-05f6ace3a6d4", name: "Flow", unit: "L/min", register: 40009 },
-  { id: "99bfe26d-1691-441f-aa8f-036aa415b0a8", name: "Vibration", unit: "mm/s", register: 40011 },
-];
 
-// useEffect(() => {
-//   const loadSignalTypes = async () => {
-//     const result = await getSignalTypes();
-//     console.log(result);
-//   };
 
-//   loadSignalTypes();
-// }, []);
 
 
 type StagedConfig = AssetConfig & {
