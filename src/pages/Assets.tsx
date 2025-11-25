@@ -85,21 +85,24 @@ export default function Assets() {
     loadAssets();
   }, []);
 
-  const loadAssets = async () => {
-    try {
-      setLoading(true);
-      const backendData: BackendAsset[] = await getAssetHierarchy();
-      setAssets(normalizeAssets(backendData));
-    } catch (err) {
-      console.error("Failed to load assets:", err);
-      const message = err || "Failed to load assets. Please try again.";
-      toast.error(message, { autoClose: 4000 });
-      const message = err || "Failed to load assets. Please try again.";
-      toast.error(message, { autoClose: 4000 });
-    } finally {
-      setLoading(false);
-    }
-  };
+ const loadAssets = async () => {
+  try {
+    setLoading(true);
+    const backendData: BackendAsset[] = await getAssetHierarchy();
+    setAssets(normalizeAssets(backendData));
+  } catch (err: any) {
+    console.error("Failed to load assets:", err);
+
+    const message =
+      err?.response?.data?.message ||
+      err?.message ||
+      "Failed to load assets. Please try again.";
+
+    toast.error(message, { autoClose: 4000 });
+  } finally {
+    setLoading(false);
+  }
+};
 
   // -------------------- Assign Device --------------------
   const onAssignDevice = () => {
