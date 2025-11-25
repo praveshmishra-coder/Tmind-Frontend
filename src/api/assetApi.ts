@@ -35,72 +35,32 @@ export interface UpdateAssetConfigPayload {
 
 // GET ALL ASSET HIERARCHY
 export const getAssetHierarchy = async () => {
-  try {
-    const res = await apiAsset.get("/AssetHierarchy/GetAssetHierarchy");
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || "Failed to fetch asset hierarchy";
-  }
+  const res = await apiAsset.get("/AssetHierarchy/GetAssetHierarchy");
+  return res.data;
 };
 
 // INSERT NEW ASSET
 export const insertAsset = async (payload: InsertAssetRequest) => {
-  try {
-    const res = await apiAsset.post("/AssetHierarchy/InsertAsset", payload);
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || "Failed to insert asset";
-  }
+  const res = await apiAsset.post("/AssetHierarchy/InsertAsset", payload);
+  return res.data;
 };
 
 // GET CHILDREN ASSETS BY PARENT ID
 export const getAssetsByParentId = async (parentId: string) => {
-  try {
-    const res = await apiAsset.get(`/AssetHierarchy/GetByParentId/${parentId}`);
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || `Failed to fetch children for parent ${parentId}`;
-  }
+  const res = await apiAsset.get(`/AssetHierarchy/GetByParentId/${parentId}`);
+  return res.data;
 };
 
 // DELETE ASSET
 export const deleteAsset = async (assetId: string) => {
-  try {
-    const res = await apiAsset.delete(`/AssetHierarchy/DeleteAsset/${assetId}`);
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || `Failed to delete asset ${assetId}`;
-  }
+  const res = await apiAsset.delete(`/AssetHierarchy/DeleteAsset/${assetId}`);
+  return res.data;
 };
 
-// UPDATE ASSET NAME
+// ⭐⭐⭐ UPDATE ASSET NAME (NEW) ⭐⭐⭐
 export const updateAsset = async (payload: UpdateAssetRequest) => {
-  try {
-    const res = await apiAsset.put(`/AssetHierarchy/UpdateAsset`, payload);
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || "Failed to update asset";
-  }
-};
-
-// GET DELETED ASSETS
-export const getDeletedAssets = async () => {
-  try {
-    const res = await apiAsset.get("/AssetHierarchy/Deleted");
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || "Failed to fetch deleted assets";
-  }
-};
-
-// RESTORE DELETED ASSET
-export const restoreAssetById = async (assetId: string) => {
-  try {
-    const res = await apiAsset.post(`/AssetHierarchy/Restore/${assetId}`);
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || `Failed to restore asset ${assetId}`;
-  }
+  const res = await apiAsset.put(`/AssetHierarchy/UpdateAsset`, payload);
+  return res.data;
 };
 
 /* --------------------------------------------------------
@@ -109,22 +69,14 @@ export const restoreAssetById = async (assetId: string) => {
 
 // ADD ASSET CONFIG
 export const addAssetConfig = async (payload: any) => {
-  try {
-    const res = await apiAsset.post("/AssetConfig", payload);
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || "Failed to add asset config";
-  }
+  const res = await apiAsset.post("/AssetConfig", payload);
+  return res.data;
 };
 
 // GET SIGNALS + CONFIG FOR AN ASSET
 export const getAssetConfig = async (assetId: string) => {
-  try {
-    const res = await apiAsset.get(`/AssetConfig/${assetId}`);
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || `Failed to fetch asset config for ${assetId}`;
-  }
+  const res = await apiAsset.get(`/AssetConfig/${assetId}`);
+  return res.data;
 };
 
 // UPDATE SIGNAL CONFIG FOR AN ASSET
@@ -132,10 +84,6 @@ export const updateAssetConfig = async (
   assetId: string,
   payload: UpdateAssetConfigPayload
 ) => {
-  try {
-    const res = await apiAsset.put(`/AssetConfig/${assetId}`, payload);
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || `Failed to update asset config for ${assetId}`;
-  }
+  const res = await apiAsset.put(`/AssetConfig/${assetId}`, payload);
+  return res.data;
 };
