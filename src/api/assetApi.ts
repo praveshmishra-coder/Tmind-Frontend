@@ -29,6 +29,15 @@ export interface UpdateAssetConfigPayload {
   signalType: string;
 }
 
+export interface SignalType {
+  signalTypeID: string;
+  signalName: string;
+  signalUnit: string;
+  defaultRegisterAdress: number;
+  assetConfigurations: any[];
+}
+
+
 /* --------------------------------------------------------
     ASSET HIERARCHY APIS
 -------------------------------------------------------- */
@@ -137,5 +146,15 @@ export const updateAssetConfig = async (
     return res.data;
   } catch (err: any) {
     throw err.response?.data || err.message || `Failed to update asset config for ${assetId}`;
+  }
+};
+
+
+export const getSignalTypes = async () => {
+  try {
+    const res = await apiAsset.get("/AssetConfig/SiganlTypes");
+    return res.data;
+  } catch (err: any) {
+    throw err.response?.data || err.message || "Failed to fetch signal types";
   }
 };

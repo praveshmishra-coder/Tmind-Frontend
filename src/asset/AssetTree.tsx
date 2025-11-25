@@ -9,8 +9,14 @@ import {
   Edit,
   Trash2,
   Factory,
-  Cog
+  Signal
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 
 import { Input } from "@/components/ui/input";
@@ -101,17 +107,16 @@ const AssetTreeNode = ({
     assetType === "Plant"
       ? Factory
       : assetType === "Department"
-      ? Building2
-      : assetType === "Line"
-      ? Layers
-      : Wrench;
+        ? Building2
+        : assetType === "Line"
+          ? Layers
+          : Wrench;
 
   return (
     <div>
       <div
-        className={`flex items-center justify-between gap-2 px-3 py-2 cursor-pointer hover:bg-accent rounded-sm ${
-          isSelected ? "bg-primary/10 text-primary font-medium" : ""
-        } ${asset.isDeleted ? "opacity-50" : ""}`}
+        className={`flex items-center justify-between gap-2 px-3 py-2 cursor-pointer hover:bg-accent rounded-sm ${isSelected ? "bg-primary/10 text-primary font-medium" : ""
+          } ${asset.isDeleted ? "opacity-50" : ""}`}
       >
         <div className="flex items-center gap-2 flex-1" onClick={() => onSelect(asset)}>
           {hasChildren ? (
@@ -130,57 +135,98 @@ const AssetTreeNode = ({
           <span className="text-sm">{asset.name}</span>
         </div>
 
+
+
         {isAdmin && (
-          <div className="flex gap-1">
-            {asset.level !== 5 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setAssetForAdd(asset);
-                  setShowAddAssetModal(true);
-                }}
-                className="p-1 rounded hover:bg-gray-200"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            )}
+          <TooltipProvider>
+            <div className="flex gap-1">
 
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setAssetForEdit(asset);
-                setShowEditModal(true);
-              }}
-              className="p-1 rounded hover:bg-gray-200"
-            >
-              <Edit className="h-4 w-4" />
-            </button>
+              {/* ADD */}
+              {asset.level !== 5 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAssetForAdd(asset);
+                        setShowAddAssetModal(true);
+                      }}
+                      className="p-1 rounded hover:bg-gray-200"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-white" side="top" align="center">
+                    <p>Add Child Asset</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
 
-            {!hasChildren && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setAssetToDelete(asset);
-                  setOpenDeleteDialog(true);
-                }}
-                className="p-1 rounded hover:bg-red-200 text-red-600"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setAssetForConfig(asset);
-                  setShowConfigureModal(true);
-                }}
-                className="p-1 rounded hover:bg-gray-200"
-              >
-                <Cog className="h-4 w-4" />
-              </button>
-            
-          </div>
+              {/* EDIT */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAssetForEdit(asset);
+                      setShowEditModal(true);
+                    }}
+                    className="p-1 rounded hover:bg-gray-200"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent className="bg-white" side="top" align="center">
+                  <p>Edit Asset</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* DELETE */}
+              {!hasChildren && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAssetToDelete(asset);
+                        setOpenDeleteDialog(true);
+                      }}
+                      className="p-1 rounded hover:bg-red-200 text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-white" side="top" align="center">
+                    <p>Delete Asset</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* CONFIGURE SIGNALS */}
+              {asset.level > 2 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAssetForConfig(asset);
+                        setShowConfigureModal(true);
+                      }}
+                      className="p-1 rounded hover:bg-gray-200"
+                    >
+                      <Signal className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-white" side="top" align="center">
+                    <p>Configure Signals</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+            </div>
+          </TooltipProvider>
         )}
+
       </div>
 
       {hasChildren && isExpanded && (
@@ -288,7 +334,7 @@ export const AssetTree = ({ assets, selectedId, onSelect, onAdd, onDelete }: Ass
               setOpenDeleteDialog={setOpenDeleteDialog}
               setAssetToDelete={setAssetToDelete}
               setAssetForConfig={setAssetForConfig}
-              setShowConfigureModal = {setShowConfigureModal}
+              setShowConfigureModal={setShowConfigureModal}
 
               isAdmin={isAdmin}
             />
@@ -298,7 +344,7 @@ export const AssetTree = ({ assets, selectedId, onSelect, onAdd, onDelete }: Ass
 
       {/* Modals */}
 
-  {showConfigureModal && assetForConfig && (
+      {showConfigureModal && assetForConfig && (
         <ConfigureAsset asset={assetForConfig} onClose={() => setShowConfigureModal(false)} />
       )}
 
