@@ -18,7 +18,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -32,7 +31,6 @@ import { toast } from "react-toastify";
 import ConfigureAsset from "@/AssetsHierarchy/ConfigureAsset";
 import { Spinner } from "@/components/ui/spinner";
 
-
 export interface BackendAsset {
   assetId: string;
   name: string;
@@ -41,7 +39,6 @@ export interface BackendAsset {
   level: number;
   isDeleted: boolean;
 }
-
 
 export const addAssetToTree = (
   list: BackendAsset[],
@@ -62,6 +59,11 @@ export const removeAssetById = (assets: BackendAsset[], id: string): BackendAsse
     .filter((a) => a.assetId !== id)
     .map((a) => ({ ...a, childrens: removeAssetById(a.childrens, id) }));
 
+// Recursive function to check if asset or any child matches search
+const matchesAssetOrChildren = (asset: BackendAsset, searchTerm: string): boolean => {
+  if (asset.name.toLowerCase().includes(searchTerm.toLowerCase())) return true;
+  return asset.childrens.some((child) => matchesAssetOrChildren(child, searchTerm));
+};
 
 interface AssetTreeNodeProps {
   asset: BackendAsset;
@@ -98,8 +100,8 @@ const AssetTreeNode = ({
   const hasChildren = asset.childrens?.length > 0;
   const isSelected = selectedId === asset.assetId;
 
-  const matchesSearch =
-    searchTerm === "" || asset.name.toLowerCase().includes(searchTerm.toLowerCase());
+  // Updated search logic: check asset and its children
+  const matchesSearch = searchTerm === "" || matchesAssetOrChildren(asset, searchTerm);
   if (!matchesSearch) return null;
 
   const assetType = levelToType(asset.level);
@@ -134,8 +136,6 @@ const AssetTreeNode = ({
           <Icon className="h-4 w-4" />
           <span className="text-sm">{asset.name}</span>
         </div>
-
-
 
         {isAdmin && (
           <TooltipProvider>
@@ -281,14 +281,8 @@ export const AssetTree = ({ assets, selectedId, onSelect, onAdd, onDelete }: Ass
   const { user, loading } = useAuth();
   const isAdmin = user?.role?.toLowerCase() === "admin";
 
-  // Prevent rendering until auth is loaded
-  if (loading) {
-    return <Spinner />;
-  }
+  if (loading) return <Spinner />;
 
-  // -------------------------
-  // Handle Delete
-  // -------------------------
   const handleConfirmDelete = () => {
     if (!assetToDelete) return;
     onDelete(assetToDelete);
@@ -298,7 +292,6 @@ export const AssetTree = ({ assets, selectedId, onSelect, onAdd, onDelete }: Ass
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header + Search */}
       <div className="p-4 border-b flex flex-col gap-2">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold">Asset Tree</h2>
@@ -315,7 +308,6 @@ export const AssetTree = ({ assets, selectedId, onSelect, onAdd, onDelete }: Ass
         />
       </div>
 
-      {/* Tree */}
       <div className="flex-1 overflow-auto p-2">
         {assets.length === 0 ? (
           <p className="text-center text-sm text-gray-500">No assets found</p>
@@ -335,19 +327,15 @@ export const AssetTree = ({ assets, selectedId, onSelect, onAdd, onDelete }: Ass
               setAssetToDelete={setAssetToDelete}
               setAssetForConfig={setAssetForConfig}
               setShowConfigureModal={setShowConfigureModal}
-
               isAdmin={isAdmin}
             />
           ))
         )}
       </div>
 
-      {/* Modals */}
-
       {showConfigureModal && assetForConfig && (
         <ConfigureAsset asset={assetForConfig} onClose={() => setShowConfigureModal(false)} />
       )}
-
       {showAddRootModal && <Addroot onClose={() => setShowAddRootModal(false)} onAdd={onAdd} />}
       {showAddAssetModal && assetForAdd && (
         <Addasset parentAsset={assetForAdd} onClose={() => setShowAddAssetModal(false)} onAdd={onAdd} />

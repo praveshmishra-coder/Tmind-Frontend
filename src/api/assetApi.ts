@@ -20,8 +20,9 @@ export interface InsertAssetRequest {
 
 export interface UpdateAssetRequest {
   assetId: string;
-  name: string;
+  newName: string;
 }
+
 
 export interface UpdateAssetConfigPayload {
   signalName: string;
