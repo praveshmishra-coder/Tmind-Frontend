@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from "@/components/ui/table";
 import apiAsset from "@/api/axiosAsset";
 import { match_by_regAddress } from "@/api/deviceApi";
+import { toast } from "react-toastify";
 
 // ---------------------- Types ----------------------
 interface AssetConfig {
@@ -184,14 +185,18 @@ export default function MapDeviceToAsset() {
 
     try {
       // sends payload { assetId, deviceId, devicePortId } as required
-      await apiAsset.post("/Mapping", { assetId, deviceId, devicePortId });
+    let res =   await apiAsset.post("/Mapping", { assetId, deviceId, devicePortId });
+    console.log(res);
+    
       setMappingSuccess(true);
+      toast.success("Mapping created successfully");
       // refresh so newly created mapping disables the appropriate items
       await loadAll();
     } catch (err: any) {
-      console.error(err);
-      const msg = err?.response?.data ? JSON.stringify(err.response.data) : err.message || "Mapping failed";
-      setError(msg);
+      console.error(err.response.data.message );
+      toast.error(err.response.data.message);
+      const msg = err.response.data.message || "Mapping failed";
+      // setError(msg);
       setMappingSuccess(false);
     } finally {
       setMappingLoading(false);
@@ -392,7 +397,7 @@ export default function MapDeviceToAsset() {
         </div>
       </motion.div>
 
-      {mappingLoading && (
+      {/* {mappingLoading && (
         <Card>
           <CardContent>Creating mapping…</CardContent>
         </Card>
@@ -408,7 +413,7 @@ export default function MapDeviceToAsset() {
         <Card>
           <CardContent className="text-red-700">Mapping failed. Check console / server response.</CardContent>
         </Card>
-      )}
+      )} */}
 
       <div className="text-xs text-slate-500">
         Tip: Click <span className="font-medium">Map</span> to create a mapping. The body posted is{" "}
