@@ -3,8 +3,7 @@ import authApi from "@/api/authApi";
 import { getCurrentUser } from "@/api/userApi";
 
 interface User {
-  id: string;
-  name: string;
+  username: string;
   email: string;
   role: string;
 }
@@ -35,8 +34,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     await authApi.post("/User/Login", { email, password });
     const currentUser = await getCurrentUser();
-    setUser(currentUser);
-    localStorage.setItem("user", JSON.stringify(currentUser));
+    const { userId, ...userWithoutId } = currentUser;
+    setUser(userWithoutId);
+
+  localStorage.setItem("user", JSON.stringify(userWithoutId));
   };
 
  

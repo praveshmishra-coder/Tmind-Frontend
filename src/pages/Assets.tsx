@@ -170,9 +170,9 @@ export default function Assets() {
             Explore structure of plants, departments, machines & sub-machines.
           </p>
         </div>
-        {isAdmin && (
+        {/* {isAdmin && (
           <Button onClick={() => setShowUploadModal(true)}>Import Bulk</Button>
-        )}
+        )} */}
       </div>
 
       {/* Main Grid */}

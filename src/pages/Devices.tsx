@@ -199,14 +199,14 @@ export default function Devices() {
             </Button>
           )}
 
-          {isAdmin && (
+          {/* {isAdmin && (
             <Button
               onClick={() => navigate("/devices/upload")}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               + Import Bulk
             </Button>
-          )}
+          )} */}
           </div>
         </div>
 
