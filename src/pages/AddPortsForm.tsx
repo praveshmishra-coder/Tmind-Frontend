@@ -464,7 +464,7 @@ export default function ModbusPortManager() {
                           <SelectTrigger className="rounded-xl border-slate-200">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-white">
                             <SelectItem value="coil">Coil (0xxxx)</SelectItem>
                             <SelectItem value="discrete">Discrete Input (1xxxx)</SelectItem>
                             <SelectItem value="input">Input Register (3xxxx)</SelectItem>
@@ -480,7 +480,7 @@ export default function ModbusPortManager() {
                           <SelectTrigger className="rounded-xl border-slate-200">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-white">
                             {signals.map(sig => (
                               <SelectItem key={sig.id} value={String(sig.id)}>{String(sig.id).padStart(4,'0')} — {sig.name}</SelectItem>
                             ))}
@@ -521,7 +521,7 @@ export default function ModbusPortManager() {
                           <SelectTrigger className="rounded-xl border-slate-200">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-white">
                             <SelectItem value="int16">int16</SelectItem>
                             <SelectItem value="uint16">uint16</SelectItem>
                             <SelectItem value="int32">int32</SelectItem>
@@ -550,13 +550,15 @@ export default function ModbusPortManager() {
                           <SelectTrigger className="rounded-xl border-slate-200">
                             <SelectValue placeholder="None" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-white">
                             <SelectItem value="__none">None</SelectItem>
                             <SelectItem value="V">V (Volts)</SelectItem>
                             <SelectItem value="A">A (Amperes)</SelectItem>
                             <SelectItem value="°C">°C (Celsius)</SelectItem>
                             <SelectItem value="Hz">Hz (Hertz)</SelectItem>
                             <SelectItem value="rpm">rpm (RPM)</SelectItem>
+                            <SelectItem value="rpm">kPa</SelectItem>
+                            <SelectItem value="rpm">mm/s</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
