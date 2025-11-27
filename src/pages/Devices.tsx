@@ -270,7 +270,8 @@ export default function Devices() {
                       )}
 
                       
-                      <Button
+                     {
+                      isAdmin &&  <Button
                         variant="outline"
                         size="sm"
                         onClick={() => navigate(`/devices/ports/${d.deviceId}`)}
@@ -278,6 +279,7 @@ export default function Devices() {
                       >
                         <HdmiPort className="h-4 w-4" /> Slave
                       </Button>
+                     }
                       {d.deviceConfiguration && (
                       <Button
                         variant={isSelected ? "destructive" : "outline"}

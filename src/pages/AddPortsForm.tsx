@@ -37,10 +37,10 @@ const defaultRegister: RegisterPayload = {
   registerAddress: 40001,
   registerLength: 2,
   dataType: "float32",
-  scale: 1.0,
+  scale: 0.01,
   unit: null,
   isHealthy: true,
-  byteOrder: "Big",
+  byteOrder: "Little",
   wordSwap: false,
   registerType: "holding",
   signalBase: 1
@@ -116,16 +116,17 @@ export default function ModbusPortManager() {
     });
   };
   // load slaves (ports) from your API — unchanged from original logic but renamed
-  const loadSlaves = useCallback(async () => {
-    if (!deviceId) return;
-    try {
-      const res = await api.get(`/devices/${deviceId}/ports`);
-      const arr = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-      const mapped: SlaveData[] = (arr || []).map((p: any) => ({
-        deviceSlaveId: p.deviceSlaveId ?? undefined,
-        slaveIndex: p.slaveIndex,
-        isHealthy: p.isHealthy ?? true,
-        registers: (p.registers || []).map((r: any) => ({
+
+const loadSlaves = useCallback(async () => {
+  if (!deviceId) return;
+  try {
+    const res = await api.get(`/devices/${deviceId}/ports`);
+    const arr = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+    const mapped: SlaveData[] = (arr || []).map((p: any) => ({
+      deviceSlaveId: p.deviceSlaveId ?? undefined,
+      slaveIndex: p.slaveIndex,
+      isHealthy: p.isHealthy ?? true,
+      registers: (p.registers || []).map((r: any) => ({
           registerId: r.registerId ?? undefined,
           registerAddress: r.registerAddress,
           registerLength: r.registerLength,
@@ -152,16 +153,26 @@ export default function ModbusPortManager() {
             return Number(s.slice(1));
           })()
         }))
-      }));
-      const sorted = [...mapped].sort((a, b) => b.slaveIndex - a.slaveIndex);
-      setSlaves(sorted);
-      if (sorted.length > 0 && selectedSlaveIndex === null) {
-        setSelectedSlaveIndex(sorted[0].slaveIndex);
-      }
-    } catch (err) {
-      console.error("Failed to load slaves", err);
+    }));
+   const sorted = [...mapped].sort((a, b) => b.slaveIndex - a.slaveIndex);
+
+
+    // Merge unsaved slaves
+    setSlaves(prev => {
+      const savedIndexes = sorted.map(s => s.slaveIndex);
+      const unsaved = prev.filter(s => !s.deviceSlaveId && !savedIndexes.includes(s.slaveIndex));
+      return [...sorted, ...unsaved].sort((a, b) => b.slaveIndex - a.slaveIndex);
+    });
+
+    // select first slave if none selected
+    if (slaves.length > 0 && selectedSlaveIndex === null) {
+      setSelectedSlaveIndex(sorted[0]?.slaveIndex ?? null);
     }
-  }, [deviceId, selectedSlaveIndex]);
+  } catch (err) {
+    console.error(err);
+  }
+}, [deviceId]);
+
 
   useEffect(() => {
     loadSlaves();
@@ -193,13 +204,15 @@ export default function ModbusPortManager() {
     setEditingRegisterIdx(null);
   }, [selectedSlaveIndex, fetchSignals]);
 
-  const validateRegister = (reg: RegisterPayload, currentRegisters: RegisterPayload[]) => {
+  const validateRegister = (reg: RegisterPayload, currentRegisters: RegisterPayload[], selectedSlave:any) => {
     if (!Number.isInteger(reg.registerAddress) || reg.registerAddress < 0 || reg.registerAddress > 65535)
       return "Address must be between 0-65535";
     if (!Number.isInteger(reg.registerLength) || reg.registerLength < 1 || reg.registerLength > 10)
       return "Length must be between 1-10";
     if (!reg.dataType?.trim()) return "Data type is required";
     if (!(reg.scale > 0)) return "Scale must be greater than 0";
+
+
 
     const duplicate = currentRegisters.some((r, idx) =>
       idx !== editingRegisterIdx && r.registerAddress === reg.registerAddress
@@ -211,11 +224,12 @@ export default function ModbusPortManager() {
 
  const handleSaveRegister = () => {
     if (!selectedSlave) return;
+    
 
     // Use registerForm.registerAddress directly, don't recompute
     const form = { ...registerForm }; 
 
-    const validationError = validateRegister(form, selectedSlave.registers);
+    const validationError = validateRegister(form, selectedSlave.registers, selectedSlave);
     if (validationError) {
         toast.error(validationError);
         return;
@@ -307,14 +321,24 @@ export default function ModbusPortManager() {
     setShowRegisterForm(true);
   };
 
+  
+
   const handleAddNewSlave = () => {
+
+    console.log(slaves.length);
+    
+
+    if(slaves.length >=2){
+      toast.error("Maximum of 2 slaves allowed per device");
+      return
+    }
     const newslaveIndex = slaves.length > 0 ? Math.max(...slaves.map(p => p.slaveIndex)) + 1 : 1;
     const newSlave: SlaveData = { slaveIndex: newslaveIndex, registers: [], isHealthy: true };
-
+    
     setSlaves(prev => [...prev, newSlave]);
     setSelectedSlaveIndex(newslaveIndex);
     setShowRegisterForm(false);
-    toast.success("New slave created locally, please add registers now");
+    // toast.success("New slave created locally, please add registers now");
   };
 
   const buildPayload = (slave: SlaveData) => {
@@ -338,6 +362,14 @@ export default function ModbusPortManager() {
     if (!selectedSlave || !deviceId) return;
 
     const payload = buildPayload(selectedSlave);
+    if (payload.registers.length === 0) {
+      toast.error("Cannot save slave with no registers");
+      return;
+    }
+    if(payload.registers.length > 5){
+      toast.error("Maximum of 5 registers allowed per slave");
+      return
+    }
     setIsSaving(true);
 
     try {
@@ -388,10 +420,10 @@ export default function ModbusPortManager() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 ">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8  ">
           {/* Slaves Sidebar */}
-          <div className="grid grid-cols-2 gap-3 p-3 max-h-96 overflow-y-auto">
+          <div className="grid grid-cols-2 gap-3 p-3 max-h-96 overflow-y-auto  border-r ">
             {slaves.length === 0 ? (
               <div className="p-8 text-center col-span-2">
                 <Database className="w-10 h-10 mx-auto text-slate-300 mb-2" />
@@ -407,9 +439,9 @@ export default function ModbusPortManager() {
                     setEditingRegisterIdx(null);
                     setRegisterForm({ ...defaultRegister, registerAddress: buildDisplayAddress(defaultRegister.registerType!, defaultRegister.signalBase!) });
                   }}
-                  className={`p-4 text-left rounded-xl border transition-all ${selectedSlaveIndex === slave.slaveIndex
+                  className={`p-4 h-32 text-left rounded-xl border transition-all ${selectedSlaveIndex === slave.slaveIndex
                     ? "bg-gradient-to-r from-blue-50 to-blue-100 border-blue-600"
-                    : "hover:bg-slate-50 border-slate-200"
+                    : "hover:bg-slate-50 border-slate-200 "
                     }`}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -532,6 +564,7 @@ export default function ModbusPortManager() {
                         <Input
                           type="number"
                           value={registerForm.registerAddress}
+                          disabled
                           onChange={(e) => updateRegisterForm("registerAddress", Number(e.target.value))}
                           className="rounded-xl border-slate-200 focus:border-blue-500 focus:ring-blue-500 font-mono"
                         />
