@@ -17,17 +17,17 @@ apiAsset.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        await axios.post(
-          "https://localhost:7208/auth/User/refresh-token",
-          {},
-          { withCredentials: true }
-        );
+       await axios.post(
+          "http://localhost:5000/auth/User/refresh-token",  // Through gateway
+         {},
+        { withCredentials: true }
+       );
 
         return apiAsset(originalRequest);
       } catch (err) {
         console.error("Refresh token failed. Redirecting...");
         localStorage.removeItem("user");
-        window.location.href = "/";
+        // window.location.href = "/";
         return Promise.reject(err);
       }
     }

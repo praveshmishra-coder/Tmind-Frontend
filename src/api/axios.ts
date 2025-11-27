@@ -12,24 +12,24 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-   
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
+        console.log("🔄 Attempting token refresh...");
+        console.log("🍪 Current cookies:", document.cookie); // Check what cookies exist
         
-        await axios.post(
+        const response = await axios.post(
           "http://localhost:5000/auth/User/refresh-token",
           {},
           { withCredentials: true }
         );
-
         
+        console.log("✅ Refresh successful:", response.data);
         return api(originalRequest);
-      } catch (err) {
-        console.log("Refresh token failed, redirecting to Register");
+      } catch (err:any) {
+        console.log("❌ Refresh token failed:", err.response?.data);
         localStorage.removeItem("user");
-        window.location.href = "/";
         return Promise.reject(err);
       }
     }

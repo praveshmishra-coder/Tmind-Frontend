@@ -159,3 +159,12 @@ export const getSignalTypes = async () => {
     throw err.response?.data || err.message || "Failed to fetch signal types";
   }
 };
+
+export const getSignalOnAsset=async (assetID:string)=>{
+  try{
+    const res=await apiAsset.get(`/Mapping/${assetID}`);
+    return res.data;
+  }catch (err: any) {
+    throw err.response?.data || err.message || "Failed to fetch signal types";
+  }
+}
