@@ -259,7 +259,7 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                       <Plus className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>Add Child</TooltipContent>
+                  <TooltipContent className="bg-white" side="top" align="center">Add Child</TooltipContent>
                 </Tooltip>
               )}
 
@@ -277,7 +277,7 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                     <Edit className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>Edit</TooltipContent>
+                <TooltipContent className="bg-white" side="top" align="center">Edit</TooltipContent>
               </Tooltip>
 
               {/* DELETE */}
@@ -295,7 +295,7 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>Delete</TooltipContent>
+                  <TooltipContent className="bg-white" side="top" align="center">Delete</TooltipContent>
                 </Tooltip>
               )}
 
@@ -314,7 +314,7 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                       <Signal className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>Configure Signals</TooltipContent>
+                  <TooltipContent className="bg-white" side="top" align="center">Configure Signals</TooltipContent>
                 </Tooltip>
               )}
 
