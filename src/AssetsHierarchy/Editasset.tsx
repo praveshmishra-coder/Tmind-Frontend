@@ -60,7 +60,7 @@ export default function EditAsset({ asset, onClose, onUpdated }: EditAssetProps)
     try {
       const payload = {
         assetId: asset.assetId,
-        name: formData.name.trim(),
+        newName: formData.name.trim(),
       };
 
       console.log("Update Asset payload:", payload);
@@ -69,9 +69,8 @@ export default function EditAsset({ asset, onClose, onUpdated }: EditAssetProps)
 
       toast.success("Asset updated successfully!");
 
-      if (onUpdated) onUpdated();
-
-      setTimeout(() => onClose(), 800);
+      if (onUpdated) onUpdated();  
+      setTimeout(() => onClose(), 700);
     } catch (err: any) {
       console.error("Error updating asset:", err);
 

@@ -350,7 +350,7 @@ const ipOrLocalhostRegex =
                       required
                     />
                   </div>
-                  <div className="grid gap-2">
+                  {/* <div className="grid gap-2">
                     <Label htmlFor="SlaveId">Slave ID</Label>
                     <Select
                       value={formData.protocolSettings.SlaveId?.toString() || ""}
@@ -387,7 +387,7 @@ const ipOrLocalhostRegex =
                         <SelectItem value="Big">Big</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>

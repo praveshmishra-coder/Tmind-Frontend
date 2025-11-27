@@ -241,7 +241,7 @@ export default function ConfigureDevice() {
                 />
               </div>
 
-              <div className="grid gap-2">
+              {/* <div className="grid gap-2">
                 <Label htmlFor="SlaveId">Slave ID</Label>
                 <Select
                   value={formData.protocolSettings.SlaveId?.toString() || ""}
@@ -263,9 +263,9 @@ export default function ConfigureDevice() {
                     <SelectItem value="2">2</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
 
-              <div className="grid gap-2">
+              {/* <div className="grid gap-2">
                 <Label htmlFor="Endian">Endian</Label>
                 <Select value={formData.protocolSettings.Endian} onValueChange={handleEndianChange}>
                   <SelectTrigger>
@@ -276,7 +276,7 @@ export default function ConfigureDevice() {
                     <SelectItem value="Big">Big</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
             </div>
 
             {/* Buttons */}

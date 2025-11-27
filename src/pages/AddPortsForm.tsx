@@ -78,6 +78,7 @@ export default function ModbusPortManager() {
   };
 
   // update helper, keep registerType and signalBase in sync with registerAddress
+  // --- replace your existing updateRegisterForm with this ---
   const updateRegisterForm = <K extends keyof RegisterPayload>(key: K, value: RegisterPayload[K]) => {
     setRegisterForm(prev => {
       const next = { ...prev, [key]: value } as RegisterPayload;
@@ -87,6 +88,11 @@ export default function ModbusPortManager() {
         const rt = (key === "registerType" ? (value as any) : next.registerType) ?? "holding";
         const sb = (key === "signalBase" ? (value as any) : next.signalBase) ?? 1;
         next.registerAddress = buildDisplayAddress(rt, sb);
+
+        // set unit automatically (you can choose to only set if unit was null)
+        console.log("Auto-set unit to");
+        next.unit = guessUnitForSignal(rt, sb);
+        console.log("Auto-set unit to", next.unit);
       }
 
       // if user directly typed registerAddress numeric (rare), try to decode type+base
@@ -97,14 +103,18 @@ export default function ModbusPortManager() {
         const base = Number(s.slice(1));
         // map leading to registerType
         const map: Record<number, RegisterPayload["registerType"]> = { 0: "coil", 1: "discrete", 3: "input", 4: "holding" };
-        next.registerType = map[leading] ?? "holding";
+        const decodedType = map[leading] ?? "holding";
+        next.registerType = decodedType;
         next.signalBase = base;
+
+        // set unit based on decoded type+base
+        next.unit = guessUnitForSignal(decodedType, base);
       }
 
+      // if user changed only registerType elsewhere (like by editing dataType), preserve unit unless the above logic handled it
       return next;
     });
   };
-
   // load slaves (ports) from your API — unchanged from original logic but renamed
   const loadSlaves = useCallback(async () => {
     if (!deviceId) return;
@@ -160,29 +170,17 @@ export default function ModbusPortManager() {
   // Fetch available signals for selected slave (example API path). Fallback to default list.
   const fetchSignals = useCallback(async (slaveIndex: number) => {
     if (!deviceId) return;
-    try {
-      // Preferred: backend endpoint returning available signals for the slave/unit
-      const res = await api.get(`/devices/${deviceId}/slaves/${slaveIndex}/signals`); // adapt path if needed
-      const arr = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-      // Expect items like { id: 1, name: "Voltage" }
-      if (arr && arr.length > 0) {
-        setSignals(arr.map((s: any) => ({ id: s.id ?? s.address ?? 1, name: s.name ?? s.label ?? `Signal ${s.id}` })));
-        return;
-      }
-    } catch (err) {
-      // ignore and use fallback
-      // console.warn("signals fetch failed, falling back to defaults", err);
-    }
-
+   
     // fallback signals if backend doesn't provide them:
     setSignals([
-      { id: 1, name: "Temperature" },
-      { id: 3, name: "Pressure" },
-      { id: 5, name: "Voltage" },
-      { id: 7, name: "Current" },
-      { id: 9, name: "Flow"},
-      { id:11, name: "Vibration"},
-      { id:13 ,name: "RPM"} 
+      { id: 1, name: "Voltage" },
+      { id: 3, name: "Current" },
+      { id: 5, name: "Temperature" },
+      { id: 7, name: "Frequency" },
+      { id: 9, name: "Vibration" },
+      { id: 11, name: "FlowRate" },
+      { id: 13, name: "RPM" },
+      { id: 15, name: "Torque" }
     ]);
   }, [deviceId]);
 
@@ -211,38 +209,78 @@ export default function ModbusPortManager() {
     return null;
   };
 
-  const handleSaveRegister = () => {
+ const handleSaveRegister = () => {
     if (!selectedSlave) return;
-    // ensure the computed registerAddress is up to date (in case complex edits were done)
-    const form = { ...registerForm, registerAddress: buildDisplayAddress(registerForm.registerType!, registerForm.signalBase ?? 1) };
+
+    // Use registerForm.registerAddress directly, don't recompute
+    const form = { ...registerForm }; 
+
     const validationError = validateRegister(form, selectedSlave.registers);
     if (validationError) {
-      toast.error(validationError);
-      return;
+        toast.error(validationError);
+        return;
     }
 
     setSlaves(prev =>
-      prev.map(slave => {
-        if (slave.slaveIndex !== selectedSlave.slaveIndex) return slave;
+        prev.map(slave => {
+            if (slave.slaveIndex !== selectedSlave.slaveIndex) return slave;
 
-        let updatedRegisters: RegisterPayload[];
-        if (editingRegisterIdx !== null) {
-          updatedRegisters = slave.registers.map((r, idx) =>
-            idx === editingRegisterIdx ? { ...form } : r
-          );
-          toast.success("Register updated locally, please save to persist");
-        } else {
-          updatedRegisters = [...slave.registers, { ...form }];
-          toast.success("Register added locally, please save to persist");
-        }
+            let updatedRegisters: RegisterPayload[];
+            if (editingRegisterIdx !== null) {
+                updatedRegisters = slave.registers.map((r, idx) =>
+                    idx === editingRegisterIdx ? { ...form } : r
+                );
+                toast.success("Register updated locally, please save to persist");
+            } else {
+                updatedRegisters = [...slave.registers, { ...form }];
+                toast.success("Register added locally, please save to persist");
+            }
 
-        return { ...slave, registers: updatedRegisters };
-      })
+            return { ...slave, registers: updatedRegisters };
+        })
     );
 
-    setRegisterForm({ ...defaultRegister, registerAddress: buildDisplayAddress(defaultRegister.registerType!, defaultRegister.signalBase!) });
-    setEditingRegisterIdx(null);
-    setShowRegisterForm(false);
+    cancelRegisterForm(); // reset the form safely
+};
+
+
+
+  const guessUnitForSignal = (regType?: RegisterPayload["registerType"], sb?: number | null) => {
+    // prefer signal-based mapping if we have signal info
+    const sigId = sb ?? 1;
+    const sig = signals.find(s => Number(s.id) === Number(sigId));
+    console.log(sig);
+
+
+    if (sig && sig.id) {
+      const n = sig.id;   // no toLowerCase needed
+      
+
+      if (n === 1) return "V";
+      if (n === 3) return "A";
+      if (n === 5) return "°C";
+      if (n === 7) return "Hz";
+      if (n === 9) return "mm/s";   // or "g"
+      if (n === 11) return "L/min";    // or "kPa"
+      if (n === 13) return "rpm";
+      if (n === 15) return "N·m";
+
+      return null;
+    }
+
+
+    // fallback by register type (if signal not found)
+    switch (regType) {
+      case "input":
+      case "holding":
+        // default to volts for analog holding/input registers (adjust as you prefer)
+        return "V";
+      case "coil":
+      case "discrete":
+        return null; // booleans, no unit
+      default:
+        return null;
+    }
   };
 
   const handleDeleteRegister = (idx: number) => {
@@ -340,8 +378,8 @@ export default function ModbusPortManager() {
               <p className="text-xs text-slate-500">Modbus Slave / Registers Configuration</p>
             </div>
           </div>
-          <Button 
-            onClick={handleAddNewSlave} 
+          <Button
+            onClick={handleAddNewSlave}
             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all"
           >
             <Plus className="w-5 h-5 mr-2" />
@@ -369,11 +407,10 @@ export default function ModbusPortManager() {
                     setEditingRegisterIdx(null);
                     setRegisterForm({ ...defaultRegister, registerAddress: buildDisplayAddress(defaultRegister.registerType!, defaultRegister.signalBase!) });
                   }}
-                  className={`p-4 text-left rounded-xl border transition-all ${
-                    selectedSlaveIndex === slave.slaveIndex
-                      ? "bg-gradient-to-r from-blue-50 to-blue-100 border-blue-600"
-                      : "hover:bg-slate-50 border-slate-200"
-                  }`}
+                  className={`p-4 text-left rounded-xl border transition-all ${selectedSlaveIndex === slave.slaveIndex
+                    ? "bg-gradient-to-r from-blue-50 to-blue-100 border-blue-600"
+                    : "hover:bg-slate-50 border-slate-200"
+                    }`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -415,17 +452,17 @@ export default function ModbusPortManager() {
                   </div>
                   <div className="flex gap-2">
                     {!showRegisterForm && (
-                      <Button 
-                        onClick={() => setShowRegisterForm(true)} 
-                        variant="outline" 
+                      <Button
+                        onClick={() => setShowRegisterForm(true)}
+                        variant="outline"
                         className="border-blue-600 text-blue-600 hover:bg-blue-50 rounded-xl"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Add Register
                       </Button>
                     )}
-                    <Button 
-                      onClick={saveCurrentSlave} 
+                    <Button
+                      onClick={saveCurrentSlave}
                       disabled={isSaving}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
                     >
@@ -482,7 +519,7 @@ export default function ModbusPortManager() {
                           </SelectTrigger>
                           <SelectContent className="bg-white">
                             {signals.map(sig => (
-                              <SelectItem key={sig.id} value={String(sig.id)}>{String(sig.id).padStart(4,'0')} — {sig.name}</SelectItem>
+                              <SelectItem key={sig.id} value={String(sig.id)}>{String(sig.id).padStart(4, '0')} — {sig.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -492,9 +529,9 @@ export default function ModbusPortManager() {
                       {/* Display Address (computed) */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-700">Display Address (computed)</Label>
-                        <Input 
-                          type="number" 
-                          value={registerForm.registerAddress} 
+                        <Input
+                          type="number"
+                          value={registerForm.registerAddress}
                           onChange={(e) => updateRegisterForm("registerAddress", Number(e.target.value))}
                           className="rounded-xl border-slate-200 focus:border-blue-500 focus:ring-blue-500 font-mono"
                         />
@@ -504,10 +541,10 @@ export default function ModbusPortManager() {
                       {/* Length */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-700">Register Length</Label>
-                        <Input 
-                          type="number" 
-                          value={registerForm.registerLength} 
-                          min={1} 
+                        <Input
+                          type="number"
+                          value={registerForm.registerLength}
+                          min={1}
                           max={10}
                           onChange={(e) => updateRegisterForm("registerLength", Number(e.target.value))}
                           className="rounded-xl border-slate-200 focus:border-blue-500 focus:ring-blue-500"
@@ -534,10 +571,10 @@ export default function ModbusPortManager() {
                       {/* Scale */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-700">Scale Factor</Label>
-                        <Input 
-                          type="number" 
-                          step={0.01} 
-                          value={registerForm.scale} 
+                        <Input
+                          type="number"
+                          step={0.01}
+                          value={registerForm.scale}
                           onChange={(e) => updateRegisterForm("scale", Number(e.target.value))}
                           className="rounded-xl border-slate-200 focus:border-blue-500 focus:ring-blue-500"
                         />
@@ -546,22 +583,31 @@ export default function ModbusPortManager() {
                       {/* Unit */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-slate-700">Unit</Label>
-                        <Select value={registerForm.unit ?? "__none"} onValueChange={(v) => updateRegisterForm("unit", v === "__none" ? null : v)}>
+
+                        <Select
+                          value={registerForm.unit ?? "V"}
+                          onValueChange={(v) => updateRegisterForm("unit", v)}
+                        >
                           <SelectTrigger className="rounded-xl border-slate-200">
-                            <SelectValue placeholder="None" />
+                            <SelectValue placeholder="Select unit" />
                           </SelectTrigger>
+
                           <SelectContent className="bg-white">
-                            <SelectItem value="__none">None</SelectItem>
                             <SelectItem value="V">V (Volts)</SelectItem>
                             <SelectItem value="A">A (Amperes)</SelectItem>
                             <SelectItem value="°C">°C (Celsius)</SelectItem>
                             <SelectItem value="Hz">Hz (Hertz)</SelectItem>
+                            <SelectItem value="mm/s">mm/s (Vibration)</SelectItem>
+                            <SelectItem value="L/min">L/min (FlowRate)</SelectItem>
                             <SelectItem value="rpm">rpm (RPM)</SelectItem>
                             <SelectItem value="rpm">kPa</SelectItem>
                             <SelectItem value="rpm">mm/s</SelectItem>
                              <SelectItem value="rpm">L/min</SelectItem>
+                            <SelectItem value="N·m">N·m (Torque)</SelectItem>
                           </SelectContent>
+
                         </Select>
+
                       </div>
 
                       {/* Byte Order */}
@@ -571,7 +617,7 @@ export default function ModbusPortManager() {
                           <SelectTrigger className="rounded-xl border-slate-200">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-white">
                             <SelectItem value="Big">Big Endian</SelectItem>
                             <SelectItem value="Little">Little Endian</SelectItem>
                           </SelectContent>
@@ -581,17 +627,17 @@ export default function ModbusPortManager() {
 
                     <div className="space-y-3 mb-6 p-4 bg-slate-50 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <Checkbox 
+                        <Checkbox
                           id="wordSwap"
-                          checked={!!registerForm.wordSwap} 
+                          checked={!!registerForm.wordSwap}
                           onCheckedChange={(c) => updateRegisterForm("wordSwap", !!c)}
                         />
                         <Label htmlFor="wordSwap" className="text-sm font-medium cursor-pointer">Word Swap</Label>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Checkbox 
+                        <Checkbox
                           id="isHealthy"
-                          checked={registerForm.isHealthy} 
+                          checked={registerForm.isHealthy}
                           onCheckedChange={(c) => updateRegisterForm("isHealthy", !!c)}
                         />
                         <Label htmlFor="isHealthy" className="text-sm font-medium cursor-pointer">Healthy</Label>
@@ -599,14 +645,14 @@ export default function ModbusPortManager() {
                     </div>
 
                     <div className="flex gap-3">
-                      <Button 
-                        onClick={handleSaveRegister} 
+                      <Button
+                        onClick={handleSaveRegister}
                         className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl"
                       >
                         <Save className="w-4 h-4 mr-2" />
                         {editingRegisterIdx !== null ? "Update Register" : "Add Register"}
                       </Button>
-                      <Button 
+                      <Button
                         variant="outline"
                         onClick={cancelRegisterForm}
                         className="rounded-xl"
@@ -658,17 +704,17 @@ export default function ModbusPortManager() {
                               </td>
                               <td className="px-6 py-4 text-sm">
                                 <div className="flex gap-2 justify-end">
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
                                     onClick={() => handleEditRegister(idx)}
                                     className="hover:bg-blue-50 hover:text-blue-600"
                                   >
                                     <Edit2 className="w-4 h-4" />
                                   </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="ghost" 
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
                                     onClick={() => handleDeleteRegister(idx)}
                                     className="hover:bg-red-50 hover:text-red-600"
                                   >

@@ -303,8 +303,8 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
                   return (
                     <div key={id} className="flex items-center justify-between border rounded p-2">
                       <div>
-                        <div className="font-medium">{s.name}</div>
-                        <div className="text-xs text-slate-500">{s.unit} — Reg: {s.register}</div>
+                        <div className="font-medium">{s.signalName}</div>
+                        <div className="text-xs text-slate-500">{s.signalUnit} — Reg: {s.defaultRegisterAdress}</div>
                       </div>
                       <div>
                         <button onClick={() => removeStagedNewSignal(id)} className="text-sm underline">Remove</button>
