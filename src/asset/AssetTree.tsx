@@ -170,22 +170,16 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
   };
 
   const handleFullToggle = (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
+  if (e) e.stopPropagation();
 
-    setExpandedMap(prev => {
-      const next = { ...prev };
-      if (next[asset.assetId]) {
-        // currently expanded -> collapse entire subtree
-        collapseRecursivelyFromMap(asset, next);
-      } else {
-        // currently collapsed -> expand entire subtree
-        expandRecursivelyToMap(asset, next);
-      }
-      return next;
-    });
+  setExpandedMap(prev => {
+    const next = { ...prev };
+    expandRecursivelyToMap(asset, next);   // ALWAYS fully expand
+    return next;
+  });
 
-    onSelect(asset);
-  };
+  onSelect(asset);
+};
 
   /* ---------- Toggle single level (chevron only) ---------- */
 
