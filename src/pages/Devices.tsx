@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/pagination";
 import { useAuth } from "@/context/AuthContext"; 
 import PageLoader from "@/components/Loader";
+import { Spinner } from "@/components/ui/spinner";
 
 type AssetType = 'Company' | 'Plant' | 'Line' | 'Machine';
 interface Device {
@@ -212,7 +213,8 @@ export default function Devices() {
           </div>
         </div>
 
-      {loading && <PageLoader isVisible={loading} />}
+      {loading && <div className="w-full h-full flex justify-center items-center">
+      <Spinner /></div>}
       {error && <div className="text-center text-destructive">{error}</div>}
 
       {!loading && !error && (
