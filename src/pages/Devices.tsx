@@ -29,6 +29,8 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useAuth } from "@/context/AuthContext"; 
+import PageLoader from "@/components/Loader";
+
 type AssetType = 'Company' | 'Plant' | 'Line' | 'Machine';
 interface Device {
   deviceId: string;
@@ -210,7 +212,7 @@ export default function Devices() {
           </div>
         </div>
 
-      {loading && <div className="text-center text-muted-foreground">Loading devices...</div>}
+      {loading && <PageLoader isVisible={loading} />}
       {error && <div className="text-center text-destructive">{error}</div>}
 
       {!loading && !error && (
