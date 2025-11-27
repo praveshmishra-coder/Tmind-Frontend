@@ -106,7 +106,7 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
     }
 
     setStagedNewSignals((p) => [...p, id]);
-    toast.success(`Staged add ${findSignal(id)?.name ?? id}`);
+    toast.success(`Staged, please save to apply.`);
   };
 
   const removeStagedNewSignal = (id: string) => {
