@@ -103,6 +103,10 @@ export default function MapDeviceToAsset() {
       // 1) Fetch asset config for this asset id
       const assetResp = await apiAsset.get<AssetConfig[]>(`/AssetConfig/${assetid}`);
       const assetData = Array.isArray(assetResp.data) ? assetResp.data : [];
+      if(assetConfigs && assetConfigs.length ===0){
+        toast.info("first assign the signals, then map the device");
+        return navigate(-1);
+      }
       setAssetConfigs(assetData);
 
       // 1.5) Fetch existing mappings (so we can determine disabled state)
