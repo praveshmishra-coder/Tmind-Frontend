@@ -15,6 +15,7 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import DeletedDevices from "./devices/DeletedDevices";
 import Profile from "./pages/Profile";
+import ManageUser from "./pages/ManageUser";
 import AddPortForm from "./pages/AddPortsForm";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Map_Device_To_Asset from "./asset/Map-Device-To-Asset";
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="/signals" element={<Signals />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/manage-user" element={<ManageUser />} />
             <Route path="/deleted-devices" element={<DeletedDevices />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/map-device-to-asset/:assetid" element={<Map_Device_To_Asset />} />

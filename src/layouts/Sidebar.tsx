@@ -4,9 +4,11 @@ import {
   Network,
   Cpu,
   Activity,
-  Trash
+  Trash,
+  UserRoundSearch 
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { Search } from "lucide-react";
 
 export default function Sidebar() {
   const { user } = useAuth();
@@ -20,7 +22,7 @@ export default function Sidebar() {
 
     // ADMIN ONLY
     ...(isAdmin
-      ? [
+      ? [ { icon: <UserRoundSearch  size={18} />, label: "Manage User", path: "/manage-user" },
           { icon: <Trash size={18} />, label: "Deleted Devices", path: "/deleted-devices" },
           { icon: <Trash size={18} />, label: "Deleted Assets", path: "/deleted-assets" }
         ]
