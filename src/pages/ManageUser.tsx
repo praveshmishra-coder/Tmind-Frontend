@@ -83,7 +83,8 @@ export default function UserManagement() {
         email: user.email,
         role: newRole,
       };
-
+      
+      
       await updateUser(user.userId, updatedPayload);
 
       setUsers((prev) =>
@@ -126,7 +127,7 @@ export default function UserManagement() {
       </div>
 
       {/* Search + CSV Download */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 sm:justify-between">
         <div className="relative w-full sm:w-1/3">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
@@ -212,16 +213,29 @@ export default function UserManagement() {
                     {isAdmin && (
                       <td className="p-4 flex justify-center gap-2">
                         <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedUser(u);
-                            setShowDeleteDialog(true);
-                          }}
-                          className="flex items-center gap-1"
-                        >
-                          <Trash2 className="h-4 w-4" /> Delete
-                        </Button>
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        // Prevent admin from deleting themselves
+                        if (u.email === user?.email) {
+                          toast.error("You cannot delete your own account!");
+                          return;
+                        }
+
+                        // Prevent deleting other admins except specific email
+                        if (u.role === "Admin" && u.email !== "admin.example.com") {
+                          toast.error("You can only delete the admin with email admin.example.com");
+                          return;
+                        }
+
+                        // Allow delete
+                        setSelectedUser(u);
+                        setShowDeleteDialog(true);
+                      }}
+                      className="flex items-center gap-1"
+                    >
+                      <Trash2 className="h-4 w-4" /> Delete
+                    </Button>
                       </td>
                     )}
                   </tr>
