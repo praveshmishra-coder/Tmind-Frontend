@@ -157,6 +157,12 @@ const AssetTreeNode: React.FC<NodeProps> = ({
   const isExpanded = expandedMap[asset.assetId] ?? false;
   const navigate = useNavigate();
 
+  const handleOpenAsset = (asset) => {
+    navigate("/signal", {
+      state: { asset },
+    });
+  };
+
   /* ---------- Click on asset name = expand/collapse entire subtree (recursive, local) ---------- */
 
 const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>) => {
@@ -327,7 +333,7 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                   <TooltipTrigger asChild>
                     <button
                       className="p-1 hover:bg-gray-200 rounded"
-                      onClick={() => navigate(`/signal`)}
+                      onClick={() => handleOpenAsset(asset)}
                     >
                       <Tv className="h-4 w-4" />
                     </button>
