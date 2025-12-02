@@ -1,5 +1,5 @@
 // App.tsx
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -19,11 +19,18 @@ import ManageUser from "./pages/ManageUser";
 import AddPortForm from "./pages/AddPortsForm";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Map_Device_To_Asset from "./asset/Map-Device-To-Asset";
+
+import DeletedAsset from "./AssetsHierarchy/DeletedAssets";
+
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import DeletedAsset from "./AssetsHierarchy/DeletedAssets";
+
 import { useEffect, useState } from "react";
 import PageLoader from "./components/Loader";
+
+// 🔥 Guided Tour Imports
+import GuidedTourProvider from "./guides/GuidedTourProvider";
+import HelpIcon from "@/components/HelpIcon";
 
 export default function App() {
   const [showLoader, setShowLoader] = useState(true);
@@ -33,7 +40,6 @@ export default function App() {
       setTimeout(() => setShowLoader(false), 800);
     };
 
-    // If the load event already fired before effect mounted, hide loader immediately
     if (document.readyState === "complete") {
       handleLoad();
     } else {
@@ -44,35 +50,51 @@ export default function App() {
 
   return (
     <TooltipProvider>
-      <ToastContainer position="top-right" autoClose={2000} theme="light" />
-      <PageLoader isVisible={showLoader} /> {/* <- mounted at app root so it shows on any full-page load */}
-      <Router>
-        <Routes>
-          <Route path="/" element={<Login />} />
+      <GuidedTourProvider>
+        {/* Toasts */}
+        <ToastContainer position="top-right" autoClose={2000} theme="light" />
 
-          <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/assets" element={<Assets />} />
-            <Route path="/deleted-assets" element={<DeletedAsset />} />
-            <Route path="/devices" element={<Devices />} />
-            <Route path="/devices/add" element={<AddDeviceForm />} />
-            <Route path="/devices/edit/:deviceId" element={<EditDeviceForm />} />
-            <Route path="/devices/config/:deviceId" element={<ConfigureDeviceForm />} />
-            <Route path="/devices/ports" element={<PortSettings />} />
-            <Route path="/devices/ports/:id" element={<AddPortForm />} />
-            <Route path="/devices/upload" element={<UploadCsvModal />} />
-            <Route path="/signals" element={<Signals />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/manage-user" element={<ManageUser />} />
-            <Route path="/deleted-devices" element={<DeletedDevices />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/map-device-to-asset/:assetid" element={<Map_Device_To_Asset />} />
-          </Route>
+        {/* Page Loader */}
+        <PageLoader isVisible={showLoader} />
 
-          {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
-        </Routes>
-      </Router>
+        <Router>
+          <Routes>
+            {/* Login */}
+            <Route path="/" element={<Login />} />
+
+            {/* All Logged-in Pages */}
+            <Route element={<DashboardLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/assets" element={<Assets />} />
+              <Route path="/deleted-assets" element={<DeletedAsset />} />
+
+              <Route path="/devices" element={<Devices />} />
+              <Route path="/devices/add" element={<AddDeviceForm />} />
+              <Route path="/devices/edit/:deviceId" element={<EditDeviceForm />} />
+              <Route path="/devices/config/:deviceId" element={<ConfigureDeviceForm />} />
+              <Route path="/devices/ports" element={<PortSettings />} />
+              <Route path="/devices/ports/:id" element={<AddPortForm />} />
+              <Route path="/devices/upload" element={<UploadCsvModal />} />
+
+              <Route path="/signals" element={<Signals />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/manage-user" element={<ManageUser />} />
+
+              <Route path="/deleted-devices" element={<DeletedDevices />} />
+              <Route path="/profile" element={<Profile />} />
+
+              <Route
+                path="/map-device-to-asset/:assetid"
+                element={<Map_Device_To_Asset />}
+              />
+            </Route>
+          </Routes>
+        </Router>
+
+        {/* 🔥 Global Help Icon for Guided Tours */}
+        <HelpIcon />
+      </GuidedTourProvider>
     </TooltipProvider>
   );
 }

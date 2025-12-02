@@ -45,3 +45,18 @@ body {
   @apply bg-card/40 backdrop-blur-md border border-border/40 rounded-lg shadow-md;
 }
 
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+/* Make sure help icon sits above other elements */
+.help-icon {
+  z-index: 99999;
+}
+
+/* small utility */
+.container {
+  padding: 24px;
+}
