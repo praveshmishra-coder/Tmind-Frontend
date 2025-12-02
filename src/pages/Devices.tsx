@@ -29,10 +29,8 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { useAuth } from "@/context/AuthContext"; 
-import PageLoader from "@/components/Loader";
 import { Spinner } from "@/components/ui/spinner";
 
-type AssetType = 'Company' | 'Plant' | 'Line' | 'Machine';
 interface Device {
   deviceId: string;
   name: string;
@@ -202,14 +200,14 @@ export default function Devices() {
             </Button>
           )}
 
-          {/* {isAdmin && (
+          {isAdmin && (
             <Button
               onClick={() => navigate("/devices/upload")}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               + Import Bulk
             </Button>
-          )} */}
+          )}
           </div>
         </div>
 

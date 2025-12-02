@@ -4,21 +4,21 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+
 import { AssetTree } from "@/asset/AssetTree";
 import AssetDetails from "@/asset/AssetDetails";
 import AssignDevice from "@/asset/AssignDevice";
 
 import { getAssetHierarchy } from "@/api/assetApi";
 import { useAuth } from "@/context/AuthContext"; 
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import UploadAssetCsv from "@/asset/UploadAssetCsv";
 
 import { toast } from "react-toastify";
 import { Spinner } from "@/components/ui/spinner";
@@ -71,11 +71,10 @@ export default function Assets() {
   const [selectedAsset, setSelectedAsset] = useState<BackendAsset | null>(null);
   const [assignedDevice, setAssignedDevice] = useState<any>(null);
   const [showAssignDevice, setShowAssignDevice] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+
 
   const [loading, setLoading] = useState(true);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [dragOver, setDragOver] = useState(false);
 
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -110,44 +109,6 @@ export default function Assets() {
     setShowAssignDevice(true);
   };
 
-  // -------------------- CSV Handlers --------------------
-  const validateCsv = (file: File) => {
-    if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
-      toast.error("Please upload a valid CSV file.");
-      return false;
-    }
-    return true;
-  };
-
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-    if (!validateCsv(file)) return;
-    setCsvFile(file);
-    toast.info(`Selected: ${file.name}`);
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!validateCsv(file)) return;
-    setCsvFile(file);
-    toast.info(`Selected: ${file.name}`);
-  };
-
-  const handleCsvSubmit = () => {
-    if (!csvFile) {
-      toast.warning("Please select a CSV file first.");
-      return;
-    }
-
-    toast.success(`✅ CSV uploaded: ${csvFile.name}`);
-    setShowUploadModal(false);
-    setCsvFile(null);
-    loadAssets();
-  };
 
   const isAdmin = user?.role === "Admin";
 
@@ -170,9 +131,9 @@ export default function Assets() {
             Explore structure of plants, departments, machines & sub-machines.
           </p>
         </div>
-        {/* {isAdmin && (
+        {isAdmin && (
           <Button onClick={() => setShowUploadModal(true)}>Import Bulk</Button>
-        )} */}
+        )}
       </div>
 
       {/* Main Grid */}
@@ -233,51 +194,24 @@ export default function Assets() {
         />
       )}
 
-      {/* CSV Upload Modal */}
-      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
-        <DialogContent className="sm:max-w-md p-6 bg-card rounded-2xl border shadow-xl">
-          <DialogHeader>
-            <DialogTitle>Upload CSV</DialogTitle>
-            <DialogDescription>
-              Drag & drop a CSV file or click to select.
-            </DialogDescription>
-          </DialogHeader>
+     <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+      <DialogContent className="sm:max-w-md p-6 bg-card rounded-2xl border shadow-xl">
+        <DialogHeader>
+          <DialogTitle>Upload CSV</DialogTitle>
+          <DialogDescription>Upload asset hierarchy file</DialogDescription>
+        </DialogHeader>
 
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            className={`w-full h-48 border-2 rounded-lg flex flex-col items-center justify-center p-4 cursor-pointer ${
-              dragOver ? "border-primary bg-primary/10" : "border-border bg-card"
-            }`}
-          >
-            {csvFile ? (
-              <p className="font-medium">{csvFile.name}</p>
-            ) : (
-              <p className="text-muted-foreground">
-                Drag & drop a CSV file or click to select
-              </p>
-            )}
+        <UploadAssetCsv 
+          onClose={() => setShowUploadModal(false)}
+          onSuccess={(file) => {
+            console.log("File received:", file);
+            loadAssets();
+            setShowUploadModal(false);
+          }}
+        />
+      </DialogContent>
+    </Dialog>
 
-            <input
-              type="file"
-              accept=".csv"
-              onChange={handleFileSelect}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-            />
-          </div>
-
-          <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => setShowUploadModal(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCsvSubmit}>Submit CSV</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
