@@ -30,6 +30,7 @@ api.interceptors.response.use(
       } catch (err:any) {
         console.log("❌ Refresh token failed:", err.response?.data);
         localStorage.removeItem("user");
+          window.location.href = "/";
         return Promise.reject(err);
       }
     }
