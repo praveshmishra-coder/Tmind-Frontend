@@ -130,9 +130,9 @@ export default function Devices() {
         prev.filter((d) => d.deviceId !== selectedDevice.deviceId)
       );
       toast.success(`Device "${selectedDevice.name}" deleted successfully!`);
-    } catch (err) {
+    } catch (err:any) {
       console.error("Error deleting device:", err);
-      toast.error("Failed to delete device. Please try again.");
+      toast.error( err?.response?.data?.error || "Failed to delete device. Please try again.");
     } finally {
       setOpenDialog(false);
       setSelectedDevice(null);
