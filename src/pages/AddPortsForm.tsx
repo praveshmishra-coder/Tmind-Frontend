@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Plus, Save, X, Edit2, Trash2, Database, Loader, Settings2, Cable } from "lucide-react";
 import { toast } from "react-toastify";
+import apiAsset from "@/api/axiosAsset";
 
 export type RegisterPayload = {
   registerId?: string;
@@ -46,6 +47,19 @@ const defaultRegister: RegisterPayload = {
   signalBase: 1
 };
 
+interface ExistingMapping {
+  mappingId: string;
+  assetId: string;
+  signalTypeId: string;
+  deviceId: string;
+  devicePortId: string;
+  signalUnit: string;
+  signalName: string;
+  registerAdress: number;
+  createdAt: string;
+  registerId: string; // 
+}
+
 export default function ModbusPortManager() {
   const [slaves, setSlaves] = useState<SlaveData[]>([]);
   const [selectedSlaveIndex, setSelectedSlaveIndex] = useState<number | null>(null);
@@ -55,6 +69,8 @@ export default function ModbusPortManager() {
   const [isSaving, setIsSaving] = useState(false);
   const [signals, setSignals] = useState<Array<{ id: number; name: string }>>([]);
   const params = useParams<{ id?: string }>();
+  const [existingMappings, setExistingMappings] = useState<string[]>([]);
+
   const deviceId = params.id;
 
   const selectedSlave = slaves.find(p => p.slaveIndex === selectedSlaveIndex) ?? null;
@@ -117,16 +133,16 @@ export default function ModbusPortManager() {
   };
   // load slaves (ports) from your API — unchanged from original logic but renamed
 
-const loadSlaves = useCallback(async () => {
-  if (!deviceId) return;
-  try {
-    const res = await api.get(`/devices/${deviceId}/ports`);
-    const arr = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-    const mapped: SlaveData[] = (arr || []).map((p: any) => ({
-      deviceSlaveId: p.deviceSlaveId ?? undefined,
-      slaveIndex: p.slaveIndex,
-      isHealthy: p.isHealthy ?? true,
-      registers: (p.registers || []).map((r: any) => ({
+  const loadSlaves = useCallback(async () => {
+    if (!deviceId) return;
+    try {
+      const res = await api.get(`/devices/${deviceId}/ports`);
+      const arr = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+      const mapped: SlaveDatabuildPayload[] = (arr || []).map((p: any) => ({
+        deviceSlaveId: p.deviceSlaveId ?? undefined,
+        slaveIndex: p.slaveIndex,
+        isHealthy: p.isHealthy ?? true,
+        registers: (p.registers || []).map((r: any) => ({
           registerId: r.registerId ?? undefined,
           registerAddress: r.registerAddress,
           registerLength: r.registerLength,
@@ -153,35 +169,56 @@ const loadSlaves = useCallback(async () => {
             return Number(s.slice(1));
           })()
         }))
-    }));
-   const sorted = [...mapped].sort((a, b) => b.slaveIndex - a.slaveIndex);
+      }));
+      const sorted = [...mapped].sort((a, b) => b.slaveIndex - a.slaveIndex);
 
 
-    // Merge unsaved slaves
-    setSlaves(prev => {
-      const savedIndexes = sorted.map(s => s.slaveIndex);
-      const unsaved = prev.filter(s => !s.deviceSlaveId && !savedIndexes.includes(s.slaveIndex));
-      return [...sorted, ...unsaved].sort((a, b) => b.slaveIndex - a.slaveIndex);
-    });
+      // Merge unsaved slaves
+      setSlaves(prev => {
+        const savedIndexes = sorted.map(s => s.slaveIndex);
+        const unsaved = prev.filter(s => !s.deviceSlaveId && !savedIndexes.includes(s.slaveIndex));
+        return [...sorted, ...unsaved].sort((a, b) => b.slaveIndex - a.slaveIndex);
+      });
 
-    // select first slave if none selected
-    if (slaves.length > 0 && selectedSlaveIndex === null) {
-      setSelectedSlaveIndex(sorted[0]?.slaveIndex ?? null);
+      // select first slave if none selected
+      if (slaves.length > 0 && selectedSlaveIndex === null) {
+        setSelectedSlaveIndex(sorted[0]?.slaveIndex ?? null);
+      }
+    } catch (err) {
+      console.error(err);
     }
-  } catch (err) {
-    console.error(err);
-  }
-}, [deviceId]);
+  }, [deviceId]);
 
 
   useEffect(() => {
     loadSlaves();
+    loadMappingTable();
   }, [deviceId, loadSlaves]);
+  console.log("Existing mappings:", existingMappings);
+  console.log("Slaves:", slaves);
+
+  let loadMappingTable = async () => {
+    try {
+      const mappingsResp = await apiAsset.get<ExistingMapping[]>(`/Mapping`);
+      const mappingsData = Array.isArray(mappingsResp.data) ? mappingsResp.data : [];
+
+      // Filter mappings for this device
+      const mappingsForThisAsset = mappingsData
+        .filter((m) => m.deviceId === deviceId)
+        .map((m) => m.registerId); // extract only deviceId
+
+      setExistingMappings(mappingsForThisAsset); // now array of deviceId strings
+
+    } catch (error) {
+      console.error("Failed to load existing mappings:", error);
+    }
+  };
+
 
   // Fetch available signals for selected slave (example API path). Fallback to default list.
   const fetchSignals = useCallback(async (slaveIndex: number) => {
     if (!deviceId) return;
-   
+
     // fallback signals if backend doesn't provide them:
     setSignals([
       { id: 1, name: "Voltage" },
@@ -204,13 +241,15 @@ const loadSlaves = useCallback(async () => {
     setEditingRegisterIdx(null);
   }, [selectedSlaveIndex, fetchSignals]);
 
-  const validateRegister = (reg: RegisterPayload, currentRegisters: RegisterPayload[], selectedSlave:any) => {
+  const validateRegister = (reg: RegisterPayload, currentRegisters: RegisterPayload[], selectedSlave: any) => {
     if (!Number.isInteger(reg.registerAddress) || reg.registerAddress < 0 || reg.registerAddress > 65535)
       return "Address must be between 0-65535";
     if (!Number.isInteger(reg.registerLength) || reg.registerLength < 1 || reg.registerLength > 10)
       return "Length must be between 1-10";
     if (!reg.dataType?.trim()) return "Data type is required";
     if (!(reg.scale > 0)) return "Scale must be greater than 0";
+
+
 
 
 
@@ -222,40 +261,40 @@ const loadSlaves = useCallback(async () => {
     return null;
   };
 
- const handleSaveRegister = () => {
+  const handleSaveRegister = () => {
     if (!selectedSlave) return;
-    
+
 
     // Use registerForm.registerAddress directly, don't recompute
-    const form = { ...registerForm }; 
+    const form = { ...registerForm };
 
-    const validationError = validateRegister(form, selectedSlave.registers, selectedSlave);
+    const validationError = validateRegister(form, selectedSlave.registers, selectedSlave, existingMappings);
     if (validationError) {
-        toast.error(validationError);
-        return;
+      toast.error(validationError);
+      return;
     }
 
     setSlaves(prev =>
-        prev.map(slave => {
-            if (slave.slaveIndex !== selectedSlave.slaveIndex) return slave;
+      prev.map(slave => {
+        if (slave.slaveIndex !== selectedSlave.slaveIndex) return slave;
 
-            let updatedRegisters: RegisterPayload[];
-            if (editingRegisterIdx !== null) {
-                updatedRegisters = slave.registers.map((r, idx) =>
-                    idx === editingRegisterIdx ? { ...form } : r
-                );
-                toast.success("Register updated locally, please save to persist");
-            } else {
-                updatedRegisters = [...slave.registers, { ...form }];
-                toast.success("Register added locally, please save to persist");
-            }
+        let updatedRegisters: RegisterPayload[];
+        if (editingRegisterIdx !== null) {
+          updatedRegisters = slave.registers.map((r, idx) =>
+            idx === editingRegisterIdx ? { ...form } : r
+          );
+          toast.success("Register updated locally, please save to persist");
+        } else {
+          updatedRegisters = [...slave.registers, { ...form }];
+          toast.success("Register added locally, please save to persist");
+        }
 
-            return { ...slave, registers: updatedRegisters };
-        })
+        return { ...slave, registers: updatedRegisters };
+      })
     );
 
     cancelRegisterForm(); // reset the form safely
-};
+  };
 
 
 
@@ -268,7 +307,7 @@ const loadSlaves = useCallback(async () => {
 
     if (sig && sig.id) {
       const n = sig.id;   // no toLowerCase needed
-      
+
 
       if (n === 1) return "V";
       if (n === 3) return "A";
@@ -299,6 +338,12 @@ const loadSlaves = useCallback(async () => {
 
   const handleDeleteRegister = (idx: number) => {
     if (!selectedSlave) return;
+    const reg = selectedSlave.registers[idx];
+    if (reg.registerId && existingMappings.includes(reg.registerId)) {
+      toast.error("Cannot delete register linked to asset signal. Please unlink first.");
+      return;
+    }
+
     const updated = slaves.map(slave =>
       slave.slaveIndex === selectedSlave.slaveIndex
         ? { ...slave, registers: slave.registers.filter((_, i) => i !== idx) }
@@ -311,6 +356,12 @@ const loadSlaves = useCallback(async () => {
   const handleEditRegister = (idx: number) => {
     if (!selectedSlave) return;
     const reg = selectedSlave.registers[idx];
+
+    if (reg.registerId && existingMappings.includes(reg.registerId)) {
+      toast.error("Cannot edit register linked to asset signal. Please unlink first.");
+      return;
+    }
+
     // decode registerAddress to type+base for form fields if possible
     const s = String(reg.registerAddress).padStart(5, "0");
     const leading = Number(s[0]);
@@ -321,20 +372,20 @@ const loadSlaves = useCallback(async () => {
     setShowRegisterForm(true);
   };
 
-  
+
 
   const handleAddNewSlave = () => {
 
     console.log(slaves.length);
-    
 
-    if(slaves.length >=2){
+
+    if (slaves.length >= 2) {
       toast.error("Maximum of 2 slaves allowed per device");
       return
     }
     const newslaveIndex = slaves.length > 0 ? Math.max(...slaves.map(p => p.slaveIndex)) + 1 : 1;
     const newSlave: SlaveData = { slaveIndex: newslaveIndex, registers: [], isHealthy: true };
-    
+
     setSlaves(prev => [...prev, newSlave]);
     setSelectedSlaveIndex(newslaveIndex);
     setShowRegisterForm(false);
@@ -343,9 +394,11 @@ const loadSlaves = useCallback(async () => {
 
   const buildPayload = (slave: SlaveData) => {
     return {
+      deviceSlaveId: slave.deviceSlaveId,
       slaveIndex: slave.slaveIndex,
       isHealthy: slave.isHealthy,
       registers: slave.registers.map(r => ({
+        registerId: r.registerId,
         registerAddress: r.registerAddress,
         registerLength: r.registerLength,
         dataType: r.dataType,
@@ -366,7 +419,7 @@ const loadSlaves = useCallback(async () => {
       toast.error("Cannot save slave with no registers");
       return;
     }
-    if(payload.registers.length > 5){
+    if (payload.registers.length > 5) {
       toast.error("Maximum of 5 registers allowed per slave");
       return
     }
@@ -465,7 +518,7 @@ const loadSlaves = useCallback(async () => {
           {/* Main Content */}
           <div className="lg:col-span-3">
             {selectedSlave ? (
-              <div className="space-y-6">
+              <div className="space-y-3">
                 {/* Slave Header Card */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -512,6 +565,14 @@ const loadSlaves = useCallback(async () => {
                     </Button>
                   </div>
                 </div>
+                <div className="-mt-8">
+                  <p className="text-sm text-blue-700 bg-blue-100 border border-blue-300 rounded-lg px-4">
+                    The register having status Connected will not be <b>deleted / updated </b>, please unlink them by asset to <b>delete / update</b>
+                  </p>
+                </div>
+
+
+
 
                 {/* Register Form */}
                 {showRegisterForm && (
@@ -635,7 +696,7 @@ const loadSlaves = useCallback(async () => {
                             <SelectItem value="rpm">rpm (RPM)</SelectItem>
                             <SelectItem value="rpm">kPa</SelectItem>
                             <SelectItem value="rpm">mm/s</SelectItem>
-                             <SelectItem value="rpm">L/min</SelectItem>
+                            <SelectItem value="rpm">L/min</SelectItem>
                             <SelectItem value="N·m">N·m (Torque)</SelectItem>
                           </SelectContent>
 
@@ -715,7 +776,7 @@ const loadSlaves = useCallback(async () => {
                             <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Scale</th>
                             <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Unit</th>
                             <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Byte Order</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Word Swap</th>
+
                             <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Status</th>
                             <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">Actions</th>
                           </tr>
@@ -729,10 +790,9 @@ const loadSlaves = useCallback(async () => {
                               <td className="px-6 py-4 text-sm text-slate-700">{reg.scale}</td>
                               <td className="px-6 py-4 text-sm text-slate-700">{reg.unit || "—"}</td>
                               <td className="px-6 py-4 text-sm text-slate-700">{reg.byteOrder || "—"}</td>
-                              <td className="px-6 py-4 text-sm text-slate-700">{reg.wordSwap ? "Yes" : "No"}</td>
-                              <td className="px-6 py-4 text-sm">
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${reg.isHealthy ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : "bg-red-100 text-red-700 border border-red-200"}`}>
-                                  {reg.isHealthy ? "Healthy" : "Unhealthy"}
+                              <td className="px-6 py-4 text-sm w-[7.2rem] text-center">
+                                <span className={`inline-flex items-center w-[7.2rem]   px-4 py-1 rounded-full text-xs font-medium ${reg?.registerId ? existingMappings.includes(reg.registerId) ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : "bg-red-100 text-red-700 border border-red-200" : " bg-slate-100 text-slate-500 border border-slate-200"}`}>
+                                  {reg?.registerId ? existingMappings.includes(reg.registerId) ? "connected" : "not connected" : "loading..."}
                                 </span>
                               </td>
                               <td className="px-6 py-4 text-sm">
@@ -740,6 +800,7 @@ const loadSlaves = useCallback(async () => {
                                   <Button
                                     size="sm"
                                     variant="ghost"
+                                    disabled={reg?.registerId ? existingMappings.includes(reg.registerId) : false}
                                     onClick={() => handleEditRegister(idx)}
                                     className="hover:bg-blue-50 hover:text-blue-600"
                                   >
@@ -748,6 +809,8 @@ const loadSlaves = useCallback(async () => {
                                   <Button
                                     size="sm"
                                     variant="ghost"
+                                    disabled={reg?.registerId ? existingMappings.includes(reg.registerId) : false}
+
                                     onClick={() => handleDeleteRegister(idx)}
                                     className="hover:bg-red-50 hover:text-red-600"
                                   >

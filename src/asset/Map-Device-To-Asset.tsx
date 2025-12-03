@@ -1,5 +1,5 @@
 // src/pages/MapDeviceToAsset.tsx
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,7 +20,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from "@/components/ui/alert-dialog"
+
+
 
 // ---------------------- Types ----------------------
 interface AssetConfig {
@@ -28,10 +30,7 @@ interface AssetConfig {
   signalTypeID: string;
   signalName: string;
   signalUnit: string;
-  // backend has inconsistent names, allow either
-  regsiterAdress?: number | string;
-  registerAdress?: number | string;
-  registerAddress?: number | string;
+  regsiterAdress: number | string;
 }
 
 interface MatchedRegister {
@@ -78,12 +77,10 @@ interface ExistingMapping {
   signalTypeId: string;
   deviceId: string;
   devicePortId: string;
-  signalUnit?: string;
-  signalName?: string;
-  // backend inconsistent naming again
-  registerAdress?: number;
-  registerAddress?: number;
-  createdAt?: string;
+  signalUnit: string;
+  signalName: string;
+  registerAdress: number;
+  createdAt: string;
 }
 
 type Params = { assetid?: string };
@@ -102,25 +99,32 @@ export default function MapDeviceToAsset() {
   const [assetConfigs, setAssetConfigs] = useState<AssetConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [matchResult, setMatchResult] = useState<MatchResponse | null>(null);
-
-  // keep ALL mappings from the server (for "mapped to any asset" checks)
-  const [allMappings, setAllMappings] = useState<ExistingMapping[]>([]);
-  // keep mappings filtered to current asset (for "mapped to this asset" checks & rendering)
-  const [assetMappings, setAssetMappings] = useState<ExistingMapping[]>([]);
-
+  const [existingMappings, setExistingMappings] = useState<ExistingMapping[]>([]);
   const [mappingLoading, setMappingLoading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const [modalState, setModalState] = useState<ModalState>({ open: false });
   const [selectedRegisters, setSelectedRegisters] = useState<Set<number>>(new Set());
-
-  // unlink flow
   const [showConfirm, setShowConfirm] = useState(false);
-  const [deletedMapId, setDeletedMapId] = useState<string | null>(null);
+  const [DeletedMap, setDeletedMap] = useState("");
+  const handleUnlink = () => {
+    setShowConfirm(true);
+  };
+
+  const confirmUnlink = () => {
+    setShowConfirm(false);
+    // Your unlink logic here
+    deleteMapping(DeletedMap);
+  };
 
   // ---------------------- Load Data ----------------------
-  const loadAll = useCallback(async (): Promise<void> => {
+  useEffect(() => {
     if (!assetid) return;
+    void loadAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assetid]);
+
+
+
+  async function loadAll(): Promise<void> {
     setLoading(true);
     try {
       const assetResp = await apiAsset.get<AssetConfig[]>(`/AssetConfig/${assetid}`);
@@ -128,24 +132,18 @@ export default function MapDeviceToAsset() {
 
       if (!assetData || assetData.length === 0) {
         toast.info("First assign the signals, then map the device");
-        navigate(-1);
-        return;
+        return navigate(-1);
       }
       setAssetConfigs(assetData);
 
-      // --- mappings: load ALL mappings, then filter to this asset separately ---
+      // --- mappings: only keep mappings for this asset ---
       const mappingsResp = await apiAsset.get<ExistingMapping[]>(`/Mapping`);
       const mappingsData = Array.isArray(mappingsResp.data) ? mappingsResp.data : [];
-      setAllMappings(mappingsData);
-      const mappingsForThisAsset = mappingsData.filter((m) => String(m.assetId) === String(assetid));
-      setAssetMappings(mappingsForThisAsset);
+      const mappingsForThisAsset = mappingsData.filter((m) => m.assetId === assetid);
+      setExistingMappings(mappingsForThisAsset);
 
-      // Normalize reading register addresses from asset config (handle backend spelling differences)
       const registerAddresses = assetData
-        .map((c) => {
-          const raw = (c as any).regsiterAdress ?? (c as any).registerAdress ?? (c as any).registerAddress;
-          return Number(raw);
-        })
+        .map((c) => Number(c.regsiterAdress))
         .filter((v) => !Number.isNaN(v));
 
       if (registerAddresses.length === 0) {
@@ -161,40 +159,29 @@ export default function MapDeviceToAsset() {
     } finally {
       setLoading(false);
     }
-  }, [assetid, navigate]);
+  }
 
-  useEffect(() => {
-    if (!assetid) return;
-    void loadAll();
-  }, [assetid, loadAll]);
+
 
   // ---------------------- Helpers ----------------------
-  // mappingsSet keyed by `${assetId}|${signalTypeId}` for THIS asset (normalize to strings)
+  // mappingsSet now keyed by `${assetId}|${signalTypeId}`
+  // mappingsSet now keyed by `${assetId}|${signalTypeId}` — normalize to strings
   const mappingsSet = useMemo(() => {
     const s = new Set<string>();
-    for (const m of assetMappings) {
+    for (const m of existingMappings) {
       if (m.assetId && m.signalTypeId) {
         s.add(`${String(m.assetId)}|${String(m.signalTypeId)}`);
       }
     }
     return s;
-  }, [assetMappings]);
+  }, [existingMappings]);
 
-  // mappedSignalTypes: set of all signalTypeIds that are already mapped to any asset
-  const mappedSignalTypes = useMemo(() => {
-    const s = new Set<string>();
-    for (const m of allMappings) {
-      if (m.signalTypeId) s.add(String(m.signalTypeId));
-    }
-    return s;
-  }, [allMappings]);
 
   // Build register -> asset config map BEFORE devicesForRender (fixes reference error)
   const registerToAssetMap = useMemo(() => {
     const map = new Map<number, AssetConfig>();
     for (const a of assetConfigs || []) {
-      const raw = (a as any).regsiterAdress ?? (a as any).registerAdress ?? (a as any).registerAddress;
-      const key = Number(raw);
+      const key = Number(a.regsiterAdress);
       if (!Number.isNaN(key)) map.set(key, a);
     }
     return map;
@@ -208,26 +195,25 @@ export default function MapDeviceToAsset() {
         slave.matchedRegisters?.some((r) => {
           const assetCfg = registerToAssetMap.get(Number(r.registerAddress));
           const signalTypeId = assetCfg?.signalTypeID;
-          // available if there is a matching asset signal AND that asset+signal is not already mapped (for this asset)
-          return !!signalTypeId && !mappingsSet.has(`${String(assetid)}|${String(signalTypeId)}`);
+          // available if there is a matching asset signal AND that asset+signal is not already mapped
+          return !!signalTypeId && !mappingsSet.has(`${assetid}|${signalTypeId}`);
         })
       )
     );
   }, [matchResult, mappingsSet, registerToAssetMap, assetid]);
 
-  // mapping lookup by signalTypeID for rendering asset configs -> connected devices/ports (for current asset)
+  // mapping lookup by signalTypeID for rendering asset configs -> connected devices/ports
   const mappingLookup = useMemo(() => {
     // build device name map from matchResult
     const deviceNameById = new Map<string, string | undefined>();
     (matchResult?.data ?? []).forEach((d) => deviceNameById.set(d.deviceId, d.name));
 
     const map = new Map<string, ExistingMapping[]>();
-    for (const m of assetMappings) {
+    for (const m of existingMappings) {
       if (!m.signalTypeId) continue;
-      const key = String(m.signalTypeId);
-      const arr = map.get(key) ?? [];
+      const arr = map.get(m.signalTypeId) ?? [];
       arr.push(m);
-      map.set(key, arr);
+      map.set(m.signalTypeId, arr);
     }
 
     // attach deviceName for convenience
@@ -240,42 +226,41 @@ export default function MapDeviceToAsset() {
     }
 
     return result;
-  }, [assetMappings, matchResult]);
+  }, [existingMappings, matchResult]);
 
   function prettyUnit(u?: string | null) {
     return u ? ` ${u}` : "";
   }
 
-  // ---------------------- Delete mapping (unlink) ----------------------
-  const handleUnlinkClick = (mappingId: string) => {
-    setDeletedMapId(mappingId);
-    setShowConfirm(true);
-  };
 
-  const confirmUnlink = async () => {
-    setShowConfirm(false);
-    if (!deletedMapId) return;
-    setIsDeleting(true);
-    try {
-      await apiAsset.delete(`/deletemap/${deletedMapId}`);
+
+  let deleteMapping = (mappingId: string) => {
+
+    if (!mappingId) return;
+
+    setMappingLoading(true);
+
+    apiAsset.delete(`/deletemap/${mappingId}`).then((resp) => {
       toast.success("Mapping deleted successfully");
-      // refresh both mappings and matches
-      await loadAll();
-    } catch (err: any) {
+      setMappingLoading(false);
+      setDeletedMap("")
+      void loadAll();
+    }).catch((err) => {
+      setMappingLoading(false);
       console.error(err);
+      setDeletedMap("")
       toast.error("Failed to delete mapping");
-    } finally {
-      setIsDeleting(false);
-      setDeletedMapId(null);
-    }
-  };
+    }).finally(() => {
+      setMappingLoading(false);
+      setDeletedMap("")
+    });
 
-  const cancelUnlink = () => {
-    setShowConfirm(false);
-    setDeletedMapId(null);
-  };
+  }
 
-  // ---------------------- Mapping create ----------------------
+
+
+
+  // ---------------------- Mapping ----------------------
   async function createMappingForSelected(registers: MatchedRegister[], device: MatchedDevice, slave: MatchedSlave) {
     if (!assetid) return;
 
@@ -285,11 +270,11 @@ export default function MapDeviceToAsset() {
       devicePortId: slave.deviceSlaveId,
       registers: registers
         .map((r) => {
-          const signal = registerToAssetMap.get(Number(r.registerAddress));
+          const signal = registerToAssetMap.get(r.registerAddress);
           if (!signal) return null;
-          return { registerAddress: r.registerAddress, signalTypeId: signal.signalTypeID };
+          return { registerId : r.registerId ,registerAddress: r.registerAddress, signalTypeId: signal.signalTypeID };
         })
-        .filter((x): x is { registerAddress: number; signalTypeId: string } => x !== null),
+        .filter((x): x is { registerId : string ;registerAddress: number; signalTypeId: string } => x !== null),
     };
 
     if (payload.registers.length === 0) {
@@ -307,12 +292,13 @@ export default function MapDeviceToAsset() {
       toast.error(err?.response?.data?.message || "Mapping failed");
     } finally {
       setMappingLoading(false);
-      closeModal();
+      setModalState({ open: false });
+      setSelectedRegisters(new Set());
     }
   }
 
   // ---------------------- Modal ----------------------
-  const isModalOpen = Boolean(modalState.open && modalState.slave && modalState.device);
+  const isModalOpen = modalState.open && modalState.slave && modalState.device;
 
   // reset selectedRegisters when opening modal
   useEffect(() => {
@@ -334,10 +320,16 @@ export default function MapDeviceToAsset() {
     createMappingForSelected(regsToMap, modalState.device, modalState.slave);
   }
 
-  function closeModal() {
-    setModalState({ open: false, device: undefined, slave: undefined });
-    setSelectedRegisters(new Set());
-  }
+  const mappedSignalTypes = useMemo(() => {
+    const s = new Set();
+    for (const m of existingMappings) {
+      if (m.signalTypeId) {
+        s.add(String(m.signalTypeId));
+      }
+    }
+    return s;
+  }, [existingMappings]);
+
 
   // ---------------------- Render ----------------------
   return (
@@ -385,9 +377,10 @@ export default function MapDeviceToAsset() {
                             <TableCell>
                               <div className={`p-2 rounded ${isConnected ? "bg-green-300 border  border-green-100" : "bg-transparent"}`}>
                                 <div className="font-medium">{c.signalName}</div>
-                                {/* <div className="text-xs text-slate-500">Addr: {c.regsiterAdress ?? c.registerAdress ?? c.registerAddress}</div> */}
+                                {/* <div className="text-xs text-slate-500">Addr: {c.regsiterAdress}</div> */}
                               </div>
                             </TableCell>
+
 
                             <TableCell>
                               {isConnected ? (
@@ -405,8 +398,8 @@ export default function MapDeviceToAsset() {
                                             size="sm"
                                             variant="ghost"
                                             className="border"
-                                            onClick={() => handleUnlinkClick(mapping.mappingId)}
-                                            disabled={isDeleting}
+                                            onClick={() => { handleUnlink(), setDeletedMap(mapping.mappingId) }}
+                                            disabled={mappingLoading}
                                           >
                                             Un-Map
                                           </Button>
@@ -461,7 +454,7 @@ export default function MapDeviceToAsset() {
                           const slaveFullyMapped = (slave.matchedRegisters ?? []).every((r) => {
                             const assetCfg = registerToAssetMap.get(Number(r.registerAddress));
                             const sigId = assetCfg?.signalTypeID;
-                            return !sigId ? false : mappingsSet.has(`${String(assetid)}|${String(sigId)}`);
+                            return !sigId ? false : mappingsSet.has(`${assetid}|${sigId}`);
                           });
 
                           return (
@@ -504,7 +497,7 @@ export default function MapDeviceToAsset() {
 
       {/* Modal */}
       {isModalOpen && modalState.slave && modalState.device && (
-        <Dialog open={true} onOpenChange={closeModal}>
+        <Dialog open={true} onOpenChange={() => setModalState({ open: false })}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Select Registers to Map</DialogTitle>
@@ -521,12 +514,14 @@ export default function MapDeviceToAsset() {
                   !!signalTypeId &&
                   mappingsSet.has(`${String(assetid)}|${String(signalTypeId)}`);
 
-                // 2️⃣ Mapped for ANY asset (including this one)
-                const mappedToAnyAsset = !!signalTypeId && mappedSignalTypes.has(String(signalTypeId));
+                // 2️⃣ Mapped for ANY OTHER asset
+                const mappedToAnyAsset =
+                  !!signalTypeId && mappedSignalTypes.has(String(signalTypeId));
 
-                // Final condition: disable if mapped to any asset OR no signal type OR unhealthy
+                // Final condition
                 const disableCheckbox =
                   alreadyMapped || mappedToAnyAsset || !signalTypeId || nothealthy;
+
 
                 return (
                   <div
@@ -540,7 +535,7 @@ export default function MapDeviceToAsset() {
                         {matchingAsset?.signalName ?? "No asset signal"} {matchingAsset?.signalUnit ?? ""}
                       </div>
                       <div className={r.isHealthy ? "text-green-500 text-xs" : "text-red-500 text-xs"}>
-                        {r.isHealthy === true ? "Healthy" : "Un-Healthy"}</div>
+                        {r.isHealthy == true ? "Healthy" : "Un-Healthy"}</div>
 
                     </div>
                     <Checkbox
@@ -554,37 +549,27 @@ export default function MapDeviceToAsset() {
             </div>
 
             <DialogFooter>
-              <Button onClick={handleSubmitModal} disabled={selectedRegisters.size === 0 || mappingLoading}>
+              <Button onClick={handleSubmitModal} disabled={selectedRegisters.size === 0}>
                 Map Selected
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
-
       <ConfirmDialog
         open={showConfirm}
         title="Unlink Device Port?"
         description="Are you sure you want to unlink this device port from the asset signal?"
-        onCancel={cancelUnlink}
+        onCancel={() => setShowConfirm(false)}
         onConfirm={confirmUnlink}
       />
     </div>
   );
 }
 
-// ConfirmDialog component (typed)
-type ConfirmDialogProps = {
-  open: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-  title?: string;
-  description?: string;
-};
-
-function ConfirmDialog({ open, onConfirm, onCancel, title, description }: ConfirmDialogProps) {
+function ConfirmDialog({ open, onConfirm, onCancel, title, description }: any) {
   return (
-    <AlertDialog open={open} onOpenChange={(val) => { if (!val) onCancel(); }}>
+    <AlertDialog open={open} onOpenChange={onCancel}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
