@@ -25,6 +25,7 @@ import "react-toastify/dist/ReactToastify.css";
 import DeletedAsset from "./AssetsHierarchy/DeletedAssets";
 import { useEffect, useState } from "react";
 import PageLoader from "./components/Loader";
+import { NotificationProvider } from "./context/NotificationContext";
 
 export default function App() {
   const [showLoader, setShowLoader] = useState(true);
@@ -45,36 +46,39 @@ export default function App() {
 
   return (
     <TooltipProvider>
-      <ToastContainer position="top-right" autoClose={2000} theme="light" />
-      <PageLoader isVisible={showLoader} /> {/* <- mounted at app root so it shows on any full-page load */}
-      <Router>
-        <Routes>
-          <Route path="/" element={<Login />} />
+      <NotificationProvider>
+      
+        <ToastContainer position="top-right" autoClose={2000} theme="light" />
+        <PageLoader isVisible={showLoader} /> {/* <- mounted at app root so it shows on any full-page load */}
+        <Router>
+          <Routes>
+            <Route path="/" element={<Login />} />
 
-          <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/assets" element={<Assets />} />
-            <Route path="/deleted-assets" element={<DeletedAsset />} />
-            <Route path="/devices" element={<Devices />} />
-            <Route path="/devices/add" element={<AddDeviceForm />} />
-            <Route path="/devices/edit/:deviceId" element={<EditDeviceForm />} />
-            <Route path="/devices/config/:deviceId" element={<ConfigureDeviceForm />} />
-            <Route path="/devices/ports" element={<PortSettings />} />
-            <Route path="/devices/ports/:id" element={<AddPortForm />} />
-            <Route path="/devices/upload" element={<UploadCsvModal />} />
-            <Route path="/signals" element={<Signals />} />
-            <Route path="/signal" element={<Signal />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/manage-user" element={<ManageUser />} />
-            <Route path="/deleted-devices" element={<DeletedDevices />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/map-device-to-asset/:assetid" element={<Map_Device_To_Asset />} />
-          </Route>
+            <Route element={<DashboardLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/assets" element={<Assets />} />
+              <Route path="/deleted-assets" element={<DeletedAsset />} />
+              <Route path="/devices" element={<Devices />} />
+              <Route path="/devices/add" element={<AddDeviceForm />} />
+              <Route path="/devices/edit/:deviceId" element={<EditDeviceForm />} />
+              <Route path="/devices/config/:deviceId" element={<ConfigureDeviceForm />} />
+              <Route path="/devices/ports" element={<PortSettings />} />
+              <Route path="/devices/ports/:id" element={<AddPortForm />} />
+              <Route path="/devices/upload" element={<UploadCsvModal />} />
+              <Route path="/signals" element={<Signals />} />
+              <Route path="/signal" element={<Signal />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/manage-user" element={<ManageUser />} />
+              <Route path="/deleted-devices" element={<DeletedDevices />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/map-device-to-asset/:assetid" element={<Map_Device_To_Asset />} />
+            </Route>
 
-          {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
-        </Routes>
-      </Router>
+            {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
+          </Routes>
+        </Router>
+      </NotificationProvider>
     </TooltipProvider>
   );
 }
