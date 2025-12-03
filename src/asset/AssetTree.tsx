@@ -12,6 +12,7 @@ import {
   Trash2,
   Factory,
   Signal,
+  Tv
 } from "lucide-react";
 import {
   Tooltip,
@@ -32,6 +33,7 @@ import levelToType from "./mapBackendAsset";
 import { toast } from "react-toastify";
 import ConfigureAsset from "@/AssetsHierarchy/ConfigureAsset";
 import { Spinner } from "@/components/ui/spinner";
+import { useNavigate } from "react-router-dom";
 
 /* ---------------- Types ---------------- */
 
@@ -153,6 +155,13 @@ const AssetTreeNode: React.FC<NodeProps> = ({
   const hasChildren = asset.childrens.length > 0;
   const isSelected = asset.assetId === selectedId;
   const isExpanded = expandedMap[asset.assetId] ?? false;
+  const navigate = useNavigate();
+
+  const handleOpenAsset = (asset) => {
+    navigate("/signal", {
+      state: { asset },
+    });
+  };
 
   /* ---------- Click on asset name = expand/collapse entire subtree (recursive, local) ---------- */
 
@@ -315,6 +324,21 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent className="bg-white" side="top" align="center">Configure Signals</TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* Show Signal */}
+              {asset.level > 2 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      className="p-1 hover:bg-gray-200 rounded"
+                      onClick={() => handleOpenAsset(asset)}
+                    >
+                      <Tv className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-white" side="top" align="center">Show Signals</TooltipContent>
                 </Tooltip>
               )}
 
