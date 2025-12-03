@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { User, Menu,Bell } from "lucide-react";
+import { User, Menu, Bell } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,45 +28,41 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
   const isLoggedInFromState = location.state?.IsLoggedIn || false;
 
   type Notification = {
-  id: number;
-  title: string;
-  message: string;
-  isRead: boolean;
-};
+    id: number;
+    title: string;
+    message: string;
+    isRead: boolean;
+  };
 
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: 1,
       title: "High Temperature Alert",
       message: "Asset PLC-001 exceeds threshold",
-      isRead: false
+      isRead: false,
     },
     {
       id: 2,
       title: "Device Offline",
       message: "Gateway-03 disconnected",
-      isRead: false
+      isRead: false,
     },
     {
       id: 3,
       title: "Maintenance Due",
       message: "Asset M-204 scheduled today",
-      isRead: false
+      isRead: false,
     },
   ]);
 
   const markAsRead = (id: number) => {
-    setNotifications(prev =>
-      prev.map(n =>
-        n.id === id ? { ...n, isRead: true } : n
-      )
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(n => ({ ...n, isRead: true }))
-    );
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     toast.success("All notifications marked as read");
   };
 
@@ -79,7 +75,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
     }
   });
 
-  // Update user state 
+  // Update user state
   useEffect(() => {
     const handleStorageChange = () => {
       const storedUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -89,15 +85,14 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  
   const handleLogout = async () => {
-      try {
-        await logout();
-        toast.success("Logged out successfully");
-        navigate("/");
-      } catch {
-        toast.error("Logout failed");
-      }
+    try {
+      await logout();
+      toast.success("Logged out successfully");
+      navigate("/");
+    } catch {
+      toast.error("Logout failed");
+    }
   };
 
   const handleLogin = () => {
@@ -107,6 +102,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
   return (
     <header className="sticky top-0 z-40 h-16 flex items-center justify-between px-4 sm:px-6 bg-sidebar backdrop-blur-md border-b border-border shadow-sm transition-colors">
       
+      {/* LEFT SIDE */}
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
@@ -119,84 +115,102 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
 
         <h1 className="text-lg font-semibold text-foreground tracking-tight">
           <span className="lg:hidden">Tmind</span>
-          <span className="hidden lg:inline">Tata Manufacturing Intelligence and Network Devices</span>
+          <span className="hidden lg:inline">
+            Tata Manufacturing Intelligence and Network Devices
+          </span>
         </h1>
       </div>
 
-      
+      {/* RIGHT SIDE */}
       <div className="flex items-center gap-3">
+
+        {/* Theme toggle */}
         <ThemeToggle />
-        <StartTourButton />
 
+        {/* 🌟 ADD ID FOR TOUR: Start Tour button */}
+        <div id="topbar-tour-btn">
+          <StartTourButton />
+        </div>
+
+        {/* 🔔 Notifications */}
         <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            {notifications.filter(n => !n.isRead).length > 0 && (
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs">
-                {notifications.filter(n => !n.isRead).length}
-              </Badge>
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent align="end" className="w-80 bg-card border border-border p-2 shadow-lg rounded-lg">
-
-          {/* Header — Notifications + Mark All Read */}
-          <div className="flex items-center justify-between px-1 pb-1">
-            <DropdownMenuLabel className="text-base font-semibold">
-              Notifications
-            </DropdownMenuLabel>
-
+          <DropdownMenuTrigger asChild>
             <Button
-              variant="outline"
-              size="sm"
-              className="text-xs h-7"
-              onClick={markAllAsRead}
+              id="topbar-notifications"    // <-- ID FOR TOUR
+              variant="ghost"
+              size="icon"
+              className="relative"
             >
-              Mark All Read
+              <Bell className="h-5 w-5" />
+              {notifications.filter((n) => !n.isRead).length > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-destructive text-destructive-foreground text-xs">
+                  {notifications.filter((n) => !n.isRead).length}
+                </Badge>
+              )}
             </Button>
-          </div>
+          </DropdownMenuTrigger>
 
-          <DropdownMenuSeparator />
+          <DropdownMenuContent align="end" className="w-80 bg-card border border-border p-2 shadow-lg rounded-lg">
+            {/* Header */}
+            <div className="flex items-center justify-between px-1 pb-1">
+              <DropdownMenuLabel className="text-base font-semibold">
+                Notifications
+              </DropdownMenuLabel>
 
-          {/* Empty State */}
-          {notifications.length === 0 && (
-            <p className="text-center text-sm text-muted-foreground p-3">
-              No notifications
-            </p>
-          )}
-
-          {/* Notification List */}
-          <div className="max-h-72 overflow-y-auto pr-1 space-y-2">
-            {notifications.map((n) => (
-              <div
-                key={n.id}
-                className={`p-3 rounded-md border transition cursor-pointer ${
-                  n.isRead ? "bg-card/50 border-transparent" : "bg-accent/40 border-accent"
-                }`}
-                onClick={() => markAsRead(n.id)}
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs h-7"
+                onClick={markAllAsRead}
               >
-                <div className="flex items-start justify-between">
-                  <p className="text-sm font-medium">{n.title}</p>
+                Mark All Read
+              </Button>
+            </div>
 
-                  {!n.isRead && (
-                    <span className="h-2 w-2 rounded-full bg-primary mt-1"></span>
-                  )}
+            <DropdownMenuSeparator />
+
+            {/* Empty State */}
+            {notifications.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground p-3">
+                No notifications
+              </p>
+            )}
+
+            {/* Notification List */}
+            <div className="max-h-72 overflow-y-auto pr-1 space-y-2">
+              {notifications.map((n) => (
+                <div
+                  key={n.id}
+                  className={`p-3 rounded-md border transition cursor-pointer ${
+                    n.isRead
+                      ? "bg-card/50 border-transparent"
+                      : "bg-accent/40 border-accent"
+                  }`}
+                  onClick={() => markAsRead(n.id)}
+                >
+                  <div className="flex items-start justify-between">
+                    <p className="text-sm font-medium">{n.title}</p>
+
+                    {!n.isRead && (
+                      <span className="h-2 w-2 rounded-full bg-primary mt-1"></span>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {n.message}
+                  </p>
                 </div>
+              ))}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-                <p className="text-xs text-muted-foreground mt-1">{n.message}</p>
-              </div>
-            ))}
-          </div>
-
-        </DropdownMenuContent>
-      </DropdownMenu>
-              
+        {/* User Profile */}
         {user || isLoggedInFromState ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
+                id="topbar-user"   // <-- ID FOR TOUR
                 variant="ghost"
                 className="flex items-center gap-2 rounded-full px-2 py-1.5 hover:bg-accent/30 transition-colors"
               >

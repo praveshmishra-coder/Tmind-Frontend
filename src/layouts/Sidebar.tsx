@@ -44,23 +44,26 @@ export default function Sidebar() {
       </div>
 
       <nav className="space-y-2">
-        {menuItems.map((item, idx) => (
-          <NavLink
-            key={idx}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex items-center gap-3 p-2 rounded-lg transition cursor-pointer ${
-                isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                  : "hover:bg-sidebar-primary hover:text-sidebar-primary-foreground"
-              }`
-            }
-          >
-            {item.icon}
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
+  {menuItems.map((item, idx) => (
+    <NavLink
+      key={idx}
+      id={`sidebar-${item.label.toLowerCase().replace(/\s+/g, "-")}`}   // <-- ADD THIS
+      to={item.path}
+      className={({ isActive }) =>
+        `flex items-center gap-3 p-2 rounded-lg transition cursor-pointer ${
+          isActive
+            ? "bg-sidebar-primary text-sidebar-primary-foreground"
+            : "hover:bg-sidebar-primary hover:text-sidebar-primary-foreground"
+        }`
+      }
+    >
+      {item.icon}
+      <span>{item.label}</span>
+    </NavLink>
+  ))}
+</nav>
+
+
     </aside>
   );
 }
