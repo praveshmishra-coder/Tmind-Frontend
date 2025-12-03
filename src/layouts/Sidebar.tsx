@@ -33,7 +33,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="sticky top-0 z-40 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col p-4">
+    <aside id="sidebar" className="sticky top-0 z-40 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col p-4">
       <div className="h-12 flex items-center justify-center border-b border-sidebar-border px-4 mb-6">
         <div className="flex items-center gap-2">
           <div className="w-12 h-12 mb-2 bg-primary rounded flex items-center justify-center font-bold text-primary-foreground">

@@ -192,7 +192,7 @@ export default function Devices() {
         </div>
           <div className="flex flex-row gap-2">
           {isAdmin && (
-            <Button
+            <Button id="add-device-btn"
               onClick={() => navigate("/devices/add")}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
@@ -201,7 +201,7 @@ export default function Devices() {
           )}
 
           {isAdmin && (
-            <Button
+            <Button id="import-bulk-btn"
               onClick={() => navigate("/devices/upload")}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
@@ -216,7 +216,7 @@ export default function Devices() {
       {error && <div className="text-center text-destructive">{error}</div>}
 
       {!loading && !error && (
-        <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+        <div id="device-list" className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
           <table className="w-full text-sm text-foreground">
             <thead className="bg-muted/40 text-left">
               <tr>
@@ -241,9 +241,9 @@ export default function Devices() {
                             variant="outline"
                             size="sm"
                             onClick={() => navigate(`/devices/edit/${d.deviceId}`)}
-                            className="flex items-center gap-1"
+                            className="flex items-center gap-1 edit-device-btn"
                           >
-                            <Settings className="h-4 w-4" /> Edit
+                            <Settings className="h-4 w-4 " /> Edit
                           </Button>
 
                           {!d.deviceConfiguration && (
@@ -251,16 +251,16 @@ export default function Devices() {
                               variant="outline"
                               size="sm"
                               onClick={() => navigate(`/devices/config/${d.deviceId}`)}
-                              className="flex items-center gap-1"
+                              className="flex items-center gap-1 config-device-btn"
                             >
-                              <Wrench className="h-4 w-4" /> Config
+                              <Wrench className="h-4 w-4 " /> Config
                             </Button>
                           )}
 
                           <Button
                             variant="outline"
                             size="sm"
-                            className="flex items-center gap-1"
+                            className="flex items-center gap-1 delete-device-btn"
                             onClick={() => {
                               setSelectedDevice(d);
                               setOpenDialog(true);
@@ -277,7 +277,7 @@ export default function Devices() {
                         variant="outline"
                         size="sm"
                         onClick={() => navigate(`/devices/ports/${d.deviceId}`)}
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1 slave-device-btn"
                       >
                         <HdmiPort className="h-4 w-4" /> Slave
                       </Button>

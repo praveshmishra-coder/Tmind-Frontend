@@ -132,14 +132,14 @@ export default function Assets() {
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={() => setShowUploadModal(true)}>Import Bulk</Button>
+          <Button id="import-bulk-btn" onClick={() => setShowUploadModal(true)}>Import Bulk</Button>
         )}
       </div>
 
       {/* Main Grid */}
       <div className="grid grid-cols-12 gap-1 mt-6">
         {/* Asset Tree */}
-        <div className="col-span-12 lg:col-span-5">
+        <div id="asset-tree" className="col-span-12 lg:col-span-5">
           <Card className="h-[550px] flex flex-col">
             <CardContent className="p-2 flex-1 overflow-auto">
               {!loading && (
@@ -160,7 +160,7 @@ export default function Assets() {
         </div>
 
         {/* Asset Details */}
-        <div className="col-span-12 lg:col-span-7">
+        <div id="asset-details" className="col-span-12 lg:col-span-7">
           <Card className="h-[550px] flex flex-col">
             <CardHeader>
               <CardTitle className="text-lg">Asset Details</CardTitle>

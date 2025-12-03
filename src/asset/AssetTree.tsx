@@ -258,6 +258,7 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
+                      id="add-subasset-btn"  
                       className="p-1 hover:bg-gray-200 rounded"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -276,6 +277,7 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
+                    id="edit-asset-btn"
                     className="p-1 hover:bg-gray-200 rounded"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -294,6 +296,7 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
+                      id = "delete-asset-btn"
                       className="p-1 bg-red-100 text-red-600 hover:bg-red-200 rounded"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -462,7 +465,7 @@ export const AssetTree: React.FC<{
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Asset Tree</h2>
           {isAdmin && (
-            <Button size="sm" onClick={() => setShowAddRootModal(true)}>
+            <Button  id="add-root-btn"  size="sm" onClick={() => setShowAddRootModal(true)}>
               <Plus className="h-4 w-4" /> Add Root
             </Button>
           )}
@@ -470,6 +473,7 @@ export const AssetTree: React.FC<{
 
         <Input
           placeholder="Search assets..."
+          id="search-asset"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />

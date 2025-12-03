@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
+import StartTourButton from "./StartTourButton";
 
 interface TopbarProps {
   onToggleSidebar?: () => void;
@@ -125,6 +126,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
       
       <div className="flex items-center gap-3">
         <ThemeToggle />
+        <StartTourButton />
 
         <DropdownMenu>
         <DropdownMenuTrigger asChild>
