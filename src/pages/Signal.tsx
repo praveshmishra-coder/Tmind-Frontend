@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { getAssetHierarchy, getSignalOnAsset } from "@/api/assetApi";
 import { getDeviceById } from "@/api/deviceApi";
-import type { Asset } from "@/api/assetApi"; // type-only import
+import type { Asset } from "@/api/assetApi";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import {
@@ -17,7 +17,6 @@ import {
 } from "recharts";
 
 /* ------------------------------ Helpers ------------------------------ */
-// deterministic pseudo-random generator for stable dummy values
 function mulberry32(a: number) {
   return function () {
     let t = (a += 0x6d2b79f5);
@@ -35,7 +34,6 @@ function hashStringToInt(s: string) {
   return h >>> 0;
 }
 
-// deterministic color per asset
 function colorForAsset(assetId: string) {
   const seed = hashStringToInt(assetId);
   const rnd = mulberry32(seed);
@@ -50,13 +48,14 @@ export default function Signals() {
   const { state } = useLocation();
   const passedAsset = (state as any)?.asset as Asset | undefined | null;
 
-  const [mainAsset] = useState<Asset | null>(passedAsset ?? null);
+  const [mainAsset, setMainAsset] = useState<Asset | null>(passedAsset ?? null);
   const [deviceName, setDeviceName] = useState<string>("Loading...");
   const [allAssets, setAllAssets] = useState<Asset[]>([]);
   const [compareAssetId, setCompareAssetId] = useState<string>("");
 
   const [mainSignals, setMainSignals] = useState<string[]>([]);
   const [compareSignals, setCompareSignals] = useState<string[]>([]);
+  const [compareDeviceName, setCompareDeviceName] = useState<string>("Loading...");
 
   const [timeRange, setTimeRange] = useState<"24h" | "7d" | "today" | "custom">("24h");
   const [customStart, setCustomStart] = useState<Date | null>(null);
@@ -75,14 +74,13 @@ export default function Signals() {
     return out;
   };
 
-  // Load hierarchy
+  /* ---------------- Load asset hierarchy ---------------- */
   useEffect(() => {
     const loadHierarchy = async () => {
       setLoading(true);
       try {
         const hierarchy = await getAssetHierarchy();
-        const flat = flattenAssets(hierarchy || []);
-        setAllAssets(flat);
+        setAllAssets(flattenAssets(hierarchy || []));
       } catch (err) {
         console.error("Failed to load asset hierarchy", err);
         setAllAssets([]);
@@ -93,11 +91,11 @@ export default function Signals() {
     loadHierarchy();
   }, []);
 
-  // Load main asset signals & device
+  /* ---------------- Load main asset signals & device ---------------- */
   useEffect(() => {
     const loadMainSignals = async () => {
       if (!mainAsset) {
-        setDeviceName("No asset");
+        setDeviceName("Not Assigned");
         setMainSignals([]);
         return;
       }
@@ -113,8 +111,7 @@ export default function Signals() {
           if (deviceId) {
             try {
               const device = await getDeviceById(deviceId);
-              const name = device?.name ?? device?.data?.name ?? "Unknown Device";
-              setDeviceName(name);
+              setDeviceName(device?.name ?? device?.data?.name ?? "Unknown Device");
             } catch {
               setDeviceName("Unknown Device");
             }
@@ -134,50 +131,42 @@ export default function Signals() {
     loadMainSignals();
   }, [mainAsset]);
 
-  // Compare asset signals
-const [compareDeviceName, setCompareDeviceName] = useState<string>("Loading...");
-
-useEffect(() => {
-  const loadCompareSignals = async () => {
-    if (!compareAssetId) {
-      setCompareSignals([]);
-      setCompareDeviceName("Not Assigned");
-      return;
-    }
-
-    try {
-      const mappings = await getSignalOnAsset(compareAssetId);
-      const uniqueSignals = Array.from(
-        new Set(mappings.map((m: any) => (m.signalName ?? "").toString()))
-      ).map((s) => s.trim());
-      setCompareSignals(uniqueSignals);
-
-      // Get device assigned to compare asset
-      const deviceId = mappings[0]?.deviceId;
-      if (deviceId) {
-        try {
-          const device = await getDeviceById(deviceId);
-          const name = device?.name ?? device?.data?.name ?? "Unknown Device";
-          setCompareDeviceName(name);
-        } catch {
-          setCompareDeviceName("Unknown Device");
-        }
-      } else {
+  /* ---------------- Compare asset signals & device ---------------- */
+  useEffect(() => {
+    const loadCompareSignals = async () => {
+      if (!compareAssetId) {
+        setCompareSignals([]);
         setCompareDeviceName("Not Assigned");
+        return;
       }
+      try {
+        const mappings = await getSignalOnAsset(compareAssetId);
+        const uniqueSignals = Array.from(
+          new Set(mappings.map((m: any) => (m.signalName ?? "").toString()))
+        ).map((s) => s.trim());
+        setCompareSignals(uniqueSignals);
 
-    } catch (err) {
-      console.error("Failed to fetch compare asset signals", err);
-      setCompareSignals([]);
-      setCompareDeviceName("Error");
-    }
-  };
+        const deviceId = mappings[0]?.deviceId;
+        if (deviceId) {
+          try {
+            const device = await getDeviceById(deviceId);
+            setCompareDeviceName(device?.name ?? device?.data?.name ?? "Unknown Device");
+          } catch {
+            setCompareDeviceName("Unknown Device");
+          }
+        } else {
+          setCompareDeviceName("Not Assigned");
+        }
+      } catch (err) {
+        console.error("Failed to fetch compare asset signals", err);
+        setCompareSignals([]);
+        setCompareDeviceName("Error");
+      }
+    };
+    loadCompareSignals();
+  }, [compareAssetId]);
 
-  loadCompareSignals();
-}, [compareAssetId]);
-
-
-  // Points count per time range
+  /* ---------------- Data & Chart Helpers ---------------- */
   const pointsCount = useMemo(() => {
     if (timeRange === "today") return 12;
     if (timeRange === "7d") return 24;
@@ -185,14 +174,13 @@ useEffect(() => {
     return 10;
   }, [timeRange]);
 
-  // Dummy data generator per asset+signal
   const generateSeries = (assetId: string, assetName: string, signal: string) => {
     const seed = `${assetId}:${signal}`;
     const rnd = mulberry32(hashStringToInt(seed));
     const series: number[] = [];
     for (let i = 0; i < pointsCount; i++) {
-      const base = Math.floor((rnd() * 60) + 10);
-      const variance = Math.floor((Math.sin(i / (pointsCount / 2)) * 10) + (rnd() * 8));
+      const base = Math.floor(rnd() * 60 + 10);
+      const variance = Math.floor(Math.sin(i / (pointsCount / 2)) * 10 + rnd() * 8);
       series.push(Number(Math.max(0, base + variance).toFixed(2)));
     }
     return series;
@@ -203,16 +191,13 @@ useEffect(() => {
     const now = new Date();
     for (let i = pointsCount - 1; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 60 * 1000);
-      const hh = d.getHours().toString().padStart(2, "0");
-      const mm = d.getMinutes().toString().padStart(2, "0");
-      arr.push(`${hh}:${mm}`);
+      arr.push(`${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`);
     }
     return arr;
   }, [pointsCount]);
 
   const chartData = useMemo(() => {
     if (!mainAsset) return [];
-
     const mainSeriesMap: Record<string, number[]> = {};
     mainSignals.forEach(sig => {
       mainSeriesMap[`${mainAsset.name}-${sig}`] = generateSeries(mainAsset.assetId, mainAsset.name, sig);
@@ -228,8 +213,8 @@ useEffect(() => {
 
     return timestamps.map((ts, idx) => {
       const row: any = { timestamp: ts };
-      for (const k of Object.keys(mainSeriesMap)) row[k] = mainSeriesMap[k][idx] ?? null;
-      for (const k of Object.keys(compareSeriesMap)) row[k] = compareSeriesMap[k][idx] ?? null;
+      Object.keys(mainSeriesMap).forEach(k => row[k] = mainSeriesMap[k][idx] ?? null);
+      Object.keys(compareSeriesMap).forEach(k => row[k] = compareSeriesMap[k][idx] ?? null);
       return row;
     });
   }, [mainAsset, mainSignals, compareAssetId, compareSignals, timestamps, allAssets, pointsCount]);
@@ -246,42 +231,41 @@ useEffect(() => {
     <div className="p-4 space-y-6 min-h-screen bg-gray-50 dark:bg-gray-900">
       <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200">Signals</h2>
 
-      {/* Time Range */}
-      <div className="flex flex-col md:flex-row md:items-center gap-4">
-        <div className="flex flex-col">
-          <span className="text-sm text-gray-500 dark:text-gray-400 mb-1">Time Range</span>
-          <select
-            className="w-40 p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={timeRange}
-            onChange={e => setTimeRange(e.target.value as any)}
-          >
-            <option value="24h">Last 24 Hours</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="today">Today</option>
-            <option value="custom">Custom Range</option>
-          </select>
-        </div>
+      <div className="flex flex-col md:flex-row md:items-center gap-4 mt-1">
+  <div className="flex flex-col">
+    <span className="text-sm text-gray-500 dark:text-gray-400 mb-1">Time Range</span>
+    <select
+      className="w-40 p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      value={timeRange}
+      onChange={e => setTimeRange(e.target.value as any)}
+    >
+      <option value="24h">Last 24 Hours</option>
+      <option value="7d">Last 7 Days</option>
+      <option value="today">Today</option>
+      <option value="custom">Custom Range</option>
+    </select>
+  </div>
 
-        {timeRange === "custom" && (
-          <div className="flex items-center gap-2">
-            <DatePicker
-              selected={customStart}
-              onChange={setCustomStart}
-              placeholderText="Start"
-              className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <span className="text-gray-600 dark:text-gray-300">to</span>
-            <DatePicker
-              selected={customEnd}
-              onChange={setCustomEnd}
-              placeholderText="End"
-              className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-        )}
-      </div>
+  {timeRange === "custom" && (
+    <div className="flex flex-row items-center gap-2 mt-1">
+      <DatePicker
+        selected={customStart}
+        onChange={setCustomStart}
+        placeholderText="Start"
+        className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      />
+      <span className="text-gray-600 dark:text-gray-300">to</span>
+      <DatePicker
+        selected={customEnd}
+        onChange={setCustomEnd}
+        placeholderText="End"
+        className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      />
+    </div>
+  )}
+</div>
 
-      {/* Cards */}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Main Asset */}
         <Card className="shadow rounded-lg border border-gray-200 dark:border-gray-700">
@@ -289,79 +273,127 @@ useEffect(() => {
             <CardTitle className="text-gray-800 dark:text-gray-200">Selected Asset</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {mainAsset ? (
-              <>
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="font-semibold text-indigo-600 dark:text-indigo-400">Name: {mainAsset.name}</span>
-                  <span className="font-semibold text-indigo-600 dark:text-indigo-400">Level: {mainAsset.level}</span>
-                </div>
+            {/* Dropdown always visible */}
+            <div>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Select Asset:</span>
+              <select
+                className="w-full p-2 mt-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={mainAsset?.assetId ?? ""}
+                onChange={e => {
+                  const assetId = e.target.value;
+                  const selected = allAssets.find(a => a.assetId === assetId) ?? null;
+                  setMainAsset(selected);
+                }}
+              >
+                <option value="">--Select Asset--</option>
+                {allAssets.map(a => (
+                  <option key={a.assetId} value={a.assetId}>{a.name} (Level {a.level})</option>
+                ))}
+              </select>
+            </div>
 
-                <div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Assigned Device</span>
-                  <div className="font-medium text-gray-800 dark:text-gray-200">{deviceName}</div>
-                </div>
+            {/* Asset info */}
+            {/* {mainAsset && (
+              <div className="flex flex-col gap-2 mt-2 text-sm">
+                <span className="font-semibold text-indigo-600 dark:text-indigo-400">Name: {mainAsset.name}</span>
+                <span className="font-semibold text-indigo-600 dark:text-indigo-400">Level: {mainAsset.level}</span>
+              </div>
+            )} */}
 
-                <div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Signals</span>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {mainSignals.length === 0 ? (
-                      <span className="text-sm text-gray-400">No signals</span>
-                    ) : (
-                      mainSignals.map(s => (
-                        <span key={s} className="px-2 py-1 text-xs rounded-full bg-indigo-100 dark:bg-indigo-600 text-indigo-800 dark:text-white font-medium">{s}</span>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <span className="text-gray-500 dark:text-gray-400 text-sm">No asset passed via router state.</span>
-            )}
+            {/* Time Range & Custom Picker */}
+            
+
+            {/* Device & Signals in one line */}
+<div className="flex flex-wrap items-start gap-6 mt-2">
+  {/* Device */}
+  <div className="flex flex-col">
+    <span className="text-xs text-gray-500 dark:text-gray-400">Assigned Device:</span>
+    <span className="font-medium text-gray-800 dark:text-gray-200">{deviceName}</span>
+  </div>
+
+  {/* Signals */}
+  <div className="flex flex-col">
+    <span className="text-xs text-gray-500 dark:text-gray-400">Signals:</span>
+    {mainSignals.length === 0 ? (
+      <span className="text-sm text-gray-400">No signals</span>
+    ) : (
+      <div className="flex flex-wrap gap-1 mt-1">
+        {mainSignals.map(s => (
+          <span
+            key={s}
+            className="px-2 py-1 text-xs rounded-full bg-indigo-100 dark:bg-indigo-600 text-indigo-800 dark:text-white font-medium"
+          >
+            {s}
+          </span>
+        ))}
+      </div>
+    )}
+  </div>
+</div>
+
+
           </CardContent>
         </Card>
 
         {/* Compare Asset */}
         <Card className="shadow rounded-lg border border-gray-200 dark:border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-gray-800 dark:text-gray-200">Compare Asset</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {loading ? (
-              <span className="text-gray-500 dark:text-gray-400 text-sm">Loading...</span>
-            ) : (
-              <select
-                className="w-full p-2 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={compareAssetId}
-                onChange={e => setCompareAssetId(e.target.value)}
-              >
-                <option value="">None</option>
-                {allAssets.filter(a => a.assetId !== mainAsset?.assetId).map(a => (
-                  <option key={a.assetId} value={a.assetId}>{a.name} (Level {a.level})</option>
-                ))}
-              </select>
-            )}
+  <CardHeader>
+    <CardTitle className="text-gray-800 dark:text-gray-200">Compare Asset</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-3">
+    {/* Select Asset */}
+    <div className="flex flex-col">
+      <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">Select Asset</span>
+      {loading ? (
+        <span className="text-gray-500 dark:text-gray-400 text-sm">Loading...</span>
+      ) : (
+        <select
+          className="w-full p-2 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          value={compareAssetId}
+          onChange={e => setCompareAssetId(e.target.value)}
+        >
+          <option value="">None</option>
+          {allAssets.filter(a => a.assetId !== mainAsset?.assetId).map(a => (
+            <option key={a.assetId} value={a.assetId}>
+              {a.name} (Level {a.level})
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
 
-            {compareAssetId && (
-              <div>
-                <div>
-  <span className="text-xs text-gray-500 dark:text-gray-400">Assigned Device</span>
-  <div className="font-medium text-gray-800 dark:text-gray-200">{compareDeviceName}</div>
-</div>
+    {/* Device and Signals */}
+    {compareAssetId && (
+      <div className="flex flex-wrap items-start gap-6 mt-2">
+        {/* Device */}
+        <div className="flex flex-col">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Assigned Device:</span>
+          <span className="font-medium text-gray-800 dark:text-gray-200">{compareDeviceName}</span>
+        </div>
 
-                <span className="text-xs text-gray-500 dark:text-gray-400">Signals</span>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {compareSignals.length === 0 ? (
-                    <span className="text-sm text-gray-400">No signals</span>
-                  ) : (
-                    compareSignals.map(s => (
-                      <span key={s} className="px-2 py-1 text-xs rounded-full bg-purple-100 dark:bg-purple-600 text-purple-800 dark:text-white font-medium">{s}</span>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Signals */}
+        <div className="flex flex-col">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Signals:</span>
+          {compareSignals.length === 0 ? (
+            <span className="text-sm text-gray-400">No signals</span>
+          ) : (
+            <div className="flex flex-wrap gap-1 mt-1">
+              {compareSignals.map(s => (
+                <span
+                  key={s}
+                  className="px-2 py-1 text-xs rounded-full bg-purple-100 dark:bg-purple-600 text-purple-800 dark:text-white font-medium"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
       </div>
 
       {/* Graph */}
