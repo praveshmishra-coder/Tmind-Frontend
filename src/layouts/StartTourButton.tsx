@@ -4,6 +4,7 @@ import { useTour } from "../hooks/use-tour";
 import { dashboardTour } from "../tour/dashboardTour";
 import { devicesTour } from "../tour/deviceTour";
 import { assetsTour } from "@/tour/assetTour";
+import { userManagementTour } from "@/tour/userManagementTour";
 
 export default function StartTourButton() {
   const location = useLocation();
@@ -16,6 +17,8 @@ export default function StartTourButton() {
       startTour(devicesTour);
     }else if (location.pathname.startsWith("/assets")) {
       startTour(assetsTour);
+    }else if (location.pathname.startsWith("/manage-user")) {
+      startTour(userManagementTour);
     } else {
       alert("No tour available on this page yet!");
     }
