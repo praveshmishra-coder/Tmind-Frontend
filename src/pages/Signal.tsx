@@ -257,19 +257,19 @@ export default function Signals() {
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" className="w-40 justify-start text-left">
+          <Button variant="outline" className="w-56 justify-start text-left">
             <CalendarIcon className="mr-2 h-4 w-4" />
             <span>{value ? format(value, "PPP") : placeholder ?? "Pick date"}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
-            mode="single"
-            selected={value ?? undefined}
-            onSelect={(d) => onChange(d ?? null)}
-            max={today}
-            initialFocus
-          />
+          mode="single"
+          selected={value ?? undefined}
+          onSelect={(d) => onChange(d ?? null)}
+          disabled={(date) => date > today}  
+          initialFocus
+        />
         </PopoverContent>
       </Popover>
     );

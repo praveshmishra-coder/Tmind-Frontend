@@ -10,12 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationDrawer } from "./NotificationDrawer";
-import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import { useNotifications } from "@/context/NotificationContext";
 
 interface TopbarProps {
