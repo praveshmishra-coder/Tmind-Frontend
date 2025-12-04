@@ -458,8 +458,23 @@ import { getAssetHierarchy, getSignalOnAsset } from "@/api/assetApi";
 import { getDeviceById } from "@/api/deviceApi";
 import { getTelemetryData, TimeRange } from "@/api/telemetryApi";
 import type { Asset } from "@/api/assetApi";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+
+import { Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+
 import {
   LineChart,
   Line,
@@ -498,7 +513,8 @@ function colorForAsset(assetId: string) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-/* ---------------------------- Component ---------------------------- */
+/* ---------------------------- Types & Component ---------------------------- */
+
 export default function Signals() {
   const { state } = useLocation();
   const passedAsset = (state as any)?.asset as Asset | undefined | null;
@@ -731,6 +747,39 @@ export default function Signals() {
     if (!obj) return [];
     return compareSignals.map(s => `${obj.name}-${s.signalName}`);
   }, [compareAssetId, compareSignals, allAssets]);
+
+  /* ---------------------- Small Shadcn Single Date Picker ---------------------- */
+  const today = new Date();
+
+  function SingleDatePicker({
+    value,
+    onChange,
+    placeholder,
+  }: {
+    value: Date | null;
+    onChange: (d: Date | null) => void;
+    placeholder?: string;
+  }) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="w-56 justify-start text-left">
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            <span>{value ? format(value, "PPP") : placeholder ?? "Pick date"}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+          mode="single"
+          selected={value ?? undefined}
+          onSelect={(d) => onChange(d ?? null)}
+          disabled={(date) => date > today}  
+          initialFocus
+        />
+        </PopoverContent>
+      </Popover>
+    );
+  }
 
   /* ---------------------------- JSX ---------------------------- */
   return (

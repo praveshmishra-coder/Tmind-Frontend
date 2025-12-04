@@ -37,7 +37,7 @@ export default function StartTourButton() {
   };
 
   return (
-    <Button onClick={handleStartTour} variant="outline" className="text-sm">
+    <Button onClick={handleStartTour} variant="outline" className="text-sm ">
       Start Tour
     </Button>
   );
