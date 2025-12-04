@@ -1,8 +1,9 @@
 // src/hooks/use-tour.ts
-import { driver } from "driver.js"; // only import the runtime function
+import * as DriverJS from "driver.js";
 import "driver.js/dist/driver.css";
 
-// TypeScript type for tour steps
+const Driver = DriverJS.default || DriverJS; 
+
 export type DriveStep = {
   element?: string | Element | (() => Element);
   popover?: {
@@ -12,25 +13,19 @@ export type DriveStep = {
 };
 
 export const useTour = () => {
-  const startTour = (steps: DriveStep[]) => {
-    // Filter dynamically: only include elements that exist in the DOM
+  const startTour = (steps: DriveStep[], autoDelayMs: number = 2500) => {
+    // Filter steps dynamically
     const filteredSteps = steps.filter(step => {
       if (!step.element) return false;
-
-      if (typeof step.element === "string") {
-        return !!document.querySelector(step.element);
-      }
-      if (typeof step.element === "function") {
-        return !!step.element();
-      }
+      if (typeof step.element === "string") return !!document.querySelector(step.element);
+      if (typeof step.element === "function") return !!step.element();
       if (step.element instanceof Element) return true;
-
       return false;
     });
 
-    if (!filteredSteps.length) return; // nothing to show
+    if (!filteredSteps.length) return;
 
-    const tour = driver({
+    const tour = Driver({
       animate: true,
       showProgress: true,
       overlayOpacity: 0.6,
@@ -38,7 +33,20 @@ export const useTour = () => {
       steps: filteredSteps,
     });
 
+    // Auto-start with optional autoDelay between steps
     tour.drive();
+
+    let stepIndex = 0;
+
+    const nextStep = () => {
+      stepIndex++;
+      if (stepIndex < filteredSteps.length) {
+        setTimeout(() => tour.moveNext(), autoDelayMs);
+        nextStep();
+      }
+    };
+
+    nextStep();
   };
 
   return { startTour };
