@@ -7,7 +7,10 @@ import autoTable from "jspdf-autotable";
 import { getAssetHierarchy, getSignalOnAsset } from "@/api/assetApi";
 import { getDeviceById } from "@/api/deviceApi";
 import type { Asset } from "@/api/assetApi";
-import { Download, FileText, FileDown } from "lucide-react";
+import { CalendarIcon, FileText, FileDown } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format } from "date-fns"
 
 // Dummy report generator
 const generateReportData = (asset: Asset, deviceName: string, date: string) => {
@@ -142,7 +145,7 @@ export default function DailySignalReport() {
     if (!selectedDate) return toast.error("Select a date!");
     if (!selectedAssetId) return toast.error("Select an asset!");
     const asset = allAssets.find((a) => a.assetId === selectedAssetId)!;
-    setReportData(generateReportData(asset, deviceName, selectedDate));
+    setReportData(generateReportData(asset, deviceName, selectedDate).reverse());
     toast.success("Report generated!");
   };
 
@@ -162,16 +165,39 @@ export default function DailySignalReport() {
           <div className="bg-card text-card-foreground border border-border rounded-xl flex flex-col h-[570px] shadow-lg">
             <div className="p-4 border-b border-border font-semibold text-lg bg-primary/10">Select Parameters</div>
             <div className="flex-1 overflow-auto p-4 space-y-4">
-              {/* Date */}
-              <div>
-                <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Date</label>
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  max={today}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full border border-border rounded-md p-2"
-                />
+        <div className="flex flex-col gap-1">
+          <label className="text-sm text-gray-600 dark:text-gray-300">Date</label>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    className="
+                      w-full flex items-center justify-between 
+                      border border-border rounded-md p-2 
+                      bg-background hover:border-primary transition
+                    "
+                  >
+                    <span>
+                      {selectedDate ? format(new Date(selectedDate), "PPP") : "Select Date"}
+                    </span>
+
+                    {/* BIG Calendar Icon */}
+                    <CalendarIcon className="w-6 h-6 text-primary" />
+                  </button>
+                </PopoverTrigger>
+
+                <PopoverContent className="w-auto bg-background p-0">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate ? new Date(selectedDate) : undefined}
+                    onSelect={(date) => {
+                      if (date) setSelectedDate(format(date, "yyyy-MM-dd"));
+                    }}
+                    disabled={(date) => date > new Date()}
+                    className="rounded-md border"
+                  />
+                </PopoverContent>
+              </Popover>
               </div>
 
               {/* Asset Dropdown */}
