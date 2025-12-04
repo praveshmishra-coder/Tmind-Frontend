@@ -1,91 +1,63 @@
-import React, { useState, type DragEvent } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify"; // import toast notification
+import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import Papa from "papaparse";
 
-export default function UploadDeviceCsv() {
-  const [file, setFile] = useState<File | null>(null);
-  const [dragOver, setDragOver] = useState(false);
+export default function CsvUploadPreview() {
+  const [rows, setRows] = useState([]);
+  const [headers, setHeaders] = useState([]);
 
-  const navigate = useNavigate();
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  // Handle file drop
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setDragOver(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile.type === "text/csv") {
-        setFile(droppedFile);
-      } else {
-        toast.error("Please upload a CSV file only.");
-      }
-    }
-  };
-
-  // Handle file select via input
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const selectedFile = e.target.files[0];
-      if (selectedFile.type === "text/csv") {
-        setFile(selectedFile);
-      } else {
-        toast.error("Please upload a CSV file only.");
-      }
-    }
-  };
-
-  // Handle submit (frontend only)
-  const handleSubmit = () => {
-    if (!file) {
-      toast.warning("Please select a CSV file first.");
-      return;
-    }
-
-    console.log("CSV file submitted:", file.name);
-    toast.success(`CSV file "${file.name}" submitted!`);
-
-    // Reset and navigate
-    setFile(null);
-    navigate("/devices");
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (result) => {
+        setHeaders(Object.keys(result.data[0] || {}));
+        setRows(result.data);
+      },
+    });
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-6">
-      <h1 className="text-2xl font-semibold mb-4">Upload CSV</h1>
+    <div className="p-6 space-y-4">
+      <Card className="shadow-lg rounded-2xl p-4">
+        <CardContent className="space-y-4">
+          <h2 className="text-xl font-semibold">Upload Device Import CSV</h2>
+          <input type="file" accept=".csv" onChange={handleFile} />
+        </CardContent>
+      </Card>
 
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={handleDrop}
-        className={`w-full max-w-md h-48 border-2 rounded-lg flex flex-col items-center justify-center p-4 cursor-pointer transition-colors relative ${
-          dragOver ? "border-primary bg-primary/10" : "border-border bg-card"
-        }`}
-      >
-        {file ? (
-          <p className="text-center font-medium">{file.name}</p>
-        ) : (
-          <p className="text-center text-muted-foreground">
-            Drag & drop a CSV file here or click to select
-          </p>
-        )}
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleFileSelect}
-          className="absolute inset-0 opacity-0 cursor-pointer"
-        />
-      </div>
-
-      <Button
-        onClick={handleSubmit}
-        className="mt-4 w-full max-w-md bg-primary text-primary-foreground hover:bg-primary/90"
-      >
-        Submit CSV
-      </Button>
+      {rows.length > 0 && (
+        <Card className="rounded-2xl shadow-lg">
+          <CardContent className="p-4">
+            <h3 className="text-lg font-semibold mb-3">Preview Data</h3>
+            <div className="overflow-auto max-h-[400px] border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {headers.map((h, i) => (
+                      <TableHead key={i}>{h}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((row, rowIndex) => (
+                    <TableRow key={rowIndex}>
+                      {headers.map((h, cellIndex) => (
+                        <TableCell key={cellIndex}>{row[h]}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
