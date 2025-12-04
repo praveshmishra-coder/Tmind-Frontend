@@ -131,6 +131,7 @@ export default function UserManagement() {
         <div className="relative w-full sm:w-1/3">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
+            id="user-search"
             type="text"
             placeholder="Search users..."
             value={searchTerm}
@@ -141,7 +142,7 @@ export default function UserManagement() {
 
         {/* Only Admin can download */}
         {isAdmin && (
-          <Button
+          <Button id="download-csv-btn"
             onClick={() =>
               downloadCSV(
                 filteredUsers.map((u) => ({
@@ -171,7 +172,7 @@ export default function UserManagement() {
       {/* Users Table */}
       {!loading && !error && (
         <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-          <table className="w-full text-sm text-foreground">
+          <table  id="user-table" className="w-full text-sm text-foreground">
             <thead className="bg-muted/40 text-left">
               <tr>
                 <th className="p-4 font-semibold">Username</th>
@@ -191,14 +192,14 @@ export default function UserManagement() {
                     <td className="p-4 font-medium">{u.username}</td>
                     <td className="p-4">{u.email}</td>
 
-                    <td className="p-4">
+                    <td className="p-4 ">
                       {isAdmin ? (
                         <select
                           value={u.role}
                           onChange={(e) =>
                             updateRole(u, e.target.value)
                           }
-                          className="border border-border rounded-md bg-background px-2 py-1"
+                          className="border border-border rounded-md bg-background px-2 py-1 role-dropdown"
                         >
                           <option>User</option>
                           <option>Engineer</option>
@@ -232,7 +233,7 @@ export default function UserManagement() {
                         setSelectedUser(u);
                         setShowDeleteDialog(true);
                       }}
-                      className="flex items-center gap-1"
+                      className="flex items-center gap-1 delete-user-btn"
                     >
                       <Trash2 className="h-4 w-4" /> Delete
                     </Button>

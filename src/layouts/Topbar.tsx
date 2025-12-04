@@ -46,7 +46,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
     }
   });
 
-  // Update user state 
+  // Update user state
   useEffect(() => {
     const handleStorageChange = () => {
       const storedUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -55,7 +55,6 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
-
 
   const handleLogout = async () => {
     try {
@@ -76,7 +75,6 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
 
   return (
     <header className="sticky top-0 z-40 h-16 flex items-center justify-between px-4 sm:px-6 bg-sidebar backdrop-blur-md border-b border-border shadow-sm transition-colors">
-
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
@@ -89,12 +87,15 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
 
         <h1 className="text-lg font-semibold text-foreground tracking-tight">
           <span className="lg:hidden">Tmind</span>
-          <span className="hidden lg:inline">Tata Manufacturing Intelligence and Network Devices</span>
+          <span className="hidden lg:inline">
+            Tata Manufacturing Intelligence and Network Devices
+          </span>
         </h1>
       </div>
 
-
       <div className="flex items-center gap-3">
+
+        {/* Theme toggle */}
         <ThemeToggle />
 
         <Button
@@ -116,6 +117,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
+                id="topbar-user"   // <-- ID FOR TOUR
                 variant="ghost"
                 className="flex items-center gap-2 rounded-full px-2 py-1.5 hover:bg-accent/30 transition-colors"
               >

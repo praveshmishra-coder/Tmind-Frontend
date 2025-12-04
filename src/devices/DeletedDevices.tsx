@@ -85,6 +85,7 @@ export default function DeletedDevices() {
         <div className="relative w-full sm:w-1/3">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
+            id="deleted-device-search"
             type="text"
             placeholder="Search devices..."
             value={searchTerm}
@@ -105,7 +106,7 @@ export default function DeletedDevices() {
       {/* Device Table */}
       {!loading && !error && (
         <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-          <table className="w-full text-sm text-foreground">
+          <table id="deleted-device-table" className="w-full text-sm text-foreground">
             <thead className="bg-muted/40 text-left">
               <tr>
                 <th className="p-4 font-semibold">Device Name</th>
@@ -127,7 +128,7 @@ export default function DeletedDevices() {
                         variant="secondary"
                         size="sm"
                         onClick={() => retriveDevice(d.deviceId)}
-                        className="flex items-center gap-1"
+                        className="retrieve-device-btn flex items-center gap-1"
                       >
                         <RotateCcw className="h-4 w-4" /> Retrieve
                       </Button>
