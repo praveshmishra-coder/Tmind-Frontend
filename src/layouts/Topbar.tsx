@@ -15,6 +15,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationDrawer } from "./NotificationDrawer";
 import { useNotifications } from "@/context/NotificationContext";
+import StartTourButton from "./StartTourButton";
 
 interface TopbarProps {
   onToggleSidebar?: () => void;
@@ -95,6 +96,10 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
 
         {/* Theme toggle */}
         <ThemeToggle />
+
+          <div id="topbar-tour-btn">
+          <StartTourButton/>
+        </div>
 
         <Button
           variant="ghost"
