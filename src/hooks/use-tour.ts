@@ -1,8 +1,6 @@
 // src/hooks/use-tour.ts
-import * as DriverJS from "driver.js";
+import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
-
-const Driver = DriverJS.default || DriverJS; 
 
 export type DriveStep = {
   element?: string | Element | (() => Element);
@@ -14,39 +12,50 @@ export type DriveStep = {
 
 export const useTour = () => {
   const startTour = (steps: DriveStep[], autoDelayMs: number = 2500) => {
-    // Filter steps dynamically
-    const filteredSteps = steps.filter(step => {
+    // Filter only those steps where the element exists
+    const filteredSteps = steps.filter((step) => {
       if (!step.element) return false;
-      if (typeof step.element === "string") return !!document.querySelector(step.element);
-      if (typeof step.element === "function") return !!step.element();
+
+      if (typeof step.element === "string") {
+        return !!document.querySelector(step.element);
+      }
+
+      if (typeof step.element === "function") {
+        return !!step.element();
+      }
+
       if (step.element instanceof Element) return true;
+
       return false;
     });
 
     if (!filteredSteps.length) return;
 
-    const tour = Driver({
+    // Driver.js v1+ API
+    const tour = driver({
       animate: true,
       showProgress: true,
       overlayOpacity: 0.6,
-      allowClose: true,
       steps: filteredSteps,
+      allowClose: true
     });
 
-    // Auto-start with optional autoDelay between steps
+    // Start tour
     tour.drive();
 
-    let stepIndex = 0;
+    // Auto delay through steps (optional)
+    if (autoDelayMs > 0) {
+      let index = 0;
 
-    const nextStep = () => {
-      stepIndex++;
-      if (stepIndex < filteredSteps.length) {
-        setTimeout(() => tour.moveNext(), autoDelayMs);
-        nextStep();
-      }
-    };
-
-    nextStep();
+      const interval = setInterval(() => {
+        index++;
+        if (index < filteredSteps.length) {
+          tour.moveNext();
+        } else {
+          clearInterval(interval);
+        }
+      }, autoDelayMs);
+    }
   };
 
   return { startTour };

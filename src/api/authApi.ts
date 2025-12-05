@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://localhost:7023/api",
+  baseURL: "http://localhost:5000/auth",
   withCredentials: true,
 });
 
@@ -14,10 +14,12 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Use the same api instance to refresh token
-        await api.post("/User/refresh-token", {});
+        const response = await axios.post(
+        "http://localhost:5000/auth/User/refresh-token",
+          {},
+          { withCredentials: true }
+          );
 
-        // Retry the original request
         return api(originalRequest);
       } catch (err) {
         console.log("Refresh token failed, redirecting to login");
