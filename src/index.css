@@ -45,3 +45,17 @@ body {
   @apply bg-card/40 backdrop-blur-md border border-border/40 rounded-lg shadow-md;
 }
 
+/* make overlay visually transparent but keep pointer events (so click-to-close still works) */
+div[data-aria-hidden="true"][data-state="open"] {
+  background-color: transparent !important;
+}
+
+/* OR — be extra-specific to avoid colliding with other elements */
+div[aria-hidden="true"][data-state="open"].fixed.inset-0.z-50 {
+  background-color: transparent !important;
+}
+
+/* If you want the overlay to NOT intercept clicks (clicks pass through to page) — NOT recommended if you rely on click-outside to close: */
+div[data-aria-hidden="true"][data-state="open"] {
+  pointer-events: none !important; /* disables click-to-close */
+}

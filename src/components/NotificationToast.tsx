@@ -68,7 +68,6 @@ export default function NotificationToast({ data }: { data: Payload }) {
           <div className="mt-3">
             <div className="flex items-center justify-between text-xs text-gray-600">
               <div>Deviation: <span className="font-medium text-gray-800">{fmt(data.percent)}%</span></div>
-              <div className="text-right">Δ {Math.abs(data.value - (data.status === "HIGH" ? data.max : data.min))}</div>
             </div>
 
             {/* Progress bar */}

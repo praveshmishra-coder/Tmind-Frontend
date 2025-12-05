@@ -9,6 +9,7 @@ import {
     SheetTitle,
     SheetDescription,
     SheetClose,
+    SheetOverlay,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
@@ -49,6 +50,8 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ open, on
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             {/* make the drawer a column so header stays on top and content scrolls */}
+            <SheetOverlay className="bg-transparent" />
+
             <SheetContent side="right" className="w-96 p-0 flex flex-col max-h-screen">
                 <SheetHeader className="p-4 border-b flex justify-between items-center">
                     <div>
@@ -89,7 +92,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ open, on
                                     <div className="w-1 rounded-l-md mr-3 bg-green-500" aria-hidden />
 
                                     <div className="flex-1">
-                                            <div className="text-xs text-gray-600 text-right">{fmtDate(data.to)}</div>
+                                        <div className="text-xs text-gray-600 text-right">{fmtDate(data.to)}</div>
                                         <div className="flex items-center justify-between">
                                             <div className="text-sm font-semibold">
                                                 {title}
@@ -106,10 +109,10 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ open, on
                                             <div>From: <div className="font-medium text-gray-800">{fmtDate(data.from)}</div></div>
                                             <div>To: <div className="font-medium text-gray-800">{fmtDate(data.to)}</div></div>
                                             <div>Duration: <div className="font-medium text-gray-800">{Math.round(durationSeconds)}s</div></div>
-                                            
+
                                         </div>
 
-                                        
+
 
                                         <div className="mt-3 flex items-center justify-between text-xs text-gray-600">
                                             <div>Min: <span className="font-medium text-gray-800">{fmt(data.min)}</span></div>
@@ -136,7 +139,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ open, on
                                     <div className={`w-1 rounded-l-md mr-3 ${isHigh ? "bg-red-500" : isLow ? "bg-blue-500" : "bg-gray-400"}`} aria-hidden />
 
                                     <div className="flex-1">
-                                            <div className="text-xs text-right text-gray-600">{fmtDate(data.timestamp ?? data.time ?? notif.createdAt)}</div>
+                                        <div className="text-xs text-right text-gray-600">{fmtDate(data.timestamp ?? data.time ?? notif.createdAt)}</div>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-sm">{isHigh ? "🔔" : isLow ? "ℹ️" : "⚠️"}</span>
@@ -161,17 +164,16 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ open, on
 
                                         <div className="mt-3">
                                             <div className="flex items-center justify-between text-xs text-gray-600">
-                                                <div>Deviation: <span className="font-medium text-gray-800">{fmt(percent)}%</span></div>
                                                 <div className="text-right">Δ {fmt(Math.abs(data.value - (data.status === "HIGH" ? data.max : data.min)))}</div>
                                             </div>
 
-                                           
+
 
                                             <div className="mt-2 text-xs text-gray-500 flex items-center justify-between">
                                                 <div>Min: <span className="font-medium text-gray-800 ml-1">{fmt(data.min)}</span></div>
                                                 <div>Max: <span className="font-medium text-gray-800 ml-1">{fmt(data.max)}</span></div>
                                             </div>
-                                             <div className="mt-1 h-1 -ml-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div className="mt-1 h-1 -ml-2 bg-gray-200 rounded-full overflow-hidden">
                                                 <div
                                                     className={`h-full rounded-full ${isHigh ? "bg-red-500" : isLow ? "bg-blue-500" : "bg-gray-500"}`}
                                                 />
