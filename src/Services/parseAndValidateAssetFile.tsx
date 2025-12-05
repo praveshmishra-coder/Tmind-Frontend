@@ -1,8 +1,8 @@
 import * as XLSX from "xlsx";
 
- export interface AssetUploadRow {
+export interface AssetUploadRow {
   Name: string;
-  ParentName?: string;
+  ParentName?: string | null;
   Level: number;
 }
 
@@ -32,21 +32,32 @@ export const parseAndValidateAssetFile = (file: File): Promise<ValidationResult>
         rows.forEach((row, index) => {
           const errors: string[] = [];
 
-          if (!row.Name || row.Name.trim() === "") {
-            errors.push("Name is required");
-          } else if (!/^[A-Za-z0-9 _.-]+$/.test(row.Name)) {
-            errors.push("Name contains invalid characters");
+          // Trim values
+          row.Name = (row.Name || "").toString().trim();
+          row.ParentName = row.ParentName ? row.ParentName.toString().trim() : null;
+
+          // Convert empty ParentName to null
+          if (!row.ParentName) {
+            row.ParentName = null;
           }
 
-          if (row.Level === undefined || row.Level === null) {
+          // Validate Name
+          if (!row.Name) {
+            errors.push("Name is required");
+          } else if (!/^[A-Za-z0-9_.-]+$/.test(row.Name)) {
+            errors.push("Name contains invalid characters or spaces");
+          }
+
+          // Validate Level
+          if (row.Level === undefined || row.Level === null || isNaN(Number(row.Level))) {
             errors.push("Level is required");
           } else if (row.Level < 0 || row.Level > 5) {
             errors.push("Level must be between 0 and 5");
           }
 
-          // Optional: parent name validation
-          if (row.ParentName && row.ParentName.trim() === "") {
-            errors.push("ParentName cannot be empty string");
+          // Validate ParentName (if present)
+          if (row.ParentName && !/^[A-Za-z0-9_.-]+$/.test(row.ParentName)) {
+            errors.push("ParentName contains invalid characters or spaces");
           }
 
           if (errors.length > 0) {
