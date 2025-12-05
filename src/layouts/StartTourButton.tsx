@@ -14,7 +14,7 @@ import { reportTour } from "../tour/reportTour";
 
 import { getTourStatus, markTourCompleted, getCurrentUser } from "@/api/userApi";
 
-export default function StartTourButton() {
+export default function StartTourButton({ onStart }: { onStart?: () => void }) {
   const location = useLocation();
   const { startTour } = useTour();
 
@@ -35,7 +35,7 @@ export default function StartTourButton() {
       const steps = getTourSteps();
       if (!steps) return;
 
-      await getCurrentUser(); // ensures auth
+      await getCurrentUser();
 
       const tourStatus = await getTourStatus();
       console.log("tour status →", tourStatus);
@@ -48,7 +48,7 @@ export default function StartTourButton() {
         setTimeout(async () => {
           await markTourCompleted();
           console.log("Tour marked completed.");
-        }, steps.length * 2500 + 1000);
+        }, steps.length * 1500 + 1000);
       }
     } catch (err) {
       console.warn("Tour auto-start failed:", err);
@@ -62,6 +62,9 @@ export default function StartTourButton() {
   const handleStartTour = () => {
     const steps = getTourSteps();
     if (!steps) return alert("No tour available on this page yet!");
+
+    if (onStart) onStart(); // 👈 CLOSE POPUP HERE
+
     startTour(steps);
   };
 
