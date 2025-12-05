@@ -1,130 +1,287 @@
-import React, { useState, type DragEvent } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
-import { toast } from "react-toastify";
-import { parseAndValidateAssetFile, ValidationResult } from "@/Services/parseAndValidateAssetFile";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import apiAsset from "@/api/axiosAsset";
 
-export default function UploadAssetCsv({
-  onClose,
-  onSuccess,
-}: {
-  onClose: () => void;
-  onSuccess: (file: File) => void;
-}) {
-  const [file, setFile] = useState<File | null>(null);
+type ParsedRow = Record<string, unknown> & { __rowNum?: number };
+
+type Asset = {
+  assetName: string;
+  parentName?: string | null;
+  level: number;
+  sourceRows: number[];
+};
+
+type FieldError = {
+  assetIndex: number;
+  field: "assetName" | "parentName" | "level";
+  messages: string[];
+  rowInfo?: string;
+};
+type ApiResposne={
+  addedAssets:[],
+  skippedAssets:[]
+}
+
+const ASSET_NAME_RE = /^[A-Za-z0-9 _-]+$/;
+
+export default function AssetBulkUpload() {
+  const [rows, setRows] = useState<ParsedRow[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [globalErrors, setGlobalErrors] = useState<string[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<FieldError[]>([]);
   const [dragOver, setDragOver] = useState(false);
-  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [apiResposne,setApiResponse]=useState<ApiResposne>();
 
-  // Handle drag-and-drop
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setDragOver(false);
-    const f = e.dataTransfer.files?.[0];
-    if (!f) return;
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    if (!f.name.endsWith(".csv") && !f.name.endsWith(".xlsx")) {
-      toast.error("Please upload a CSV or Excel file only!");
+  const normalizeKey = (k: string | undefined) => String(k || "").replace(/\s+/g, "").toLowerCase();
+
+  function dedupAndMap(parsedRows: ParsedRow[]): Asset[] {
+    const map = new Map<string, Asset>();
+
+    for (const r of parsedRows) {
+      const normalized: Record<string, unknown> = {};
+      for (const k of Object.keys(r)) normalized[normalizeKey(k)] = r[k];
+
+      const assetName = String(normalized["assetname"] ?? "").trim();
+      const parentName = String(normalized["parentname"] ?? "").trim();
+      const level = Number(normalized["level"] ?? 0);
+      const rowNum = r.__rowNum ?? null;
+
+      if (!assetName) continue;
+
+      const key = assetName.toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, {
+          assetName,
+          parentName: parentName || null,
+          level: isNaN(level) ? 0 : level,
+          sourceRows: rowNum ? [rowNum] : [],
+        });
+      } else map.get(key)!.sourceRows.push(rowNum!);
+    }
+
+    return Array.from(map.values());
+  }
+
+  function validate(astList: Asset[]) {
+    const global: string[] = [];
+    const flatFieldErrors: FieldError[] = [];
+    const seen = new Map<string, number>();
+
+    if (astList.length > 20) global.push(`Maximum 20 assets allowed (found ${astList.length})`);
+
+    astList.forEach((a, i) => {
+      const rowInfo = a.sourceRows.length ? ` (rows: ${a.sourceRows.join(",")})` : "";
+
+      if (!a.assetName.trim())
+        flatFieldErrors.push({ assetIndex: i, field: "assetName", messages: ["AssetName is required"], rowInfo });
+
+      if (a.assetName.trim().length < 3 || a.assetName.trim().length > 100)
+        flatFieldErrors.push({ assetIndex: i, field: "assetName", messages: ["3-100 characters allowed"], rowInfo });
+
+      if (!ASSET_NAME_RE.test(a.assetName))
+        flatFieldErrors.push({ assetIndex: i, field: "assetName", messages: ["Invalid characters"], rowInfo });
+
+      if (a.level <= 0)
+        flatFieldErrors.push({ assetIndex: i, field: "level", messages: ["Level must be greater than 0"], rowInfo });
+
+      if (!Number.isInteger(a.level))
+        flatFieldErrors.push({ assetIndex: i, field: "level", messages: ["Level must be an integer"], rowInfo });
+
+      const key = a.assetName.toLowerCase();
+      if (seen.has(key)) {
+        flatFieldErrors.push({
+          assetIndex: i,
+          field: "assetName",
+          messages: [`Duplicate asset name (row ${seen.get(key)! + 2})`],
+          rowInfo
+        });
+      } else seen.set(key, i);
+    });
+
+    return { global, fieldErrors: flatFieldErrors };
+  }
+
+  useEffect(() => {
+    const { global, fieldErrors } = validate(assets);
+    setGlobalErrors(global);
+    setFieldErrors(fieldErrors);
+  }, [assets]);
+
+  const openFilePicker = () => fileInputRef.current?.click();
+
+  function handleFile(file: File) {
+    const fileName = file.name.toLowerCase();
+
+    const processRows = (data: Record<string, unknown>[]) => {
+      const annotated = data.map((r, i) => ({ __rowNum: i + 2, ...r }));
+      
+      setRows(annotated);
+      console.log(rows)
+      setAssets(dedupAndMap(annotated));
+    };
+
+    if (fileName.endsWith(".csv")) {
+      Papa.parse(file, { header: true, skipEmptyLines: true, complete: (res) => processRows(res.data as Record<string, unknown>[]) });
       return;
     }
 
-    setFile(f);
-    toast.info(`Selected: ${f.name}`);
-    setValidationResult(null); // reset previous validation
-  };
-
-  // Handle click-to-upload
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const f = e.target.files[0];
-
-    if (!f.name.endsWith(".csv") && !f.name.endsWith(".xlsx")) {
-      toast.error("Please upload a CSV or Excel file only!");
+    if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const buffer = e.target?.result as ArrayBuffer;
+        const workbook = XLSX.read(new Uint8Array(buffer), { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        processRows(json);
+      };
+      reader.readAsArrayBuffer(file);
       return;
     }
 
-    setFile(f);
-    toast.info(`Selected: ${f.name}`);
-    setValidationResult(null); // reset previous validation
-  };
+    setGlobalErrors(["Unsupported file type. Please upload CSV or Excel"]);
+  }
 
-  // Validate file and show errors
-  const handleFileUpload = async () => {
-    if (!file) {
-      toast.error("Please select a file first!");
-      return;
-    }
+  async function handleSave() {
+    const { global, fieldErrors } = validate(assets);
+    setGlobalErrors(global);
+    setFieldErrors(fieldErrors);
+    if (global.length || fieldErrors.length) return;
+
+    setSaving(true);
 
     try {
-      const result: ValidationResult = await parseAndValidateAssetFile(file);
-
-      console.log("Valid Rows:", result.validRows);
-      console.log("Invalid Rows:", result.invalidRows);
-
-      // Save validation result in state to show errors
-      setValidationResult(result);
-
-      // Trigger success only if there are valid rows
-      if (result.validRows.length > 0) onSuccess(file);
-    } catch (err) {
-      console.error("Error reading file:", err);
-      toast.error("Error reading file");
+    const response=  await apiAsset.post("/AssetHierarchy/bulk-upload", {
+         assets : assets.map(a => ({ AssetName: a.assetName.trim(), ParentName: a.parentName?.trim() ?? null, Level: a.level }))
+      });
+     setApiResponse(response.data);
+     
+      setRows([]);
+      setAssets([]);
+      setGlobalErrors([]);
+      setFieldErrors([]);
+    } catch (err: any) {
+      setGlobalErrors([err.message || "Error saving assets"]);
+    } finally {
+      setSaving(false);
     }
-  };
+  }
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* File drop area */}
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
-        }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={handleDrop}
-        className={`relative w-full h-48 border-2 rounded-lg flex flex-col items-center justify-center p-4 cursor-pointer
-          ${dragOver ? "border-primary bg-primary/10" : "border-border bg-card"}
-        `}
-      >
-        {file ? (
-          <p className="font-medium">{file.name}</p>
-        ) : (
-          <p className="text-muted-foreground">
-            Drag & drop a CSV or Excel file or click to select
-          </p>
+    <Card className="p-4">
+      <CardHeader>
+        <CardTitle className="text-sm">Asset Bulk Upload</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div
+          onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; f && handleFile(f); }}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          className={
+            "rounded-lg p-4 flex items-center justify-between transition-shadow border cursor-pointer " +
+            (dragOver ? "shadow-lg border-indigo-300 bg-indigo-50" : "bg-white")
+          }
+
+        >
+          <div className="leading-tight">
+            <div className="text-sm font-medium">Upload CSV / Excel</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Columns: <span className="font-semibold">AssetName</span>, <span className="font-semibold">ParentName</span>, <span className="font-semibold">Level</span>
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">Drag & drop or click “Choose file”</div>
+          </div>
+          <div className="flex items-center gap-3">
+            <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; f && handleFile(f); if (fileInputRef.current) fileInputRef.current.value = ""; }} />
+            <Button size="sm" onClick={openFilePicker}>Choose file</Button>
+            <Button variant="ghost" size="sm" onClick={() => { setRows([]); setAssets([]); setGlobalErrors([]); setFieldErrors([]); }}>Clear</Button>
+          </div>
+        </div>
+
+        <Separator />
+
+        {globalErrors.length > 0 && (
+          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
+            <ul className="list-disc ml-5">
+              {globalErrors.map((e, i) => <li key={i}>{e}</li>)}
+            </ul>
+          </div>
         )}
 
-        <input
-          type="file"
-          accept=".csv,.xlsx"
-          onChange={handleInputChange}
-          className="absolute inset-0 opacity-0 cursor-pointer"
-        />
-      </div>
-
-      {/* Submit / Cancel buttons */}
-      <div className="flex gap-3">
-        <Button variant="outline" className="w-1/2" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button className="w-1/2" onClick={handleFileUpload}>
-          Submit File
-        </Button>
-      </div>
-
-      {/* Show validation errors */}
-      {validationResult?.invalidRows.length ? (
-        <div className="mt-4 p-4 border border-red-300 rounded bg-red-50">
-          <h3 className="font-medium text-red-700 mb-2">Invalid Rows:</h3>
-          <ul className="list-disc list-inside">
-            {validationResult.invalidRows.map((item, idx) => (
-              <li key={idx} className="mb-1">
-                Row {item.row.__rowNum__ || idx + 1}: {item.errors.join(", ")}
-                <br />
-                Data: {JSON.stringify(item.row)}
-              </li>
-            ))}
-          </ul>
+        <div>
+          {fieldErrors.length > 0 ? (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+              <div className="font-medium mb-2">Validation issues</div>
+              <ScrollArea className="h-auto overflow-auto">
+                <ul className="space-y-2">
+                  {fieldErrors.map((fe, i) => (
+                    <li key={i} className="p-2 bg-white border rounded shadow-sm">
+                      <div className="text-xs text-muted-foreground">
+                        {fe.rowInfo || assets[fe.assetIndex]?.sourceRows?.join(",") || "?"}
+                      </div>
+                      <div className="font-medium">Field: {fe.field}</div>
+                      <div className="text-xs text-red-700 mt-1">
+                        {fe.messages.map((m, i2) => <div key={i2}>• {m}</div>)}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </ScrollArea>
+            </div>
+          ) : (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded text-sm">
+              {assets.length > 0 ? "🎉 CSV is ready to upload." : "Upload a CSV/XLSX to validate."}
+            </div>
+          )}
         </div>
-      ) : null}
-    </div>
+
+        <div className="flex justify-end gap-2">
+          <Button onClick={handleSave} disabled={assets.length === 0 || saving}>
+            {saving ? "Saving..." : "Save Assets"}
+          </Button>
+        </div>
+
+         {apiResposne && (
+          <div className="space-y-3 mt-4">
+            {apiResposne.addedAssets?.length > 0 && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded text-sm">
+                <div className="font-medium text-emerald-700 mb-1">
+                  ✅ Successfully Added ({apiResposne.addedAssets.length})
+                </div>
+                <ScrollArea className="max-h-40">
+                  <ul className="list-disc ml-5 text-emerald-800">
+                    {apiResposne.addedAssets.map((msg, i) => (
+                      <li key={i}>{msg}</li>
+                    ))}
+                  </ul>
+                </ScrollArea>
+              </div>
+            )}
+
+            {apiResposne.skippedAssets?.length > 0 && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-sm">
+                <div className="font-medium text-red-700 mb-1">
+                  ⚠️ Skipped ({apiResposne.skippedAssets.length})
+                </div>
+                <ScrollArea className="max-h-40">
+                  <ul className="list-disc ml-5 text-red-800">
+                    {apiResposne.skippedAssets.map((msg, i) => (
+                      <li key={i}>{msg}</li>
+                    ))}
+                  </ul>
+                </ScrollArea>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

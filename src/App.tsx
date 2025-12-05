@@ -26,6 +26,7 @@ import DeletedAsset from "./AssetsHierarchy/DeletedAssets";
 import { useEffect, useState } from "react";
 import PageLoader from "./components/Loader";
 import { NotificationProvider } from "./context/NotificationContext";
+import AssetBulkUpload from "./asset/UploadAssetCsv";
 
 export default function App() {
   const [showLoader, setShowLoader] = useState(true);
@@ -73,6 +74,8 @@ export default function App() {
               <Route path="/deleted-devices" element={<DeletedDevices />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/map-device-to-asset/:assetid" element={<Map_Device_To_Asset />} />
+              <Route path="Asset/BulkUpload" element={<AssetBulkUpload/>} />
+              
             </Route>
 
             {/* <Route path="*" element={<Navigate to="/" replace />} /> */}

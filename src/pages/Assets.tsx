@@ -132,7 +132,12 @@ export default function Assets() {
           </p>
         </div>
         {isAdmin && (
-          <Button id="import-bulk-btn" onClick={() => setShowUploadModal(true)}>Import Bulk</Button>
+          <Button
+      id="import-bulk-btn"
+      onClick={() => navigate("/Asset/BulkUpload")}
+    >
+      Import Bulk
+    </Button>
         )}
       </div>
 
