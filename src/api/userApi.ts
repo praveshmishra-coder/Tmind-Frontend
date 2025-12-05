@@ -24,3 +24,15 @@ export const deleteUser = async (id: string | number) => {
   const res = await authApi.delete(`/User/${id}`);
   return res.data;
 };
+
+// ---------------------- NEW TOUR ENDPOINTS ----------------------
+
+export const getTourStatus = async () => {
+  const res = await authApi.get("/User/tour-status");
+  return res.data; // returns { isTourCompleted: boolean }
+};
+
+export const markTourCompleted = async () => {
+  const res = await authApi.post("/User/complete-tour");
+  return res.data; // returns {}
+};
