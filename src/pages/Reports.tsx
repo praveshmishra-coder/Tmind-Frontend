@@ -8,8 +8,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format, parseISO } from "date-fns";
 
-import { getAssetHierarchy } from "@/api/assetApi";
-import { getAllNotifications } from "@/api/assetApi";
+import { getAssetHierarchy, getAllNotifications } from "@/api/assetApi";
 import type { Asset } from "@/api/assetApi";
 
 export default function Reports() {
@@ -138,10 +137,7 @@ export default function Reports() {
       console.error(err);
     }
   };
-
-  // ------------------------------------
-  // EXPORT CSV
-  // ------------------------------------
+  
   const downloadCSV = (data: any[]) => {
     if (!data.length) return toast.error("No data!");
 
@@ -210,7 +206,10 @@ export default function Reports() {
             <label className="mb-1">Select Date</label>
             <Popover>
               <PopoverTrigger asChild>
-                <button className="w-full p-2 border rounded-md flex justify-between">
+                <button
+                  id="report-date"
+                  className="w-full p-2 border rounded-md flex justify-between"
+                >
                   {selectedDate ? format(new Date(selectedDate), "PPP") : "Choose date"}
                   <CalendarIcon />
                 </button>
@@ -228,6 +227,7 @@ export default function Reports() {
             <div className="mt-4" ref={dropdownRef}>
               <label>Asset (Optional)</label>
               <button
+                id="report-asset"
                 className="w-full border p-2 rounded-md"
                 onClick={() => setAssetDropdownOpen(!assetDropdownOpen)}
               >
@@ -254,9 +254,15 @@ export default function Reports() {
               )}
             </div>
 
+            {/* DEVICE */}
+            <div id="report-device" className="mt-4 font-medium text-primary">
+              Assigned Device: {selectedAssetId ? "Device Name Here" : "None"}
+            </div>
+
             {/* ALERT CHECKBOX */}
             <div className="mt-4 flex items-center gap-2">
               <input
+                id="report-alerts"
                 type="checkbox"
                 checked={showOnlyAlerts}
                 onChange={(e) => setShowOnlyAlerts(e.target.checked)}
@@ -266,6 +272,7 @@ export default function Reports() {
 
             {/* GENERATE */}
             <Button
+              id="generate-report-btn"
               className="mt-4 bg-primary text-white"
               onClick={generateReport}
             >
@@ -284,6 +291,7 @@ export default function Reports() {
 
               <div className="flex gap-2">
                 <Button
+                  id="download-csv-btn"
                   className="bg-green-500/20 text-green-700"
                   onClick={() => downloadCSV(displayedReport)}
                 >
@@ -291,6 +299,7 @@ export default function Reports() {
                 </Button>
 
                 <Button
+                  id="download-pdf-btn"
                   className="bg-red-500/20 text-red-700"
                   onClick={() => downloadPDF(displayedReport)}
                 >
@@ -300,7 +309,7 @@ export default function Reports() {
             </div>
 
             {/* TABLE */}
-            <div className="flex-1 overflow-auto">
+            <div id="report-table" className="flex-1 overflow-auto">
               {displayedReport.length === 0 ? (
                 <div className="text-center text-gray-500 py-10">
                   No report generated yet.
