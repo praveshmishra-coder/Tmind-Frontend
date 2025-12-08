@@ -168,3 +168,11 @@ export const getSignalOnAsset=async (assetID:string)=>{
     throw err.response?.data || err.message || "Failed to fetch signal types";
   }
 }
+
+
+
+//notifications
+export const getAllNotifications = async () => {
+  const res = await apiAsset.get("/Notifications/all");
+  return res.data.data; // backend returns { message, data }
+};
