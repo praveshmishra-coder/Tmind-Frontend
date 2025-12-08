@@ -19,11 +19,11 @@ interface Device {
 
 
 export const getDevices = async (pageNumber = 1, pageSize = 10, searchTerm = "") => {
-  console.log("calling getDevices with", { pageNumber, pageSize, searchTerm });
+  // console.log("calling getDevices with", { pageNumber, pageSize, searchTerm });
   const response = await api.get("/devices", {
     params: { pageNumber, pageSize, searchTerm },
   });
-  console.log("API Response:", response.status, response.data);
+  // console.log("API Response:", response.status, response.data);
   return response.data.data; // this contains items, pageNumber, pageSize, totalCount, totalPages
 };
 
