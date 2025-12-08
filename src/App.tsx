@@ -27,6 +27,7 @@ import { useEffect, useState } from "react";
 import PageLoader from "./components/Loader";
 import { NotificationProvider } from "./context/NotificationContext";
 import AssetBulkUpload from "./asset/UploadAssetCsv";
+import Notifications from "./pages/Notifications";
 
 export default function App() {
   const [showLoader, setShowLoader] = useState(true);
@@ -68,6 +69,7 @@ export default function App() {
               <Route path="/devices/upload" element={<UploadCsvModal />} />
               <Route path="/signals" element={<Signals />} />
               <Route path="/signal" element={<Signal />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/manage-user" element={<ManageUser />} />
