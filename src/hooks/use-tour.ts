@@ -12,44 +12,50 @@ export type DriveStep = {
 
 export const useTour = () => {
   const startTour = (steps: DriveStep[], autoDelayMs: number = 2500) => {
-    const filteredSteps = steps.filter((step) => {
-      if (!step.element) return false;
 
-      if (typeof step.element === "string") {
-        return !!document.querySelector(step.element);
-      }
-      if (typeof step.element === "function") {
-        return !!step.element();
-      }
-      if (step.element instanceof Element) return true;
+    // ⭐ Delay so DOM elements exist (fix autoTour filtering issue)
+    setTimeout(() => {
 
-      return false;
-    });
+      const filteredSteps = steps.filter((step) => {
+        if (!step.element) return false;
 
-    if (!filteredSteps.length) return;
-
-    const tour = driver({
-      animate: true,
-      showProgress: true,
-      overlayOpacity: 0.6,
-      steps: filteredSteps,
-      allowClose: true,
-    });
-
-    tour.drive();
-
-    if (autoDelayMs > 0) {
-      let index = 0;
-
-      const interval = setInterval(() => {
-        index++;
-        if (index < filteredSteps.length) {
-          tour.moveNext();
-        } else {
-          clearInterval(interval);
+        if (typeof step.element === "string") {
+          return !!document.querySelector(step.element);
         }
-      }, autoDelayMs);
-    }
+        if (typeof step.element === "function") {
+          return !!step.element();
+        }
+        if (step.element instanceof Element) return true;
+
+        return false;
+      });
+
+      if (!filteredSteps.length) return;
+
+      const tour = driver({
+        animate: true,
+        showProgress: true,
+        overlayOpacity: 0.6,
+        steps: filteredSteps,
+        allowClose: true,
+      });
+
+      tour.drive();
+
+      // ⭐ Auto-next logic
+      if (autoDelayMs > 0) {
+        let index = 0;
+        const interval = setInterval(() => {
+          index++;
+          if (index < filteredSteps.length) {
+            tour.moveNext();
+          } else {
+            clearInterval(interval);
+          }
+        }, autoDelayMs);
+      }
+
+    }, 700); // ⭐ Delay ensures all DOM elements exist
   };
 
   return { startTour };
