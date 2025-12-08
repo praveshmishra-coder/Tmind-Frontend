@@ -22,6 +22,7 @@ export default function Sidebar() {
     { icon: <File size={18} />, label: "Reports", path: "/reports" },
     { icon: <Cpu size={18} />, label: "Devices", path: "/devices" },
     { icon: <Tv size={18} />, label: "Signal", path: "/signal" },
+    { icon: <Tv size={18} />, label: "Notifications", path: "/notifications" },
 
     // ADMIN ONLY
     ...(isAdmin

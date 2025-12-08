@@ -13,7 +13,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
-import { NotificationDrawer } from "./NotificationDrawer";
+// import { NotificationDrawer } from "./NotificationDrawer";
 import { useNotifications } from "@/context/NotificationContext";
 import StartTourButton from "./StartTourButton";
 // import TourInfoPopup from "@/components/TourInfoPopup";
@@ -105,10 +105,10 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
 
 
         <Button
-          variant="ghost"
-          onClick={() => setOpen(true)}
-          className="relative"
-        >
+        variant="ghost"
+        onClick={() => navigate("/notifications")}
+        className="relative"
+      >
           <Bell className="w-6 h-6 text-gray-700" />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
@@ -117,7 +117,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
           )}
         </Button>
 
-      <NotificationDrawer open={open} onOpenChange={setOpen}/>
+      {/* <NotificationDrawer open={open} onOpenChange={setOpen}/> */}
 
         {user || isLoggedInFromState ? (
           <DropdownMenu>
