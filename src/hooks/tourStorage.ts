@@ -1,42 +1,36 @@
-// src/hooks/tourStorage.ts
+// 📌 src/utils/tourStorage.ts
 
-const VISITED_KEY = "tour_pages_visited";
-const COMPLETED_KEY = "tour_completed";
+export const PAGE_TOUR_KEY = "page_tour_completed";
+export const BACKEND_TOUR_KEY = "backend_tour_done";
 
-// Load visited pages from localStorage
-function loadVisited() {
+// ----- Load page tour state -----
+export const getPageTourState = () => {
   try {
-    return JSON.parse(localStorage.getItem(VISITED_KEY) || "{}");
+    return JSON.parse(localStorage.getItem(PAGE_TOUR_KEY) || "{}");
   } catch {
     return {};
   }
-}
+};
 
-// Check if page already visited
-export function isPageVisited(page: string): boolean {
-  const visited = loadVisited();
-  return visited[page] === true;
-}
+// ----- Mark a specific page as completed -----
+export const markPageCompleted = (page: string) => {
+  const state = getPageTourState();
+  state[page] = true;
+  localStorage.setItem(PAGE_TOUR_KEY, JSON.stringify(state));
+};
 
-// Check if full tour completed
-export function isTourCompleted(): boolean {
-  return localStorage.getItem(COMPLETED_KEY) === "true";
-}
+// ----- Mark backend as tour done -----
+export const setBackendTourDone = () => {
+  localStorage.setItem(BACKEND_TOUR_KEY, "true");
+};
 
-// Mark page visited locally
-export function markPageVisited(page: string) {
-  const visited = loadVisited();
-  visited[page] = true;
-  localStorage.setItem(VISITED_KEY, JSON.stringify(visited));
-}
+// ----- Get backend tour status from localStorage -----
+export const getBackendTourStatus = () => {
+  return localStorage.getItem(BACKEND_TOUR_KEY);
+};
 
-// Mark tour completed locally
-export function markTourCompleted() {
-  localStorage.setItem(COMPLETED_KEY, "true");
-}
-
-// Reset all on logout
-export function resetTourOnLogout() {
-  localStorage.removeItem(VISITED_KEY);
-  localStorage.removeItem(COMPLETED_KEY);
-}
+// ----- Clear all tour data (use on logout) -----
+export const clearTourData = () => {
+  localStorage.removeItem(PAGE_TOUR_KEY);
+  localStorage.removeItem(BACKEND_TOUR_KEY);
+};

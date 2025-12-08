@@ -12,18 +12,15 @@ export type DriveStep = {
 
 export const useTour = () => {
   const startTour = (steps: DriveStep[], autoDelayMs: number = 2500) => {
-    // Filter only those steps where the element exists
     const filteredSteps = steps.filter((step) => {
       if (!step.element) return false;
 
       if (typeof step.element === "string") {
         return !!document.querySelector(step.element);
       }
-
       if (typeof step.element === "function") {
         return !!step.element();
       }
-
       if (step.element instanceof Element) return true;
 
       return false;
@@ -31,19 +28,16 @@ export const useTour = () => {
 
     if (!filteredSteps.length) return;
 
-    // Driver.js v1+ API
     const tour = driver({
       animate: true,
       showProgress: true,
       overlayOpacity: 0.6,
       steps: filteredSteps,
-      allowClose: true
+      allowClose: true,
     });
 
-    // Start tour
     tour.drive();
 
-    // Auto delay through steps (optional)
     if (autoDelayMs > 0) {
       let index = 0;
 

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import authApi from "@/api/authApi";
 import { getCurrentUser,markTourCompleted } from "@/api/userApi";
+import { clearTourData } from "@/hooks/tourStorage";
 
 interface User {
   username: string;
@@ -57,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      clearTourData();
       await markTourCompleted();
       await authApi.post("/User/Logout");
     } catch (err) {
