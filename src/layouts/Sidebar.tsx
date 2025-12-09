@@ -6,10 +6,10 @@ import {
   File,
   Trash,
   UserRoundSearch ,
-  Tv
+  Tv,
+  Bell
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { Search } from "lucide-react";
 
 export default function Sidebar() {
   const { user } = useAuth();
@@ -22,7 +22,7 @@ export default function Sidebar() {
     { icon: <File size={18} />, label: "Reports", path: "/reports" },
     { icon: <Cpu size={18} />, label: "Devices", path: "/devices" },
     { icon: <Tv size={18} />, label: "Signal", path: "/signal" },
-    { icon: <Tv size={18} />, label: "Notifications", path: "/notifications" },
+    { icon: <Bell size={18} />, label: "Notifications", path: "/notifications" },
 
     // ADMIN ONLY
     ...(isAdmin

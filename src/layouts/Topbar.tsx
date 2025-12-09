@@ -13,7 +13,6 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "@/context/AuthContext";
-// import { NotificationDrawer } from "./NotificationDrawer";
 import { useNotifications } from "@/context/NotificationContext";
 import StartTourButton from "./StartTourButton";
 // import TourInfoPopup from "@/components/TourInfoPopup";
@@ -28,13 +27,6 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
   const location = useLocation();
 
   const isLoggedInFromState = location.state?.IsLoggedIn || false;
-
-  type Notification = {
-    id: number;
-    title: string;
-    message: string;
-    isRead: boolean;
-  };
 
 
   // Read user from localStorage
@@ -69,7 +61,14 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
   const handleLogin = () => {
     navigate("/");
   };
-  const [open, setOpen] = useState(false);
+  const handleNotificationClick = () => {
+  if (location.pathname === "/notifications") {
+      navigate(-1);   // Go back
+    } else {
+      navigate("/notifications"); // Open notification page
+    }
+  };
+
   const { notifications } = useNotifications();
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -99,16 +98,11 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
         <ThemeToggle />
         <StartTourButton/>
 
-{/* <div id="topbar-tour-btn">
-    <TourInfoPopup />
-</div> */}
-
-
         <Button
-        variant="ghost"
-        onClick={() => navigate("/notifications")}
-        className="relative"
-      >
+          variant="ghost"
+          onClick={handleNotificationClick}
+          className="relative"
+        >
           <Bell className="w-6 h-6 text-gray-700" />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">

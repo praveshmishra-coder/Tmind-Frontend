@@ -1,16 +1,35 @@
 import React from "react";
 import { NotificationList } from "./NotifcationList";
+import { X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Notifications() {
+  const navigate = useNavigate();
+
+  const handleClose = () => {
+    navigate(-1); // go back
+  };
+
   return (
     <div className="p-2 max-w-4xl mx-auto">
 
-      <h1 className="text-2xl font-semibold mb-2">Notifications</h1>
+      {/* Header + Close button */}
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-2xl font-semibold">Notifications</h1>
+
+        <button
+          onClick={handleClose}
+          className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
       <p className="text-muted-foreground mb-4">
         Manage and view your latest alerts.
       </p>
 
-      <div className="bg-white border rounded-xl shadow-sm p-0">
+      <div className="bg-white border rounded-xl shadow-sm p-0 dark:bg-card">
         <NotificationList />
       </div>
 
