@@ -5,6 +5,8 @@ import { getAssetHierarchy, getSignalOnAsset } from "@/api/assetApi";
 import { getDeviceById } from "@/api/deviceApi";
 import { getTelemetryData, TimeRange } from "@/api/telemetryApi";
 import type { Asset } from "@/api/assetApi";
+import { getMappingById } from "@/api/assetApi";
+
 
 import {
   Select,
@@ -124,17 +126,9 @@ export default function Signals() {
         if (mappings?.length > 0) {
           setMainSignals(mappings);
 
-          const deviceId = mappings[0].deviceId;
-          if (deviceId) {
-            try {
-              const device = await getDeviceById(deviceId);
-              setDeviceName(device?.name ?? device?.data?.name ?? "Unknown Device");
-            } catch {
-              setDeviceName("Unknown Device");
-            }
-          } else {
-            setDeviceName("Not Assigned");
-          }
+          const deviceNames = await fetchDevicesForAsset(mainAsset.assetId);
+          setDeviceName(deviceNames.join(", ")); // Join multiple device names with comma
+
         } else {
           setMainSignals([]);
           setDeviceName("Not Assigned");
@@ -160,17 +154,9 @@ export default function Signals() {
         const mappings = await getSignalOnAsset(compareAssetId);
         setCompareSignals(mappings);
 
-        const deviceId = mappings[0]?.deviceId;
-        if (deviceId) {
-          try {
-            const device = await getDeviceById(deviceId);
-            setCompareDeviceName(device?.name ?? device?.data?.name ?? "Unknown Device");
-          } catch {
-            setCompareDeviceName("Unknown Device");
-          }
-        } else {
-          setCompareDeviceName("Not Assigned");
-        }
+        const deviceNames = await fetchDevicesForAsset(compareAssetId);
+        setCompareDeviceName(deviceNames.join(", "));
+
       } catch (err) {
         console.error("Failed to fetch compare asset signals", err);
         setCompareSignals([]);
@@ -179,6 +165,35 @@ export default function Signals() {
     };
     loadCompareSignals();
   }, [compareAssetId]);
+
+
+  const fetchDevicesForAsset = async (assetId: string): Promise<string[]> => {
+  try {
+    // 1. Get all mappings for this asset
+    const mappings = await getMappingById(assetId);
+
+    // 2. Extract unique deviceIds
+    const uniqueDeviceIds = Array.from(new Set(mappings.map(m => m.deviceId).filter(Boolean)));
+
+    // 3. Fetch device names for each deviceId
+    const deviceNames = await Promise.all(
+      uniqueDeviceIds.map(async (deviceId) => {
+        try {
+          const device = await getDeviceById(deviceId);
+          return device?.name ?? device?.data?.name ?? "Unknown Device";
+        } catch {
+          return "Unknown Device";
+        }
+      })
+    );
+
+    return deviceNames;
+  } catch (err) {
+    console.error(`Failed to fetch devices for asset ${assetId}`, err);
+    return ["Error"];
+  }
+};
+
 
   /* ---------------- Fetch Telemetry Data ---------------- */
   useEffect(() => {
@@ -330,35 +345,36 @@ export default function Signals() {
 
   /* ---------------------------- JSX ---------------------------- */
   return (
-    <div className="p-4 space-y-6 min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* PAGE TITLE */}
-      <h2 className="tour-signal-title text-2xl font-semibold text-gray-800 dark:text-gray-200">
-        Signals
-      </h2>
+  <div className="p-3 space-y-8 min-h-screen bg-gray-50 dark:bg-gray-900">
+    {/* PAGE TITLE */}
+    
 
-      {/* TIME RANGE SECTION */}
-      <div className="flex flex-col md:flex-row md:items-center gap-4 mt-1">
-        <div className="flex flex-col">
-          <span className="text-sm text-gray-500 dark:text-gray-400 mb-1">Time Range</span>
-          <select
-            className="tour-time-range w-40 p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            value={timeRange}
-            onChange={e => setTimeRange(e.target.value as any)}
-          >
-            <option value="24h">Last 24 Hours</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="today">Today</option>
-            <option value="custom">Custom Range</option>
-          </select>
-        </div>
-        {timeRange === "custom" && (
+    {/* TIME RANGE SECTION */}
+    <div className="flex flex-col md:flex-row md:items-center gap-4 mt-2">
+      <div className="flex flex-col">
+        <span className="text-sm text-gray-500 dark:text-gray-400 mb-1">Time Range</span>
+        <select
+          className="tour-time-range w-44 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+          value={timeRange}
+          onChange={e => setTimeRange(e.target.value as any)}
+        >
+          <option value="24h">Last 24 Hours</option>
+          <option value="7d">Last 7 Days</option>
+          <option value="today">Today</option>
+          <option value="custom">Custom Range</option>
+        </select>
+      </div>
+
+      {timeRange === "custom" && (
         <div className="tour-custom-range flex flex-row items-center gap-3 mt-1">
-
           {/* Start Date */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-48 justify-start text-left">
-                <CalendarIcon className="mr-2 h-4 w-4" />
+              <Button
+                variant="outline"
+                className="w-48 justify-start text-left rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 p-2 flex items-center gap-2 hover:ring-1 hover:ring-indigo-500 transition"
+              >
+                <CalendarIcon className="h-4 w-4" />
                 {customStart ? format(customStart, "PPP") : "Start Date"}
               </Button>
             </PopoverTrigger>
@@ -366,20 +382,23 @@ export default function Signals() {
               <Calendar
                 mode="single"
                 selected={customStart ?? undefined}
-                onSelect={(date) => setCustomStart(date ?? null)}
-                disabled={(date) => date > new Date()}
+                onSelect={date => setCustomStart(date ?? null)}
+                disabled={date => date > new Date()}
                 initialFocus
               />
             </PopoverContent>
           </Popover>
 
-          <span className="text-gray-600 dark:text-gray-300">to</span>
+          <span className="text-gray-600 dark:text-gray-300 mt-1">to</span>
 
           {/* End Date */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-48 justify-start text-left">
-                <CalendarIcon className="mr-2 h-4 w-4" />
+              <Button
+                variant="outline"
+                className="w-48 justify-start text-left rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 p-2 flex items-center gap-2 hover:ring-1 hover:ring-indigo-500 transition"
+              >
+                <CalendarIcon className="h-4 w-4" />
                 {customEnd ? format(customEnd, "PPP") : "End Date"}
               </Button>
             </PopoverTrigger>
@@ -387,68 +406,150 @@ export default function Signals() {
               <Calendar
                 mode="single"
                 selected={customEnd ?? undefined}
-                onSelect={(date) => setCustomEnd(date ?? null)}
-                disabled={(date) => date < customStart || date > new Date()}
+                onSelect={date => setCustomEnd(date ?? null)}
+                disabled={date => date < customStart || date > new Date()}
                 initialFocus
               />
             </PopoverContent>
           </Popover>
-
         </div>
       )}
+    </div>
 
-      </div>
+    {/* 2 CARDS: MAIN + COMPARE */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* MAIN ASSET CARD */}
+      <Card className="tour-main-asset-card shadow-lg rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+            Selected Asset
+          </CardTitle>
+        </CardHeader>
 
-      {/* 2 CARDS: MAIN + COMPARE */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* MAIN ASSET CARD */}
-        <Card className="tour-main-asset-card shadow rounded-lg border border-gray-200 dark:border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-gray-800 dark:text-gray-200">Selected Asset</CardTitle>
-          </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Asset Dropdown */}
+          <div>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Select Asset:</span>
+            <select
+              className="tour-main-asset-dropdown w-full p-2 mt-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+              value={mainAsset?.assetId ?? ""}
+              onChange={e => setMainAsset(allAssets.find(a => a.assetId === e.target.value) ?? null)}
+            >
+              <option value="">--Select Asset--</option>
+              {allAssets.map(a => (
+                <option key={a.assetId} value={a.assetId}>
+                  {a.name} (Level {a.level})
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <CardContent className="space-y-3">
-            {/* Asset Dropdown */}
-            <div>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Select Asset:</span>
-              <select
-                className="tour-main-asset-dropdown w-full p-2 mt-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value={mainAsset?.assetId ?? ""}
-                onChange={e => {
-                  const selected = allAssets.find(a => a.assetId === e.target.value) ?? null;
-                  setMainAsset(selected);
-                }}
-              >
-                <option value="">--Select Asset--</option>
-                {allAssets.map(a => (
-                  <option key={a.assetId} value={a.assetId}>
-                    {a.name} (Level {a.level})
-                  </option>
-                ))}
-              </select>
+          {/* Device & Signals */}
+          <div className="flex flex-wrap items-start gap-6 mt-2">
+            {/* Device */}
+            <div className="tour-main-device flex flex-col">
+              <span className="text-xs text-gray-500 dark:text-gray-400">Assigned Device:</span>
+              {deviceName ? (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {deviceName.split(",").map((d, idx) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1 text-sm font-medium text-green-800 dark:text-green-100 bg-green-100 dark:bg-green-800 rounded-full shadow"
+                    >
+                      {d}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="font-medium text-gray-800 dark:text-gray-200">Not Assigned</span>
+              )}
             </div>
 
-            {/* Device & Signals */}
+            {/* Signals */}
+            <div className="tour-main-signals flex flex-col">
+              <span className="text-xs text-gray-500 dark:text-gray-400">Signals:</span>
+              {mainSignals.length === 0 ? (
+                <span className="text-sm text-gray-400">No signals</span>
+              ) : (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {mainSignals.map(s => (
+                    <span
+                      key={s.signalTypeId}
+                      className="px-2 py-1 text-xs rounded-full bg-indigo-100 dark:bg-indigo-600 text-indigo-800 dark:text-white font-medium"
+                    >
+                      {s.signalName}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* COMPARE ASSET CARD */}
+      <Card className="tour-compare-card shadow-lg rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+            Compare Asset
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          <div className="flex flex-col">
+            <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">Select Asset</span>
+            {loading ? (
+              <span className="text-gray-500 dark:text-gray-400 text-sm">Loading...</span>
+            ) : (
+              <select
+                className="tour-compare-dropdown w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                value={compareAssetId}
+                onChange={e => setCompareAssetId(e.target.value)}
+              >
+                <option value="">None</option>
+                {allAssets
+                  .filter(a => a.assetId !== mainAsset?.assetId)
+                  .map(a => (
+                    <option key={a.assetId} value={a.assetId}>
+                      {a.name} (Level {a.level})
+                    </option>
+                  ))}
+              </select>
+            )}
+          </div>
+
+          {compareAssetId && (
             <div className="flex flex-wrap items-start gap-6 mt-2">
               {/* Device */}
               <div className="tour-main-device flex flex-col">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Assigned Device:</span>
-                <span className="font-medium text-gray-800 dark:text-gray-200">
-                  {deviceName}
-                </span>
-              </div>
+              <span className="text-xs text-gray-500 dark:text-gray-400">Assigned Device:</span>
+              {deviceName ? (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {deviceName.split(",").map((d, idx) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1 text-sm font-medium text-green-800 dark:text-green-100 bg-green-100 dark:bg-green-800 rounded-full shadow"
+                    >
+                      {d}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="font-medium text-gray-800 dark:text-gray-200">Not Assigned</span>
+              )}
+            </div>
 
               {/* Signals */}
-              <div className="tour-main-signals flex flex-col">
+              <div className="flex flex-col">
                 <span className="text-xs text-gray-500 dark:text-gray-400">Signals:</span>
-                {mainSignals.length === 0 ? (
+                {compareSignals.length === 0 ? (
                   <span className="text-sm text-gray-400">No signals</span>
                 ) : (
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {mainSignals.map(s => (
+                    {compareSignals.map(s => (
                       <span
                         key={s.signalTypeId}
-                        className="px-2 py-1 text-xs rounded-full bg-indigo-100 dark:bg-indigo-600 text-indigo-800 dark:text-white font-medium"
+                        className="px-2 py-1 text-xs rounded-full bg-purple-100 dark:bg-purple-600 text-purple-800 dark:text-white font-medium"
                       >
                         {s.signalName}
                       </span>
@@ -457,134 +558,76 @@ export default function Signals() {
                 )}
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* COMPARE ASSET CARD */}
-        <Card className="tour-compare-card shadow rounded-lg border border-gray-200 dark:border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-gray-800 dark:text-gray-200">Compare Asset</CardTitle>
-          </CardHeader>
-
-          <CardContent className="space-y-3">
-            <div className="flex flex-col">
-              <span className="text-xs text-gray-500 dark:text-gray-400 mb-1">Select Asset</span>
-              {loading ? (
-                <span className="text-gray-500 dark:text-gray-400 text-sm">Loading...</span>
-              ) : (
-                <select
-                  className="tour-compare-dropdown w-full p-2 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  value={compareAssetId}
-                  onChange={e => setCompareAssetId(e.target.value)}
-                >
-                  <option value="">None</option>
-                  {allAssets
-                    .filter(a => a.assetId !== mainAsset?.assetId)
-                    .map(a => (
-                      <option key={a.assetId} value={a.assetId}>
-                        {a.name} (Level {a.level})
-                      </option>
-                    ))}
-                </select>
-              )}
-            </div>
-
-            {compareAssetId && (
-              <div className="flex flex-wrap items-start gap-6 mt-2">
-                {/* Device */}
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Assigned Device:</span>
-                  <span className="font-medium text-gray-800 dark:text-gray-200">{compareDeviceName}</span>
-                </div>
-
-                {/* Signals */}
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Signals:</span>
-                  {compareSignals.length === 0 ? (
-                    <span className="text-sm text-gray-400">No signals</span>
-                  ) : (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {compareSignals.map(s => (
-                        <span
-                          key={s.signalTypeId}
-                          className="px-2 py-1 text-xs rounded-full bg-purple-100 dark:bg-purple-600 text-purple-800 dark:text-white font-medium"
-                        >
-                          {s.signalName}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* GRAPH CARD */}
-      <Card className="tour-graph-card shadow rounded-lg border border-gray-200 dark:border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-gray-800 dark:text-gray-200">
-            Signals Graph
-            {fetchingData && (
-              <span className="text-sm font-normal text-gray-500 ml-2">(Loading...)</span>
-            )}
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent style={{ height: 360 }}>
-          {fetchingData ? (
-            <div className="flex items-center justify-center h-full">
-              <span className="text-gray-500 dark:text-gray-400">Loading telemetry data...</span>
-            </div>
-          ) : telemetryData.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <span className="text-gray-500 dark:text-gray-400 text-sm">
-                No data available. Please select an asset with signals.
-              </span>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={telemetryData}>
-                <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 4" />
-                <XAxis dataKey="timestamp" stroke="#4b5563" />
-                <YAxis stroke="#4b5563" />
-                <Tooltip
-                  contentStyle={{ backgroundColor: "#f9fafb", borderRadius: 6, borderColor: "#d1d5db" }}
-                  labelStyle={{ color: "#111827" }}
-                  itemStyle={{ color: "#111827" }}
-                />
-                <Legend />
-
-                {mainKeys.map(key => (
-                  <Line
-                    key={key}
-                    type="monotone"
-                    dataKey={key}
-                    stroke={mainAsset ? colorForAsset(mainAsset.assetId) : "#3b82f6"}
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                ))}
-
-                {compareKeys.map(key => {
-                  const assetObj = allAssets.find(a => a.assetId === compareAssetId);
-                  return (
-                    <Line
-                      key={key}
-                      type="monotone"
-                      dataKey={key}
-                      stroke={assetObj ? colorForAsset(assetObj.assetId) : "#a855f7"}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  );
-                })}
-              </LineChart>
-            </ResponsiveContainer>
           )}
         </CardContent>
       </Card>
     </div>
-  );
+
+    {/* GRAPH CARD */}
+    <Card className="tour-graph-card shadow-lg rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+          Signals Graph
+          {fetchingData && (
+            <span className="text-sm font-normal text-gray-500 ml-2">(Loading...)</span>
+          )}
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent style={{ height: 360 }}>
+        {fetchingData ? (
+          <div className="flex items-center justify-center h-full">
+            <span className="text-gray-500 dark:text-gray-400">Loading telemetry data...</span>
+          </div>
+        ) : telemetryData.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <span className="text-gray-500 dark:text-gray-400 text-sm">
+              No data available. Please select an asset with signals.
+            </span>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={telemetryData}>
+              <CartesianGrid stroke="#e5e7eb" strokeDasharray="4 4" />
+              <XAxis dataKey="timestamp" stroke="#4b5563" />
+              <YAxis stroke="#4b5563" />
+              <Tooltip
+                contentStyle={{ backgroundColor: "#f9fafb", borderRadius: 6, borderColor: "#d1d5db" }}
+                labelStyle={{ color: "#111827" }}
+                itemStyle={{ color: "#111827" }}
+              />
+              <Legend />
+
+              {mainKeys.map(key => (
+                <Line
+                  key={key}
+                  type="monotone"
+                  dataKey={key}
+                  stroke={mainAsset ? colorForAsset(mainAsset.assetId) : "#3b82f6"}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              ))}
+
+              {compareKeys.map(key => {
+                const assetObj = allAssets.find(a => a.assetId === compareAssetId);
+                return (
+                  <Line
+                    key={key}
+                    type="monotone"
+                    dataKey={key}
+                    stroke={assetObj ? colorForAsset(assetObj.assetId) : "#a855f7"}
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                );
+              })}
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+      </CardContent>
+    </Card>
+  </div>
+);
+
 }

@@ -1,9 +1,10 @@
 import apiAsset from "./axiosAsset";
 
 /* --------------------------------------------------------
-    ASSET TYPES
+    TYPES
 -------------------------------------------------------- */
 
+// Asset Hierarchy
 export interface Asset {
   assetId: string;
   name: string;
@@ -23,7 +24,7 @@ export interface UpdateAssetRequest {
   newName: string;
 }
 
-
+// Asset Config
 export interface UpdateAssetConfigPayload {
   signalName: string;
   signalAddress: string;
@@ -38,106 +39,123 @@ export interface SignalType {
   assetConfigurations: any[];
 }
 
+// Mapping / Signals
+export interface IMapping {
+  mappingId: string;
+  assetId: string;
+  signalTypeId: string;
+  deviceId: string;
+  devicePortId: string;
+  signalUnit: string;
+  signalName: string;
+  registerAdress: number;
+  registerId: string;
+  createdAt: string;
+}
+
+// Notifications
+export interface Notification {
+  notificationId: string;
+  title: string;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+}
+
+/* --------------------------------------------------------
+    HELPER FOR API ERRORS
+-------------------------------------------------------- */
+const handleApiError = (err: any, defaultMsg: string) => {
+  return err?.response?.data || err?.message || defaultMsg;
+};
 
 /* --------------------------------------------------------
     ASSET HIERARCHY APIS
 -------------------------------------------------------- */
-
-// GET ALL ASSET HIERARCHY
-export const getAssetHierarchy = async () => {
+export const getAssetHierarchy = async (): Promise<Asset[]> => {
   try {
     const res = await apiAsset.get("/AssetHierarchy/GetAssetHierarchy");
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || "Failed to fetch asset hierarchy";
+    return res.data as Asset[];
+  } catch (err) {
+    throw handleApiError(err, "Failed to fetch asset hierarchy");
   }
 };
 
-// INSERT NEW ASSET
 export const insertAsset = async (payload: InsertAssetRequest) => {
   try {
     const res = await apiAsset.post("/AssetHierarchy/InsertAsset", payload);
     return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || "Failed to insert asset";
+  } catch (err) {
+    throw handleApiError(err, "Failed to insert asset");
   }
 };
 
-// GET CHILDREN ASSETS BY PARENT ID
-export const getAssetsByParentId = async (parentId: string) => {
+export const getAssetsByParentId = async (parentId: string): Promise<Asset[]> => {
   try {
     const res = await apiAsset.get(`/AssetHierarchy/GetByParentId/${parentId}`);
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || `Failed to fetch children for parent ${parentId}`;
+    return res.data as Asset[];
+  } catch (err) {
+    throw handleApiError(err, `Failed to fetch children for parent ${parentId}`);
   }
 };
 
-// DELETE ASSET
 export const deleteAsset = async (assetId: string) => {
   try {
     const res = await apiAsset.delete(`/AssetHierarchy/DeleteAsset/${assetId}`);
     return res.data;
-  } catch (err: any) {
-    throw err.response?.data?.message || err.response?.data || `Failed to delete asset ${assetId}`;
+  } catch (err) {
+    throw handleApiError(err, `Failed to delete asset ${assetId}`);
   }
 };
 
-// UPDATE ASSET NAME
 export const updateAsset = async (payload: UpdateAssetRequest) => {
   try {
-    const res = await apiAsset.put(`/AssetHierarchy/UpdateAsset`, payload);
+    const res = await apiAsset.put("/AssetHierarchy/UpdateAsset", payload);
     return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || "Failed to update asset";
+  } catch (err) {
+    throw handleApiError(err, "Failed to update asset");
   }
 };
 
-// GET DELETED ASSETS
-export const getDeletedAssets = async () => {
+export const getDeletedAssets = async (): Promise<Asset[]> => {
   try {
     const res = await apiAsset.get("/AssetHierarchy/Deleted");
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || "Failed to fetch deleted assets";
+    return res.data as Asset[];
+  } catch (err) {
+    throw handleApiError(err, "Failed to fetch deleted assets");
   }
 };
 
-// RESTORE DELETED ASSET
 export const restoreAssetById = async (assetId: string) => {
   try {
     const res = await apiAsset.post(`/AssetHierarchy/Restore/${assetId}`);
     return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || `Failed to restore asset ${assetId}`;
+  } catch (err) {
+    throw handleApiError(err, `Failed to restore asset ${assetId}`);
   }
 };
 
 /* --------------------------------------------------------
     ASSET CONFIG APIS
 -------------------------------------------------------- */
-
-// ADD ASSET CONFIG
 export const addAssetConfig = async (payload: any) => {
   try {
     const res = await apiAsset.post("/AssetConfig", payload);
     return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || "Failed to add asset config";
+  } catch (err) {
+    throw handleApiError(err, "Failed to add asset config");
   }
 };
 
-// GET SIGNALS + CONFIG FOR AN ASSET
 export const getAssetConfig = async (assetId: string) => {
   try {
     const res = await apiAsset.get(`/AssetConfig/${assetId}`);
     return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || `Failed to fetch asset config for ${assetId}`;
+  } catch (err) {
+    throw handleApiError(err, `Failed to fetch asset config for ${assetId}`);
   }
 };
 
-// UPDATE SIGNAL CONFIG FOR AN ASSET
 export const updateAssetConfig = async (
   assetId: string,
   payload: UpdateAssetConfigPayload
@@ -145,34 +163,49 @@ export const updateAssetConfig = async (
   try {
     const res = await apiAsset.put(`/AssetConfig/${assetId}`, payload);
     return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || `Failed to update asset config for ${assetId}`;
+  } catch (err) {
+    throw handleApiError(err, `Failed to update asset config for ${assetId}`);
   }
 };
 
-
-export const getSignalTypes = async () => {
+export const getSignalTypes = async (): Promise<SignalType[]> => {
   try {
-    const res = await apiAsset.get("/AssetConfig/SiganlTypes");
-    return res.data;
-  } catch (err: any) {
-    throw err.response?.data || err.message || "Failed to fetch signal types";
+    const res = await apiAsset.get("/AssetConfig/SignalTypes");
+    return res.data as SignalType[];
+  } catch (err) {
+    throw handleApiError(err, "Failed to fetch signal types");
   }
 };
 
-export const getSignalOnAsset=async (assetID:string)=>{
-  try{
-    const res=await apiAsset.get(`/Mapping/${assetID}`);
-    return res.data;
-  }catch (err: any) {
-    throw err.response?.data || err.message || "Failed to fetch signal types";
+/* --------------------------------------------------------
+    MAPPING / SIGNAL APIS
+-------------------------------------------------------- */
+export const getSignalOnAsset = async (assetId: string): Promise<IMapping[]> => {
+  try {
+    const res = await apiAsset.get(`/Mapping/${assetId}`);
+    return res.data as IMapping[];
+  } catch (err) {
+    throw handleApiError(err, "Failed to fetch signals for asset");
   }
-}
+};
 
+export const getMappingById = async (id: string): Promise<IMapping[]> => {
+  try {
+    const res = await apiAsset.get(`/Mapping/${id}`);
+    return res.data as IMapping[];
+  } catch (err) {
+    throw handleApiError(err, "Failed to fetch mapping by ID");
+  }
+};
 
-
-//notifications
-export const getAllNotifications = async () => {
-  const res = await apiAsset.get("/Notifications/all");
-  return res.data.data; // backend returns { message, data }
+/* --------------------------------------------------------
+    NOTIFICATIONS APIS
+-------------------------------------------------------- */
+export const getAllNotifications = async (): Promise<Notification[]> => {
+  try {
+    const res = await apiAsset.get("/Notifications/all");
+    return res.data.data as Notification[];
+  } catch (err) {
+    throw handleApiError(err, "Failed to fetch notifications");
+  }
 };
