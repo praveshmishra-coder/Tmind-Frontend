@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import * as signalR from "@microsoft/signalr";
 import { toast } from "react-toastify"; // ✅ react-toastify
-import "react-toastify/dist/ReactToastify.css";
 import { formatNotification } from "@/hooks/utils";
 import NotificationToast from "@/components/NotificationToast";
 import apiAsset from "@/api/axiosAsset";

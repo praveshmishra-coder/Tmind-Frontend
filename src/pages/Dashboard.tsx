@@ -12,6 +12,7 @@ import {
 import { getDevices, getDeletedDeviced } from "@/api/deviceApi";
 import { getAssetHierarchy } from "@/api/assetApi";
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationContext";
 
 // KPI Card Component
 const KPICard = ({ title, value, icon, trend, trendUp, status, borderColor }: any) => (
@@ -59,6 +60,8 @@ export default function Dashboard() {
   const [plantCount, setPlantCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const { notifications } = useNotifications();
+  const alertsToday = notifications.length;
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";
 
@@ -115,7 +118,6 @@ export default function Dashboard() {
 
   const activeDevices = totalDevices - deletedDevices;
   const uptime = 99.8;
-  const alertsToday = Math.floor(totalDevices * 0.05);
   const efficiency = 94.2;
 
   return (

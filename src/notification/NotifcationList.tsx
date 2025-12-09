@@ -44,7 +44,7 @@ export const NotificationList = () => {
 
     return (
         <div className="flex flex-col h-full">
-
+            {/* {console.log("Notifications:", notifications)} */}
             {/* === FILTER BAR === */}
             <div className="border-b px-4 py-3 bg-gray-50">
                 <div className="flex items-center gap-6">
