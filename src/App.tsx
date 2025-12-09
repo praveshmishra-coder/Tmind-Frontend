@@ -17,7 +17,7 @@ import DeletedDevices from "./devices/DeletedDevices";
 import Profile from "./pages/Profile";
 import ManageUser from "./pages/ManageUser";
 import Signal from "./pages/Signal";
-import AddPortForm from "./pages/AddPortsForm";
+import AddPortForm from "./devices/AddPortsForm";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Map_Device_To_Asset from "./asset/Map-Device-To-Asset";
 import { ToastContainer } from "react-toastify";

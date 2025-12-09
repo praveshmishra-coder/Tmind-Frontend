@@ -1,5 +1,5 @@
 import React from "react";
-import { NotificationList } from "./NotifcationList";
+import { NotificationList } from "../notification/NotifcationList";
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
