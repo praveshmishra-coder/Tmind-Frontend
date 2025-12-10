@@ -18,6 +18,8 @@ interface AssetConfig {
   signalName: string;
   signalUnit: string;
   regsiterAdress: number;
+   minThreshold: number,
+   maxThreshold: number,
 }
 
 
