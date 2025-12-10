@@ -259,7 +259,7 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                   <TooltipTrigger asChild>
                     <button
                       id="add-subasset-btn"  
-                      className="p-1 hover:bg-gray-200 rounded"
+                      className="p-1 rounded hover:bg-accent"
                       onClick={(e) => {
                         e.stopPropagation();
                         setAssetForAdd(asset);
@@ -269,7 +269,12 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                       <Plus className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent className="bg-white" side="top" align="center">Add Child</TooltipContent>
+                  <TooltipContent
+                  side="top"
+                  align="center"
+                  className="bg-background text-popover-foreground border shadow-md rounded-md px-2 py-1">
+                    Add Sub-Asset
+                  </TooltipContent>
                 </Tooltip>
               )}
 
@@ -278,7 +283,7 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                 <TooltipTrigger asChild>
                   <button
                     id="edit-asset-btn"
-                    className="p-1 hover:bg-gray-200 rounded"
+                    className="p-1 rounded hover:bg-accent"
                     onClick={(e) => {
                       e.stopPropagation();
                       setAssetForEdit(asset);
@@ -288,7 +293,12 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                     <Edit className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-white" side="top" align="center">Edit</TooltipContent>
+                <TooltipContent
+                  side="top"
+                  align="center"
+                  className="bg-background text-popover-foreground border shadow-md rounded-md px-2 py-1">
+                    Edit
+                </TooltipContent>
               </Tooltip>
 
               {/* DELETE */}
@@ -297,7 +307,7 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                   <TooltipTrigger asChild>
                     <button
                       id = "delete-asset-btn"
-                      className="p-1 bg-red-100 text-red-600 hover:bg-red-200 rounded"
+                      className="p-1 rounded bg-destructive/20 text-destructive hover:bg-destructive/30"
                       onClick={(e) => {
                         e.stopPropagation();
                         setAssetToDelete(asset);
@@ -307,7 +317,12 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent className="bg-white" side="top" align="center">Delete</TooltipContent>
+                  <TooltipContent
+                  side="top"
+                  align="center"
+                  className="bg-background text-popover-foreground border shadow-md rounded-md px-2 py-1">
+                    Delete
+                  </TooltipContent>
                 </Tooltip>
               )}
 
@@ -316,7 +331,7 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      className="p-1 hover:bg-gray-200 rounded"
+                      className="p-1 rounded hover:bg-accent"
                       onClick={(e) => {
                         e.stopPropagation();
                         setAssetForConfig(asset);
@@ -326,7 +341,12 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                       <Signal className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent className="bg-white" side="top" align="center">Configure Signals</TooltipContent>
+                  <TooltipContent
+                  side="top"
+                  align="center"
+                  className="bg-background text-popover-foreground border shadow-md rounded-md px-2 py-1">
+                    Configure Signals
+                  </TooltipContent>
                 </Tooltip>
               )}
 
@@ -335,13 +355,18 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      className="p-1 hover:bg-gray-200 rounded"
+                      className="p-1 rounded hover:bg-accent"
                       onClick={() => handleOpenAsset(asset)}
                     >
                       <Tv className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent className="bg-white" side="top" align="center">Show Signals</TooltipContent>
+                  <TooltipContent
+                  side="top"
+                  align="center"
+                  className="bg-background text-popover-foreground border shadow-md rounded-md px-2 py-1">
+                    Show Signals
+                  </TooltipContent>
                 </Tooltip>
               )}
 

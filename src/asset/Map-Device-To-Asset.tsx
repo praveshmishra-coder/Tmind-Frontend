@@ -333,7 +333,7 @@ export default function MapDeviceToAsset() {
 
   // ---------------------- Render ----------------------
   return (
-    <div className="p-6 lg:p-10 space-y-6">
+    <div className="p-6 lg:p-10 space-y-6 bg-background text-foreground ">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Asset Mapper</h1>
@@ -375,7 +375,13 @@ export default function MapDeviceToAsset() {
                         return (
                           <TableRow key={c.assetConfigID}>
                             <TableCell>
-                              <div className={`p-2 rounded ${isConnected ? "bg-green-300 border  border-green-100" : "bg-transparent"}`}>
+                              <div
+                                className={`p-2 rounded-lg ${
+                                  isConnected
+                                    ? "bg-green-500/20 border border-green-500/30"
+                                    : "bg-transparent"
+                                }`}
+                              >
                                 <div className="font-medium">{c.signalName}</div>
                                 {/* <div className="text-xs text-slate-500">Addr: {c.regsiterAdress}</div> */}
                               </div>
@@ -439,13 +445,13 @@ export default function MapDeviceToAsset() {
               <div className="mt-2 space-y-4">
                 {devicesForRender.length ? (
                   devicesForRender.map((device) => (
-                    <div key={device.deviceId} className="p-3 border rounded-lg">
+                    <div key={device.deviceId} className="p-4 rounded-xl bg-card border border-border shadow-sm">
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="font-semibold">{device.name}</div>
-                          <div className="text-xs text-slate-500">Protocol: {device.protocol}</div>
+                          <div className="text-xs text-muted-foreground">Protocol: {device.protocol}</div>
                         </div>
-                        <div className="text-sm text-slate-600">Slaves: {device.matchedSlaves?.length ?? 0}</div>
+                        <div className="text-sm text-muted-foreground">Slaves: {device.matchedSlaves?.length ?? 0}</div>
                       </div>
 
                       <div className="mt-3 border-t pt-3 space-y-2">
@@ -458,7 +464,7 @@ export default function MapDeviceToAsset() {
                           });
 
                           return (
-                            <div key={slave.deviceSlaveId} className="p-2 rounded-md bg-slate-50">
+                            <div key={slave.deviceSlaveId} className="p-3 rounded-lg bg-muted border border-border">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                   <div className="text-sm font-medium">Slave #{slave.slaveIndex}</div>
@@ -487,7 +493,7 @@ export default function MapDeviceToAsset() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-slate-500">No matches found.</div>
+                  <div className="text-muted-foreground">No matches found.</div>
                 )}
               </div>
             </CardContent>
@@ -526,7 +532,7 @@ export default function MapDeviceToAsset() {
                 return (
                   <div
                     key={r.registerId}
-                    className={`flex items-center justify-between border p-2 rounded ${disableCheckbox ? "opacity-50 cursor-not-allowed" : ""}`}
+                    className={`flex items-center justify-between border border-border border-b-2 bg-card p-2 rounded-lg ${disableCheckbox ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <div>
                       <div className="font-mono">{r.registerAddress}</div>

@@ -285,7 +285,6 @@ export default function UserManagement() {
 
       )}
 
-      {/* Pagination UI */}
       {/* Pagination UI - ShadCN */}
       <Pagination className="justify-center mt-6">
         <PaginationContent>

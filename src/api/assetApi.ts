@@ -170,7 +170,7 @@ export const updateAssetConfig = async (
 
 export const getSignalTypes = async (): Promise<SignalType[]> => {
   try {
-    const res = await apiAsset.get("/AssetConfig/SignalTypes");
+    const res = await apiAsset.get("/AssetConfig/SiganlTypes");
     return res.data as SignalType[];
   } catch (err) {
     throw handleApiError(err, "Failed to fetch signal types");

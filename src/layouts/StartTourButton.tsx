@@ -124,8 +124,9 @@ export default function StartTourButton() {
   };
 
   return (
-    <Button onClick={handleStartTour} className="text-sm bg-transparent" title="Start Tour">
-      <Info className="h-5 w-5 text-gray-700" />
+    <Button onClick={handleStartTour} variant="ghost"
+   className="text-sm" title="Start Tour">
+      <Info className="w-6 h-6 text-foreground" />
     </Button>
   );
 }

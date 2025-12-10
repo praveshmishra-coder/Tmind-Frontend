@@ -214,11 +214,12 @@ export default function Reports() {
                   <CalendarIcon />
                 </button>
               </PopoverTrigger>
-              <PopoverContent>
+              <PopoverContent className="p-0 border-none shadow-none">
                 <Calendar
                   mode="single"
                   selected={selectedDate ? new Date(selectedDate) : undefined}
                   onSelect={(d) => d && setSelectedDate(format(d, "yyyy-MM-dd"))}
+                  disabled={(date) => date > new Date()} 
                 />
               </PopoverContent>
             </Popover>
@@ -291,20 +292,24 @@ export default function Reports() {
 
               <div className="flex gap-2">
                 <Button
-                  id="download-csv-btn"
-                  className="bg-green-500/20 text-green-700"
-                  onClick={() => downloadCSV(displayedReport)}
-                >
+                id="download-csv-btn"
+                className="
+                  bg-green-500/20 text-green-700 
+                  dark:bg-green-500/10 dark:text-green-300 
+                  hover:bg-green-500/30 dark:hover:bg-green-500/20"
+                onClick={() => downloadCSV(displayedReport)}>
                   <FileText /> CSV
                 </Button>
 
                 <Button
-                  id="download-pdf-btn"
-                  className="bg-red-500/20 text-red-700"
-                  onClick={() => downloadPDF(displayedReport)}
-                >
-                  <FileDown /> PDF
-                </Button>
+                id="download-pdf-btn"
+                className="
+                  bg-red-500/20 text-red-700 
+                  dark:bg-red-500/10 dark:text-red-300 
+                  hover:bg-red-500/30 dark:hover:bg-red-500/20"
+                onClick={() => downloadPDF(displayedReport)}>
+                <FileDown /> PDF
+              </Button>
               </div>
             </div>
 

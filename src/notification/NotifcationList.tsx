@@ -42,11 +42,13 @@ export const NotificationList = () => {
         if (filter === "unread") return n.isRead !== true;
     });
 
+    const cardBase =
+        "relative p-4 mb-4 bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition";
+
     return (
-        <div className="flex flex-col h-full">
-            {/* {console.log("Notifications:", notifications)} */}
+        <div className="flex flex-col h-full bg-background">
             {/* === FILTER BAR === */}
-            <div className="border-b px-4 py-3 bg-gray-50">
+            <div className="border-b border-border px-4 py-3 bg-card ove" >
                 <div className="flex items-center gap-6">
                     {["all", "unread", "read"].map((key) => (
                         <button
@@ -55,7 +57,7 @@ export const NotificationList = () => {
                             className={`pb-2 text-sm font-medium transition border-b-2 ${
                                 filter === key
                                     ? "border-primary text-primary"
-                                    : "border-transparent text-gray-500 hover:text-gray-700"
+                                    : "border-transparent text-muted-foreground hover:text-foreground"
                             }`}
                         >
                             {key.charAt(0).toUpperCase() + key.slice(1)}
@@ -65,10 +67,9 @@ export const NotificationList = () => {
             </div>
 
             {/* === LIST === */}
-            <div className="flex-1 overflow-y-auto p-4">
-
+            <div className="flex-1 overflow-y-auto p-4 bg-background">
                 {filtered.length === 0 && (
-                    <p className="text-gray-500 text-center py-10">
+                    <p className="text-muted-foreground text-center py-10">
                         No notifications found
                     </p>
                 )}
@@ -78,9 +79,6 @@ export const NotificationList = () => {
                     const resolved = isResolvedLike(data) && !isStartLike(data);
                     const start = isStartLike(data);
 
-                    const cardBase =
-                        "relative p-4 mb-4 bg-white border rounded-xl shadow-sm hover:shadow-md transition";
-
                     /** ------------------------------
                      *  PLAINTEXT NOTIFICATION
                      * ------------------------------*/
@@ -88,16 +86,16 @@ export const NotificationList = () => {
                         return (
                             <div key={notif.id} className={cardBase}>
                                 <div className="flex items-start gap-3">
-                                    <Bell className="h-5 w-5 text-gray-500 mt-1" />
+                                    <Bell className="h-5 w-5 text-muted-foreground mt-1" />
 
                                     <div className="flex-1">
-                                        <p className="font-medium">
+                                        <p className="font-medium text-foreground">
                                             {notif.title ?? "Notification"}
                                         </p>
-                                        <p className="text-sm text-gray-700">
+                                        <p className="text-sm text-foreground/80">
                                             {notif.text}
                                         </p>
-                                        <p className="text-xs text-gray-400 mt-1">
+                                        <p className="text-xs text-muted-foreground mt-1">
                                             {fmtDate(notif.createdAt)}
                                         </p>
                                     </div>
@@ -122,15 +120,15 @@ export const NotificationList = () => {
                             <div key={notif.id} className={cardBase}>
                                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-xl" />
 
-                                <div className="text-xs text-right text-gray-600">
+                                <div className="text-xs text-right text-muted-foreground">
                                     {fmtDate(data.to)}
                                 </div>
 
-                                <p className="font-semibold text-gray-800 text-sm">
+                                <p className="font-semibold text-sm text-foreground">
                                     {data.signal} is back to normal
                                 </p>
 
-                                <div className="mt-2 text-sm flex justify-between">
+                                <div className="mt-2 text-sm flex justify-between text-foreground/90">
                                     <div>
                                         Asset: <b>{data.asset}</b>
                                     </div>
@@ -140,7 +138,7 @@ export const NotificationList = () => {
                                 </div>
 
                                 {/* DETAILS */}
-                                <div className="mt-3 grid grid-cols-2 gap-2 text-xs bg-gray-50 p-3 rounded-lg border">
+                                <div className="mt-3 grid grid-cols-2 gap-2 text-xs bg-muted/10 p-3 rounded-lg border border-border">
                                     <div>
                                         From: <b>{fmtDate(data.from)}</b>
                                     </div>
@@ -151,7 +149,6 @@ export const NotificationList = () => {
                                         Duration: <b>{Math.round(durationSeconds)} sec</b>
                                     </div>
 
-                                    {/* ➤ MIN MAX ADDED HERE */}
                                     <div>
                                         Min: <b>{fmt(data.min)}</b>
                                     </div>
@@ -160,7 +157,6 @@ export const NotificationList = () => {
                                     </div>
                                 </div>
 
-                                {/* GREEN LINE */}
                                 <div className="mt-2 h-1 bg-green-500 rounded-full" />
                             </div>
                         );
@@ -185,11 +181,11 @@ export const NotificationList = () => {
                                     }`}
                                 />
 
-                                <div className="text-xs text-right text-gray-600">
+                                <div className="text-xs text-right text-muted-foreground">
                                     {fmtDate(data.timestamp)}
                                 </div>
 
-                                <div className="font-semibold text-sm text-gray-800">
+                                <div className="font-semibold text-sm text-foreground">
                                     {data.asset} • {data.signal}
                                 </div>
 
@@ -197,20 +193,19 @@ export const NotificationList = () => {
                                     <span
                                         className={`px-2 py-0.5 rounded text-xs font-medium ${
                                             isHigh
-                                                ? "bg-red-100 text-red-700"
-                                                : "bg-blue-100 text-blue-700"
+                                                ? "bg-red-500/20 text-red-400"
+                                                : "bg-blue-500/20 text-blue-400"
                                         }`}
                                     >
                                         {data.status}
                                     </span>
 
-                                    <span className="text-sm">
+                                    <span className="text-sm text-foreground">
                                         {fmt(data.value)} {data.unit}
                                     </span>
                                 </div>
 
-                                {/* LIMITS */}
-                                <div className="mt-3 grid grid-cols-2 gap-3 text-xs bg-gray-50 p-3 rounded-lg border">
+                                <div className="mt-3 grid grid-cols-2 gap-3 text-xs bg-muted/10 p-3 rounded-lg border border-border">
                                     <div>
                                         Min: <b>{fmt(data.min)}</b>
                                     </div>
@@ -227,8 +222,10 @@ export const NotificationList = () => {
                      * ------------------------------*/
                     return (
                         <div key={notif.id} className={cardBase}>
-                            <p className="font-semibold">{notif.title}</p>
-                            <pre className="text-xs mt-2 bg-gray-50 p-2 rounded border">
+                            <p className="font-semibold text-foreground">
+                                {notif.title}
+                            </p>
+                            <pre className="text-xs mt-2 bg-muted/10 p-2 rounded border border-border text-foreground">
                                 {JSON.stringify(data, null, 2)}
                             </pre>
                         </div>
