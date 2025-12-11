@@ -3,7 +3,7 @@ import { useNotifications } from "../context/NotificationContext";
 import { Bell } from "lucide-react";
 
 export const NotificationList = () => {
-    const { notifications } = useNotifications();
+    const { notifications, markAllRead, markRead } = useNotifications();
     const [filter, setFilter] = useState<"all" | "read" | "unread">("all");
 
     const fmt = (n: number | null | undefined) =>
@@ -64,6 +64,15 @@ export const NotificationList = () => {
                         </button>
                     ))}
                 </div>
+        {/* === MARK ALL READ BUTTON ONLY IN UNREAD FILTER === */}
+        {filter === "unread" && filtered.length > 0 && (
+          <button
+            onClick={markAllRead}
+            className="px-3 py-1 rounded bg-primary text-white text-sm hover:bg-primary/90 transition"
+          >
+            Mark All Read
+          </button>
+        )}
             </div>
 
             {/* === LIST === */}
@@ -222,7 +231,15 @@ export const NotificationList = () => {
                      * ------------------------------*/
                     return (
                         <div key={notif.id} className={cardBase}>
-                            <p className="font-semibold text-foreground">
+                            {!notif.isRead && (
+                            <button
+                            onClick={() => markRead(notif.id)}
+                            className="absolute right-3 top-3 px-2 py-1 text-xs bg-primary text-white rounded hover:bg-primary/90 transition"
+                            >
+                            Mark Read
+                            </button>
+                        )}
+                                        <p className="font-semibold text-foreground">
                                 {notif.title}
                             </p>
                             <pre className="text-xs mt-2 bg-muted/10 p-2 rounded border border-border text-foreground">
