@@ -220,7 +220,7 @@ export const getAllNotifications = async (): Promise<Notification[]> => {
 
 export const getUnreadNotifications = async (): Promise<Notification[]> => {
   try {
-    const res = await apiAsset.get("/Notifications/unread");
+    const res = await apiAsset.get("/Notifications/my?unread=true");
     return res.data?.data as Notification[];
   } catch (err) {
     throw handleApiError(err, "Failed to fetch unread notifications");
@@ -229,7 +229,7 @@ export const getUnreadNotifications = async (): Promise<Notification[]> => {
 
 export const getReadNotifications = async (): Promise<Notification[]> => {
   try {
-    const res = await apiAsset.get("/Notifications/read");
+    const res = await apiAsset.get("/Notifications/my?unread=false");
     return res.data?.data as Notification[];
   } catch (err) {
     throw handleApiError(err, "Failed to fetch read notifications");
@@ -238,6 +238,7 @@ export const getReadNotifications = async (): Promise<Notification[]> => {
 
 export const markNotificationAsRead = async (id: string) => {
   try {
+    console.log("ID:",{id})
     await apiAsset.post(`/Notifications/read/${id}`);
   } catch (err) {
     throw handleApiError(err, `Failed to mark notification ${id} as read`);
@@ -246,7 +247,7 @@ export const markNotificationAsRead = async (id: string) => {
 
 export const markAllNotificationsAsRead = async () => {
   try {
-    await apiAsset.post("/Notifications/read/all");
+    await apiAsset.post("/Notifications/readall");
   } catch (err) {
     throw handleApiError(err, "Failed to mark all notifications as read");
   }
