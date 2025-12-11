@@ -84,14 +84,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   /** ===================================================
    *            MARK SINGLE NOTIFICATION READ
    * =================================================== */
-  const markRead = async (id: string) => {
+  const markRead = async (recipientId: string) => {
     try {
-      await markNotificationAsRead(id);
+      await markNotificationAsRead(recipientId);
       loadNotifications(); // refresh current tab
     } catch (err) {
       console.error("Failed to mark as read:", err);
     }
   };
+  
 
   /** ===================================================
    *            MARK ALL NOTIFICATIONS READ

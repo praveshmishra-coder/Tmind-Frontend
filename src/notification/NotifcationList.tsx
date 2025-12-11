@@ -39,7 +39,7 @@ export const NotificationList = () => {
   const filtered = notifications.filter((n: any) => {
     if (filter === "all") return true;
     if (filter === "read") return n.isRead === true;
-    if (filter === "unread") return n.isRead !== true;
+    if (filter === "unread") return n.isRead === false;
   });
 
   const cardBase =
@@ -92,10 +92,10 @@ export const NotificationList = () => {
           const start = isStartLike(data);
 
           /* ===================== UNREAD CARD BUTTON ===================== */
-         const ReadBtn =
+        const ReadBtn =
         !notif.isRead && filter === "unread" ? (
             <button
-            onClick={() => markRead(notif.id)}
+            onClick={() => markRead(notif.recipientId)}   // ✅ Correct ID
             className="ml-auto flex items-center p-1 rounded hover:bg-primary/20 text-primary transition"
             title="Mark as Read"
             >
