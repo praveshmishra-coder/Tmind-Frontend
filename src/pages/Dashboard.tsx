@@ -60,8 +60,8 @@ export default function Dashboard() {
   const [plantCount, setPlantCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
-  const { notifications } = useNotifications();
-  const alertsToday = notifications.length;
+  const { unreadCount } = useNotifications();
+  const alertsToday = unreadCount;
   const [avgResponse, setAvgResponse] = useState<number>(0);
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";

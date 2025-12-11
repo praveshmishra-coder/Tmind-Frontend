@@ -69,8 +69,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
     }
   };
 
-  const { notifications } = useNotifications();
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+   const { unreadCount } = useNotifications();
 
   return (
     <header className="sticky top-0 z-40 h-16  flex items-center justify-between px-4 sm:px-6 bg-sidebar backdrop-blur-md border-b border-border shadow-sm transition-colors rounded-sm">
