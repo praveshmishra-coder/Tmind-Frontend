@@ -69,3 +69,8 @@ export const match_by_regAddress = async (registerAddresses:any) => {
   const response = await api.post(`/devices/match-by-address`, registerAddresses);
   return response;
 };
+
+export const getAvgApiResponseTime = async () => {
+  const response = await api.get("/stats/avg-response-time");
+  return response.data.avgResponseTime;
+};
