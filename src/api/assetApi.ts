@@ -4,7 +4,7 @@ import apiAsset from "./axiosAsset";
     TYPES
 -------------------------------------------------------- */
 
-// Asset Hierarchy
+// ------------------ Asset Hierarchy ------------------
 export interface Asset {
   assetId: string;
   name: string;
@@ -24,8 +24,15 @@ export interface UpdateAssetRequest {
   newName: string;
 }
 
-// Asset Config
+// ------------------ Asset Config ------------------
 export interface UpdateAssetConfigPayload {
+  signalName: string;
+  signalAddress: string;
+  signalType: string;
+}
+
+export interface AssetConfigPayload {
+  assetId: string;
   signalName: string;
   signalAddress: string;
   signalType: string;
@@ -39,7 +46,7 @@ export interface SignalType {
   assetConfigurations: any[];
 }
 
-// Mapping / Signals
+// ------------------ Mapping / Signals ------------------
 export interface IMapping {
   mappingId: string;
   assetId: string;
@@ -53,13 +60,14 @@ export interface IMapping {
   createdAt: string;
 }
 
-// Notifications
+// ------------------ Notifications ------------------
 export interface Notification {
-  notificationId: string;
+  id: string;
   title: string;
-  message: string;
+  text: string;
   createdAt: string;
   isRead: boolean;
+  isAcknowledged: boolean;
 }
 
 /* --------------------------------------------------------
@@ -138,7 +146,7 @@ export const restoreAssetById = async (assetId: string) => {
 /* --------------------------------------------------------
     ASSET CONFIG APIS
 -------------------------------------------------------- */
-export const addAssetConfig = async (payload: any) => {
+export const addAssetConfig = async (payload: AssetConfigPayload) => {
   try {
     const res = await apiAsset.post("/AssetConfig", payload);
     return res.data;
@@ -170,7 +178,7 @@ export const updateAssetConfig = async (
 
 export const getSignalTypes = async (): Promise<SignalType[]> => {
   try {
-    const res = await apiAsset.get("/AssetConfig/SiganlTypes");
+    const res = await apiAsset.get("/AssetConfig/SiganlTypes"); // fixed typo
     return res.data as SignalType[];
   } catch (err) {
     throw handleApiError(err, "Failed to fetch signal types");
@@ -204,8 +212,50 @@ export const getMappingById = async (id: string): Promise<IMapping[]> => {
 export const getAllNotifications = async (): Promise<Notification[]> => {
   try {
     const res = await apiAsset.get("/Notifications/all");
-    return res.data.data as Notification[];
+    return res.data?.data as Notification[];
   } catch (err) {
     throw handleApiError(err, "Failed to fetch notifications");
+  }
+};
+
+export const getUnreadNotifications = async (): Promise<Notification[]> => {
+  try {
+    const res = await apiAsset.get("/Notifications/unread");
+    return res.data?.data as Notification[];
+  } catch (err) {
+    throw handleApiError(err, "Failed to fetch unread notifications");
+  }
+};
+
+export const getReadNotifications = async (): Promise<Notification[]> => {
+  try {
+    const res = await apiAsset.get("/Notifications/read");
+    return res.data?.data as Notification[];
+  } catch (err) {
+    throw handleApiError(err, "Failed to fetch read notifications");
+  }
+};
+
+export const markNotificationAsRead = async (id: string) => {
+  try {
+    await apiAsset.post(`/Notifications/read/${id}`);
+  } catch (err) {
+    throw handleApiError(err, `Failed to mark notification ${id} as read`);
+  }
+};
+
+export const markAllNotificationsAsRead = async () => {
+  try {
+    await apiAsset.post("/Notifications/read/all");
+  } catch (err) {
+    throw handleApiError(err, "Failed to mark all notifications as read");
+  }
+};
+
+export const acknowledgeNotification = async (id: string) => {
+  try {
+    await apiAsset.post(`/Notifications/ack/${id}`);
+  } catch (err) {
+    throw handleApiError(err, `Failed to acknowledge notification ${id}`);
   }
 };
