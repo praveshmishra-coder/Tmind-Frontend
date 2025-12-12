@@ -100,6 +100,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
         <Button
           variant="ghost"
           onClick={handleNotificationClick}
+          title="Notifications"
           className="relative"
         >
           <Bell className="w-6 h-6 text-foreground" />
