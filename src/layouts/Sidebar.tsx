@@ -27,8 +27,7 @@ export default function Sidebar() {
     // ADMIN ONLY
     ...(isAdmin
       ? [ { icon: <UserRoundSearch  size={18} />, label: "Manage User", path: "/manage-user" },
-          { icon: <Trash size={18} />, label: "Deleted Devices", path: "/deleted-devices" },
-          { icon: <Trash size={18} />, label: "Deleted Assets", path: "/deleted-assets" }
+          { icon: <Trash size={18} />, label: "Recently Deleted", path: "/deleted-devices" }
         ]
       : [])
   ];
