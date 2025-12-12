@@ -177,21 +177,18 @@ export default function AssetBulkUpload() {
   return (
     <Card className="p-4">
       <CardHeader>
-        <CardTitle className="text-sm">Asset Bulk Upload</CardTitle>
+        <CardTitle className="text-sm text-foreground">Asset Bulk Upload</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div
           onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; f && handleFile(f); }}
           onDragOver={e => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
-          className={
-            "rounded-lg p-4 flex items-center justify-between transition-shadow border cursor-pointer " +
-            (dragOver ? "shadow-lg border-indigo-300 bg-indigo-50" : "bg-white")
-          }
-
-        >
+           className={`rounded-lg p-4 flex items-center justify-between transition-shadow border cursor-pointer
+          ${dragOver ? "shadow-lg border-primary/40 bg-primary/5" : "bg-card"}`}
+      >
           <div className="leading-tight">
-            <div className="text-sm font-medium">Upload CSV / Excel</div>
+            <div className="text-sm font-medium text-foreground">Upload CSV / Excel</div>
             <div className="text-xs text-muted-foreground mt-1">
               Columns: <span className="font-semibold">AssetName</span>, <span className="font-semibold">ParentName</span>, <span className="font-semibold">Level</span>
             </div>
@@ -208,8 +205,8 @@ export default function AssetBulkUpload() {
         <Separator />
 
         {globalErrors.length > 0 && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
-            <ul className="list-disc ml-5">
+        <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive rounded text-sm">
+          <ul className="list-disc ml-5">
               {globalErrors.map((e, i) => <li key={i}>{e}</li>)}
             </ul>
           </div>
@@ -217,16 +214,18 @@ export default function AssetBulkUpload() {
 
         <div>
           {fieldErrors.length > 0 ? (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
-              <div className="font-medium mb-2">Validation issues</div>
+            <div className="p-3 bg-warning/10 border border-warning/30 rounded text-sm">
+            <div className="font-medium mb-2 text-warning">
+              Validation issues
+            </div>
               <ScrollArea className="h-auto overflow-auto">
                 <ul className="space-y-2">
                   {fieldErrors.map((fe, i) => (
-                    <li key={i} className="p-2 bg-white border rounded shadow-sm">
+                    <li key={i} className="p-2 bg-card border rounded shadow-sm">
                       <div className="text-xs text-muted-foreground">
                         {fe.rowInfo || assets[fe.assetIndex]?.sourceRows?.join(",") || "?"}
                       </div>
-                      <div className="font-medium">Field: {fe.field}</div>
+                      <div className="font-medium text-foreground">Field: {fe.field}</div>
                       <div className="text-xs text-red-700 mt-1">
                         {fe.messages.map((m, i2) => <div key={i2}>• {m}</div>)}
                       </div>
@@ -236,9 +235,11 @@ export default function AssetBulkUpload() {
               </ScrollArea>
             </div>
           ) : (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded text-sm">
-              {assets.length > 0 ? "🎉 CSV is ready to upload." : "Upload a CSV/XLSX to validate."}
-            </div>
+            <div className="p-3 bg-emerald-50/20 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded text-sm">
+            {assets.length > 0
+              ? "🎉 CSV is ready to upload."
+              : "Upload a CSV/XLSX to validate."}
+          </div>
           )}
         </div>
 
@@ -251,12 +252,12 @@ export default function AssetBulkUpload() {
          {apiResposne && (
           <div className="space-y-3 mt-4">
             {apiResposne.addedAssets?.length > 0 && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded text-sm">
-                <div className="font-medium text-emerald-700 mb-1">
-                  ✅ Successfully Added ({apiResposne.addedAssets.length})
-                </div>
+            <div className="p-3 bg-emerald-50/20 border border-emerald-500/20 rounded text-sm">
+              <div className="font-medium text-emerald-600 dark:text-emerald-400 mb-1">
+                ✅ Successfully Added ({apiResposne.addedAssets.length})
+              </div>
                 <ScrollArea className="max-h-40">
-                  <ul className="list-disc ml-5 text-emerald-800">
+                  <ul className="list-disc ml-5 text-emerald-800 dark:text-emerald-400">
                     {apiResposne.addedAssets.map((msg, i) => (
                       <li key={i}>{msg}</li>
                     ))}
@@ -266,10 +267,10 @@ export default function AssetBulkUpload() {
             )}
 
             {apiResposne.skippedAssets?.length > 0 && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded text-sm">
-                <div className="font-medium text-red-700 mb-1">
-                  ⚠️ Skipped ({apiResposne.skippedAssets.length})
-                </div>
+               <div className="p-3 bg-destructive/10 border border-destructive/30 rounded text-sm">
+              <div className="font-medium text-destructive mb-1">
+                ⚠️ Skipped ({apiResposne.skippedAssets.length})
+              </div>
                 <ScrollArea className="max-h-40">
                   <ul className="list-disc ml-5 text-red-800">
                     {apiResposne.skippedAssets.map((msg, i) => (

@@ -215,17 +215,26 @@ export default function DeviceBulkUpload() {
           onDragOver={e => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           className={cn(
-            "rounded-lg p-4 flex items-center justify-between transition-shadow border cursor-pointer",
-            dragOver ? "shadow-lg border-indigo-300 bg-indigo-50" : "bg-white"
-          )}
+          "rounded-lg p-4 flex items-center justify-between transition-shadow border cursor-pointer",
+          dragOver
+            ? "shadow-lg border-primary/40 bg-primary/5"
+            : "bg-card"
+        )}
         >
-          <div className="leading-tight">
-            <div className="text-sm font-medium">Upload CSV / Excel</div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Columns: <span className="font-semibold">DeviceName</span>, <span className="font-semibold">DeviceDescription</span>
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">Drag & drop or click “Choose file”</div>
+        <div className="leading-tight">
+          <div className="text-sm font-medium text-foreground">
+            Upload CSV / Excel
           </div>
+
+          <div className="text-xs text-muted-foreground mt-1">
+            Columns: <span className="font-semibold">DeviceName</span>,{" "}
+            <span className="font-semibold">DeviceDescription</span>
+          </div>
+
+          <div className="text-xs text-muted-foreground mt-1">
+            Drag & drop or click “Choose file”
+          </div>
+        </div>
           <div className="flex items-center gap-3">
             <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
               onChange={e => { const f = e.target.files?.[0]; f && handleFile(f); if (fileInputRef.current) fileInputRef.current.value = ""; }} />
@@ -237,8 +246,8 @@ export default function DeviceBulkUpload() {
         <Separator />
 
         {globalErrors.length > 0 && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
-            <ul className="list-disc ml-5">
+           <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive rounded text-sm">
+             <ul className="list-disc ml-5">
               {globalErrors.map((e, i) => <li key={i}>{e}</li>)}
             </ul>
           </div>
@@ -246,8 +255,8 @@ export default function DeviceBulkUpload() {
 
         <div>
           {fieldErrors.length > 0 ? (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
-              <div className="font-medium mb-2">Validation issues</div>
+            <div className="p-3 bg-warning/10 border border-warning/30 rounded text-sm">
+            <div className="font-medium mb-2 text-warning">Validation issues</div>
               <ScrollArea className="h-auto overflow-auto">
                 <ul className="space-y-2">
                   {fieldErrors.map((fe, i) => (
@@ -255,7 +264,7 @@ export default function DeviceBulkUpload() {
                       <div className="text-xs text-muted-foreground">
                         {fe.rowInfo || devices[fe.deviceIndex]?.sourceRows?.join(",") || "?"}
                       </div>
-                      <div className="font-medium">Field: {fe.field}</div>
+                      <div className="font-medium text-foreground">Field: {fe.field}</div>
                       <div className="text-xs text-red-700 mt-1">
                         {fe.messages.map((m, i2) => <div key={i2}>• {m}</div>)}
                       </div>
@@ -265,9 +274,11 @@ export default function DeviceBulkUpload() {
               </ScrollArea>
             </div>
           ) : (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded text-sm">
-              {devices.length > 0 ? "🎉 CSV is ready to upload." : "Upload a CSV/XLSX to validate."}
-            </div>
+            <div className="p-3 bg-emerald-50/20 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded text-sm">
+            {devices.length > 0
+              ? "🎉 CSV is ready to upload."
+              : "Upload a CSV/XLSX to validate."}
+          </div>
           )}
         </div>
 

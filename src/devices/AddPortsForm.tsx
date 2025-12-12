@@ -450,19 +450,19 @@ export default function ModbusPortManager() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-slate-50 to-blue-50">
+    <div className="min-h-screen bg-background text-foreground ">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl">
-              <Cable className="w-6 h-6 text-white" />
+       <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border shadow-sm">
+    <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="p-2.5 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl">
+          <Cable className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">Slave Manager</h1>
-              <p className="text-xs text-slate-500">Modbus Slave / Registers Configuration</p>
-            </div>
+            <h1 className="text-2xl font-bold text-foreground">Slave Manager</h1>
+            <p className="text-xs text-muted-foreground">Modbus Slave / Registers Configuration</p>
           </div>
+            </div>
           <Button
             onClick={handleAddNewSlave}
             className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all"
@@ -479,8 +479,8 @@ export default function ModbusPortManager() {
           <div className="grid grid-cols-2 gap-3 p-3 max-h-96 overflow-y-auto  border-r ">
             {slaves.length === 0 ? (
               <div className="p-8 text-center col-span-2">
-                <Database className="w-10 h-10 mx-auto text-slate-300 mb-2" />
-                <p className="text-xs text-slate-500">No slaves yet</p>
+                <Database className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+                <p className="text-xs text-muted-foreground">No slaves yet</p>
               </div>
             ) : (
               slaves.map(slave => (
@@ -492,17 +492,18 @@ export default function ModbusPortManager() {
                     setEditingRegisterIdx(null);
                     setRegisterForm({ ...defaultRegister, registerAddress: buildDisplayAddress(defaultRegister.registerType!, defaultRegister.signalBase!) });
                   }}
-                  className={`p-4 h-32 text-left rounded-xl border transition-all ${selectedSlaveIndex === slave.slaveIndex
-                    ? "bg-gradient-to-r from-blue-50 to-blue-100 border-blue-600"
-                    : "hover:bg-slate-50 border-slate-200 "
-                    }`}
+                  className={`p-4 h-32 text-left rounded-xl border transition-all ${
+                  selectedSlaveIndex === slave.slaveIndex
+                  ? "bg-gradient-to-r from-primary/10 to-primary/20 border-primary shadow-sm"
+                  : "hover:bg-card/50 border-border"
+              }`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-900 text-sm">
+                      <p className="font-semibold text-foreground text-sm">
                         Slave {slave.slaveIndex}
                       </p>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         {slave.registers.length} registers
                       </p>
                     </div>
@@ -520,28 +521,34 @@ export default function ModbusPortManager() {
             {selectedSlave ? (
               <div className="space-y-3">
                 {/* Slave Header Card */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 bg-blue-100 rounded-xl">
-                        <Settings2 className="w-6 h-6 text-blue-600" />
+              <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-primary/20 rounded-xl">
+                      <Settings2 className="w-6 h-6 text-primary" />
                       </div>
                       <div>
-                        <h2 className="text-xl font-bold text-slate-900">Slave {selectedSlave.slaveIndex}</h2>
-                        <p className="text-sm text-slate-500">Configuration</p>
+                        <h2 className="text-xl font-bold text-foreground">Slave {selectedSlave.slaveIndex}</h2>
+                        <p className="text-sm text-muted-foreground">Configuration</p>
                       </div>
                     </div>
-                    <div className={`px-4 py-2 rounded-full font-semibold text-sm ${selectedSlave.isHealthy ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
-                      {selectedSlave.isHealthy ? "Healthy" : "Unhealthy"}
-                    </div>
+                <div
+                  className={`px-4 py-2 rounded-full font-semibold text-sm ${
+                    selectedSlave.isHealthy
+                      ? "bg-emerald-500/15 text-emerald-600"
+                      : "bg-red-500/15 text-red-600"
+                  }`}
+                >
+                  {selectedSlave.isHealthy ? "Healthy" : "Unhealthy"}
+                </div>
                   </div>
                   <div className="flex gap-2">
                     {!showRegisterForm && (
                       <Button
                         onClick={() => setShowRegisterForm(true)}
                         variant="outline"
-                        className="border-blue-600 text-blue-600 hover:bg-blue-50 rounded-xl"
-                      >
+                        className="border-primary text-primary hover:bg-primary/10 rounded-xl"
+            >
                         <Plus className="w-4 h-4 mr-2" />
                         Add Register
                       </Button>
@@ -550,7 +557,7 @@ export default function ModbusPortManager() {
                       onClick={saveCurrentSlave}
                       disabled={isSaving}
                       className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
-                    >
+          >
                       {isSaving ? (
                         <>
                           <Loader className="w-4 h-4 mr-2 animate-spin" />
@@ -566,35 +573,32 @@ export default function ModbusPortManager() {
                   </div>
                 </div>
                 <div className="-mt-8">
-                  <p className="text-sm text-blue-700 bg-blue-100 border border-blue-300 rounded-lg px-4">
+                  <p className="text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-800 rounded-lg px-4 py-2">
                     The register having status Connected will not be <b>deleted / updated </b>, please unlink them by asset to <b>delete / update</b>
                   </p>
                 </div>
 
-
-
-
                 {/* Register Form */}
                 {showRegisterForm && (
-                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                  <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-bold text-slate-900">
+                      <h3 className="text-lg font-bold text-foreground">
                         {editingRegisterIdx !== null ? "Edit Register" : "Add Register"}
                       </h3>
-                      <button onClick={cancelRegisterForm} className="p-1 hover:bg-slate-100 rounded-lg transition">
-                        <X className="w-5 h-5 text-slate-500" />
+                      <button onClick={cancelRegisterForm} className="p-1 rounded-lg hover:bg-muted transition">
+                        <X className="w-5 h-5 text-muted-foreground" />
                       </button>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                       {/* Register Type */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-700">Register Type</Label>
+                        <Label className="text-sm font-medium text-foreground">Register Type</Label>
                         <Select value={registerForm.registerType} onValueChange={(v) => updateRegisterForm("registerType", v as any)}>
-                          <SelectTrigger className="rounded-xl border-slate-200">
+                          <SelectTrigger className="rounded-xl border-border bg-card">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-white">
+                          <SelectContent className="bg-card shadow-md border border-border">
                             <SelectItem value="coil">Coil (0xxxx)</SelectItem>
                             <SelectItem value="discrete">Discrete Input (1xxxx)</SelectItem>
                             <SelectItem value="input">Input Register (3xxxx)</SelectItem>
@@ -605,54 +609,54 @@ export default function ModbusPortManager() {
 
                       {/* Signal selection (populated from backend or fallback) */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-700">Signal (0001)</Label>
+                        <Label className="text-sm font-medium text-foreground">Signal (0001)</Label>
                         <Select value={String(registerForm.signalBase ?? 1)} onValueChange={(v) => updateRegisterForm("signalBase", Number(v))}>
-                          <SelectTrigger className="rounded-xl border-slate-200">
+                          <SelectTrigger className="rounded-xl border-border bg-card">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-white">
+                          <SelectContent className="bg-card shadow-md border border-border">
                             {signals.map(sig => (
                               <SelectItem key={sig.id} value={String(sig.id)}>{String(sig.id).padStart(4, '0')} — {sig.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        <p className="text-xs text-slate-400 mt-1">Select which signal (0001 etc). Combined with type becomes 40001 / 30005 etc.</p>
+                        <p className="text-xs text-muted-foreground">Select which signal (0001 etc). Combined with type becomes 40001 / 30005 etc.</p>
                       </div>
 
                       {/* Display Address (computed) */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-700">Display Address (computed)</Label>
+                        <Label className="text-sm font-medium text-foreground">Display Address (computed)</Label>
                         <Input
                           type="number"
                           value={registerForm.registerAddress}
                           disabled
                           onChange={(e) => updateRegisterForm("registerAddress", Number(e.target.value))}
-                          className="rounded-xl border-slate-200 focus:border-blue-500 focus:ring-blue-500 font-mono"
+                          className="rounded-xl border-border bg-card font-mono"
                         />
-                        <p className="text-xs text-slate-400 mt-1">This is the 5-digit Modbus style address (e.g., 40001). You can edit directly if needed.</p>
+                        <p className="text-xs text-muted-foreground">This is the 5-digit Modbus style address (e.g., 40001). You can edit directly if needed.</p>
                       </div>
 
                       {/* Length */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-700">Register Length</Label>
+                        <Label className="text-sm font-medium text-foreground">Register Length</Label>
                         <Input
                           type="number"
                           value={registerForm.registerLength}
                           min={1}
                           max={10}
                           onChange={(e) => updateRegisterForm("registerLength", Number(e.target.value))}
-                          className="rounded-xl border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                          className="rounded-xl border-border bg-card"
                         />
                       </div>
 
                       {/* Data Type */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-700">Data Type</Label>
+                        <Label className="text-sm font-medium text-foreground">Data Type</Label>
                         <Select value={registerForm.dataType} onValueChange={(v) => updateRegisterForm("dataType", v)}>
-                          <SelectTrigger className="rounded-xl border-slate-200">
+                          <SelectTrigger className="rounded-xl border-border bg-card">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-white">
+                          <SelectContent className="bg-card shadow-md border border-border">
                             <SelectItem value="int16">int16</SelectItem>
                             <SelectItem value="uint16">uint16</SelectItem>
                             <SelectItem value="int32">int32</SelectItem>
@@ -664,29 +668,29 @@ export default function ModbusPortManager() {
 
                       {/* Scale */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-700">Scale Factor</Label>
+                        <Label className="text-sm font-medium text-foreground">Scale Factor</Label>
                         <Input
                           type="number"
                           step={0.01}
                           value={registerForm.scale}
                           onChange={(e) => updateRegisterForm("scale", Number(e.target.value))}
-                          className="rounded-xl border-slate-200 focus:border-blue-500 focus:ring-blue-500"
+                          className="rounded-xl border-border bg-card"
                         />
                       </div>
 
                       {/* Unit */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-700">Unit</Label>
+                        <Label className="text-sm font-medium text-foreground">Unit</Label>
 
                         <Select
                           value={registerForm.unit ?? "V"}
                           onValueChange={(v) => updateRegisterForm("unit", v)}
                         >
-                          <SelectTrigger className="rounded-xl border-slate-200">
+                          <SelectTrigger className="rounded-xl border-border bg-card">
                             <SelectValue placeholder="Select unit" />
                           </SelectTrigger>
 
-                          <SelectContent className="bg-white">
+                          <SelectContent className="bg-card shadow-md border border-border">
                             <SelectItem value="V">V (Volts)</SelectItem>
                             <SelectItem value="A">A (Amperes)</SelectItem>
                             <SelectItem value="°C">°C (Celsius)</SelectItem>
@@ -706,12 +710,12 @@ export default function ModbusPortManager() {
 
                       {/* Byte Order */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-slate-700">Byte Order</Label>
+                        <Label className="text-sm font-medium text-foreground">Byte Order</Label>
                         <Select value={registerForm.byteOrder ?? "Big"} onValueChange={(v) => updateRegisterForm("byteOrder", v as any)}>
-                          <SelectTrigger className="rounded-xl border-slate-200">
+                          <SelectTrigger className="rounded-xl border-border bg-card">
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent className="bg-white">
+                          <SelectContent className="bg-card shadow-md border border-border">
                             <SelectItem value="Big">Big Endian</SelectItem>
                             <SelectItem value="Little">Little Endian</SelectItem>
                           </SelectContent>
@@ -719,7 +723,7 @@ export default function ModbusPortManager() {
                       </div>
                     </div>
 
-                    <div className="space-y-3 mb-6 p-4 bg-slate-50 rounded-xl">
+                    <div className="space-y-3 mb-6 p-4 bg-card rounded-xl border border-border">
                       <div className="flex items-center gap-3">
                         <Checkbox
                           id="wordSwap"
@@ -741,7 +745,7 @@ export default function ModbusPortManager() {
                     <div className="flex gap-3">
                       <Button
                         onClick={handleSaveRegister}
-                        className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl"
+                        className="flex-1 bg-primary text-primary-foreground hover:opacity-90 rounded-xl"
                       >
                         <Save className="w-4 h-4 mr-2" />
                         {editingRegisterIdx !== null ? "Update Register" : "Add Register"}
@@ -749,7 +753,7 @@ export default function ModbusPortManager() {
                       <Button
                         variant="outline"
                         onClick={cancelRegisterForm}
-                        className="rounded-xl"
+                        className="rounded-xl border-border"
                       >
                         Cancel
                       </Button>
@@ -759,37 +763,37 @@ export default function ModbusPortManager() {
 
                 {/* Registers List */}
                 {selectedSlave.registers.length === 0 ? (
-                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
-                    <Database className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-                    <p className="text-slate-500 text-sm">No registers configured</p>
-                    <p className="text-slate-400 text-xs mt-1">Add a register to get started</p>
-                  </div>
+                  <div className="bg-card rounded-2xl border border-border shadow-sm p-12 text-center">
+                  <Database className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground text-sm">No registers configured</p>
+                  <p className="text-muted-foreground/70 text-xs mt-1">Add a register to get started</p>
+                </div>
                 ) : (
-                  <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                   <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full">
-                        <thead className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-200">
+                        <thead className="bg-gradient-to-r from-card to-muted border-b border-border/70">
                           <tr>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Address</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Length</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Data Type</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Scale</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Unit</th>
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Byte Order</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">Address</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">Length</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">Data Type</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">Scale</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">Unit</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">Byte Order</th>
 
-                            <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">Actions</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-foreground/80 uppercase tracking-wider">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200 bg-white">
+                        <tbody className="divide-y divide-border bg-card">
                           {selectedSlave.registers.map((reg, idx) => (
-                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                              <td className="px-6 py-4 text-sm font-mono font-medium text-slate-900">{reg.registerAddress}</td>
-                              <td className="px-6 py-4 text-sm text-slate-700">{reg.registerLength}</td>
-                              <td className="px-6 py-4 text-sm font-mono text-slate-700">{reg.dataType}</td>
-                              <td className="px-6 py-4 text-sm text-slate-700">{reg.scale}</td>
-                              <td className="px-6 py-4 text-sm text-slate-700">{reg.unit || "—"}</td>
-                              <td className="px-6 py-4 text-sm text-slate-700">{reg.byteOrder || "—"}</td>
+                            <tr key={idx} className="hover:bg-accent transition-colors">
+                              <td className="px-6 py-4 text-sm font-mono font-medium text-foreground">{reg.registerAddress}</td>
+                              <td className="px-6 py-4 text-sm text-foreground/80">{reg.registerLength}</td>
+                              <td className="px-6 py-4 text-sm font-mono text-foreground/80">{reg.dataType}</td>
+                              <td className="px-6 py-4 text-sm text-foreground/80">{reg.scale}</td>
+                              <td className="px-6 py-4 text-sm text-foreground/80">{reg.unit || "—"}</td>
+                              <td className="px-6 py-4 text-sm text-foreground/80">{reg.byteOrder || "—"}</td>
                               <td className="px-6 py-4 text-sm w-[7.2rem] text-center">
                                 <span className={`inline-flex items-center w-[7.2rem]   px-4 py-1 rounded-full text-xs font-medium ${reg?.registerId ? existingMappings.includes(reg.registerId) ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : "bg-red-100 text-red-700 border border-red-200" : " bg-slate-100 text-slate-500 border border-slate-200"}`}>
                                   {reg?.registerId ? existingMappings.includes(reg.registerId) ? "connected" : "not connected" : "loading..."}
@@ -802,7 +806,7 @@ export default function ModbusPortManager() {
                                     variant="ghost"
                                     disabled={reg?.registerId ? existingMappings.includes(reg.registerId) : false}
                                     onClick={() => handleEditRegister(idx)}
-                                    className="hover:bg-blue-50 hover:text-blue-600"
+                                    className="hover:bg-primary/10 hover:text-primary"
                                   >
                                     <Edit2 className="w-4 h-4" />
                                   </Button>

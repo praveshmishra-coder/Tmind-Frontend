@@ -29,7 +29,7 @@ export default function Notifications() {
         Manage and view your latest alerts.
       </p>
 
-      <div className="bg-white border rounded-xl shadow-sm p-0 dark:bg-card">
+      <div className="bg-white border rounded-xl shadow-sm p-0 dark:bg-card overflow-hidden">
         <NotificationList />
       </div>
 

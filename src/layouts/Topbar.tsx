@@ -69,11 +69,10 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
     }
   };
 
-  const { notifications } = useNotifications();
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+   const { unreadCount } = useNotifications();
 
   return (
-    <header className="sticky top-0 z-40 h-16 flex items-center justify-between px-4 sm:px-6 bg-sidebar backdrop-blur-md border-b border-border shadow-sm transition-colors rounded-sm">
+    <header className="sticky top-0 z-40 h-16  flex items-center justify-between px-4 sm:px-6 bg-sidebar backdrop-blur-md border-b border-border shadow-sm transition-colors rounded-sm">
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
@@ -103,7 +102,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
           onClick={handleNotificationClick}
           className="relative"
         >
-          <Bell className="w-6 h-6 text-gray-700" />
+          <Bell className="w-6 h-6 text-foreground" />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
               {unreadCount}

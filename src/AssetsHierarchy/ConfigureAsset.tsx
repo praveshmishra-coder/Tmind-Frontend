@@ -189,7 +189,8 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-[999] bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-[1000px] max-w-[98%]">
+      <div className="bg-card text-card-foreground rounded-lg shadow-xl p-6 w-[1000px] max-w-[98%] border border-border">
+
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-3">
             {asset.name} <span className="text-sm text-slate-500 font-normal">Configure</span>
@@ -208,7 +209,7 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
           {/* left: available signals table */}
           <div className="col-span-1">
             <p className="mb-2 font-medium">Available signals (click to add)</p>
-            <div className="overflow-auto max-h-[320px] border rounded p-2">
+            <div className="overflow-auto max-h-[320px] border border-border rounded-lg p-2 bg-background">
               <table className="w-full text-sm table-auto">
                 <thead>
                   <tr className="text-left">
@@ -233,7 +234,7 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
                         <td className="py-2">
                           <button
                             onClick={() => addNewSignal(s.signalTypeID)}
-                            className={`px-2 py-1 rounded text-sm border ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-slate-100"}`}
+                            className={`px-2 py-1 rounded text-sm border border-border ${disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-accent"}`}
                             disabled={disabled}
                           >
                             Add
@@ -260,11 +261,11 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
                 stagedConfigs.map((c) => {
                   const isDeleted = c.status === "toDelete";
                   return (
-                    <div key={c.assetConfigID} className={`flex items-center justify-between p-2 rounded border ${isDeleted ? "opacity-50 bg-red-50" : ""}`}>
+                    <div className={`flex items-center justify-between p-2 rounded border border-border ${isDeleted ? "opacity-50 bg-destructive/10" : "bg-background"}`}>
                       <div>
                         <div className={`font-medium ${isDeleted ? "line-through" : ""}`}>{c.signalName}</div>
-                        <div className="text-xs text-slate-500">{c.signalUnit} — Reg: {c.regsiterAdress}</div>
-                        <div className="text-xs text-slate-400">ID: {c.assetConfigID.slice(0, 8)}</div>
+                        <div className="text-xs text-muted-foreground">{c.signalUnit} — Reg: {c.regsiterAdress}</div>
+                        <div className="text-xs text-muted">ID: {c.assetConfigID.slice(0, 8)}</div>
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -303,13 +304,13 @@ export default function ConfigureAsset({ asset, onClose }: ConfigureAssetProps) 
                 stagedNewSignals.map((id) => {
                   const s = findSignal(id)!;
                   return (
-                    <div key={id} className="flex items-center justify-between border rounded p-2">
+                    <div key={id} className="flex items-center justify-between border border-border rounded-lg p-2 bg-background">
                       <div>
                         <div className="font-medium">{s.signalName}</div>
                         <div className="text-xs text-slate-500">{s.signalUnit} — Reg: {s.defaultRegisterAdress}</div>
                       </div>
                       <div>
-                        <button onClick={() => removeStagedNewSignal(id)} className="text-sm underline">Remove</button>
+                        <button onClick={() => removeStagedNewSignal(id)} className="text-sm underline text-primary hover:text-primary/80">Remove</button>
                       </div>
                     </div>
                   );
