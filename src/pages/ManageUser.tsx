@@ -49,9 +49,9 @@ export default function UserManagement() {
   // --------------------------------------------------
   const filteredUsers = users.filter(
     (u) =>
-      u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.role.toLowerCase().includes(searchTerm.toLowerCase())
+      u.username.toLowerCase().includes(searchTerm.toLowerCase()) 
+      // u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      // u.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // --------------------------------------------------
@@ -92,6 +92,7 @@ export default function UserManagement() {
     a.click();
 
     window.URL.revokeObjectURL(url);
+    toast.success("CSV downloaded successfully!");
   };
 
   // --------------------------------------------------
@@ -287,54 +288,64 @@ export default function UserManagement() {
 
       {/* Pagination UI - ShadCN */}
       <Pagination className="justify-center mt-6">
-        <PaginationContent>
-          
-          {/* Previous */}
-          <PaginationItem>
-            <PaginationPrevious
+      <PaginationContent>
+
+        {/* Previous */}
+        <PaginationItem>
+          <PaginationPrevious
+            href="#"
+            disabled={currentPage === 1}
+            className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+            onClick={(e) => {
+              e.preventDefault();
+              if (currentPage > 1) {
+                setCurrentPage((prev) => prev - 1);
+              }
+            }}
+          />
+        </PaginationItem>
+
+        {/* Page Numbers */}
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+          <PaginationItem key={num}>
+            <PaginationLink
               href="#"
+              isActive={num === currentPage}
               onClick={(e) => {
                 e.preventDefault();
-                setCurrentPage((prev) => Math.max(prev - 1, 1));
+                setCurrentPage(num);
               }}
-            />
+            >
+              {num}
+            </PaginationLink>
           </PaginationItem>
+        ))}
 
-          {/* Page Numbers */}
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
-            <PaginationItem key={num}>
-              <PaginationLink
-                href="#"
-                isActive={num === currentPage}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setCurrentPage(num);
-                }}
-              >
-                {num}
-              </PaginationLink>
-            </PaginationItem>
-          ))}
-
-          {/* Ellipsis if too many pages */}
-          {totalPages > 5 && (
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-          )}
-
-          {/* Next */}
+        {/* Ellipsis */}
+        {totalPages > 5 && (
           <PaginationItem>
-            <PaginationNext
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-              }}
-            />
+            <PaginationEllipsis />
           </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+        )}
+
+        {/* Next */}
+        <PaginationItem>
+          <PaginationNext
+            href="#"
+            disabled={currentPage === totalPages}
+            className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+            onClick={(e) => {
+              e.preventDefault();
+              if (currentPage < totalPages) {
+                setCurrentPage((prev) => prev + 1);
+              }
+            }}
+          />
+        </PaginationItem>
+
+      </PaginationContent>
+    </Pagination>
+
 
       {/* Delete Dialog */}
       {showDeleteDialog && selectedUser && (
