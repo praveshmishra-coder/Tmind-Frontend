@@ -237,8 +237,10 @@ export default function UserManagement() {
                       <select
                         value={u.role}
                         onChange={(e) => updateRole(u, e.target.value)}
-                        className="border border-border rounded-md bg-background px-1 py-1"
-                      >
+                        disabled={u.email === user?.email || u.email === "admin@example.com"}   
+                        className={`border border-border rounded-md bg-background px-1 py-1 
+                          ${u.email === user?.email ? "opacity-50 cursor-not-allowed" : ""}`}
+                                        >
                         <option>User</option>
                         <option>Engineer</option>
                         <option>Operator</option>
@@ -257,6 +259,9 @@ export default function UserManagement() {
                         onClick={() => {
                           if (u.email === user?.email) {
                             toast.error("You cannot delete your own account!");
+                            return;
+                          }else if(u.email === "admin@example.com"){
+                            toast.error("You cannot delete main admin account");
                             return;
                           }
 

@@ -105,30 +105,27 @@ export default function Reports() {
 
       // Convert notification to table-ready format
       const formatted = finalData.map((n) => {
-        let parsed: any = {};
-        try {
-          parsed = JSON.parse(n.text);
-        } catch {}
+      let parsed: any = {};
+      try {
+        parsed = JSON.parse(n.text);
+      } catch {}
 
-        // Format time with milliseconds up to 5 decimals
-        const fromTime = parsed.from
-          ? format(parseISO(parsed.from), "HH:mm:ss.SSSSS")
-          : "";
-        const toTime = parsed.to
-          ? format(parseISO(parsed.to), "HH:mm:ss.SSSSS")
-          : "";
+      const fromTime = parsed.from
+        ? format(parseISO(parsed.from), "HH:mm:ss.SSSSS")
+        : "";
+      const toTime = parsed.to
+        ? format(parseISO(parsed.to), "HH:mm:ss.SSSSS")
+        : "";
 
-        return {
-          title: n.title,
-          timeFrom: fromTime,
-          timeTo: toTime,
-          asset: parsed.asset ?? "",
-          signal: parsed.signal ?? "",
-          min: parsed.min ?? "",
-          max: parsed.max ?? "",
-          durationSeconds: parsed.durationSeconds ?? "",
-        };
-      });
+      return {
+        title: n.title,
+        asset: parsed.asset ?? "",
+        signal: parsed.signal ?? "",
+        minMax: `${parsed.min ?? "-"} → ${parsed.max ?? "-"}`,
+        timeRange: `${fromTime} – ${toTime}`,
+        duration: parsed.durationSeconds ?? "",
+      };
+    });
 
       setReportData(formatted);
       toast.success("Report generated!");
@@ -138,13 +135,37 @@ export default function Reports() {
     }
   };
   
-  const downloadCSV = (data: any[]) => {
-    if (!data.length) return toast.error("No data!");
+  const cleanText = (value: any) => {
+  if (!value) return "";
 
-    const headers = Object.keys(data[0]);
+  return String(value)
+    .replace(/[^\d.:A-Za-z\s-]/g, "") // remove weird symbols like !’, etc.
+    .replace(/\s+/g, " ")             // collapse extra spaces
+    .trim();
+  };
+
+    const formatMinMax = (str: string) => {
+    if (!str) return "";
+    const cleaned = cleanText(str).replace(/!/g, ""); 
+    const parts = cleaned.split(/[^0-9.]+/).filter(Boolean);
+
+    if (parts.length === 2) {
+      return `${parts[0]} - ${parts[1]}`;
+    }
+    return cleaned;
+  };
+
+  const downloadCSV = (data: any[]) => {
+  if (!data.length) return toast.error("No data!");
+
+    const headers = ["title", "asset", "signal", "minMax", "timeRange", "duration"];
+    
+
     const rows = [
-      headers.join(","),
-      ...data.map((r) => headers.map((h) => `"${r[h]}"`).join(",")),
+      headers.join(","), // header row
+      ...data.map((r) =>
+        headers.map((h) => `"${r[h] ?? ""}"`).join(",")
+      ),
     ];
 
     const blob = new Blob([rows.join("\n")], { type: "text/csv" });
@@ -157,23 +178,39 @@ export default function Reports() {
     URL.revokeObjectURL(url);
   };
 
+
   // ------------------------------------
   // EXPORT PDF
   // ------------------------------------
-  const downloadPDF = (data: any[]) => {
+    const downloadPDF = (data: any[]) => {
     if (!data.length) return toast.error("No data!");
 
     const doc = new jsPDF();
     doc.text(`Daily Signal Report for ${selectedDate}`, 14, 16);
 
+    const headers = [["Title", "Asset", "Signal", "Min - Max", "Time Range", "Duration (sec)"]];
+
+    const body = data.map((r) => {
+      const safeRow = [
+        cleanText(r.title),
+        cleanText(r.asset),
+        cleanText(r.signal),
+        formatMinMax(r.minMax),
+        cleanText(r.timeRange),
+        cleanText(r.duration),
+      ];
+      return safeRow;
+    });
+
     autoTable(doc, {
-      head: [Object.keys(data[0])],
-      body: data.map((row) => Object.values(row)),
+      head: headers,
+      body,
       startY: 22,
     });
 
     doc.save(`daily-report-${selectedDate}.pdf`);
   };
+
 
   // ------------------------------------
   // UI + TABLE
@@ -322,25 +359,36 @@ export default function Reports() {
               ) : (
                 <table className="w-full border">
                   <thead className="bg-primary text-white sticky top-0">
-                    <tr>
-                      {Object.keys(displayedReport[0]).map((h) => (
-                        <th key={h} className="p-2 border">{h}</th>
-                      ))}
+                  <tr>
+                    <th className="p-2 border">Title</th>
+                    <th className="p-2 border">Asset</th>
+                    <th className="p-2 border">Signal</th>
+                    <th className="p-2 border">Min → Max</th>
+                    <th className="p-2 border">Time Range</th>
+                    <th className="p-2 border">Duration (sec)</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {displayedReport.map((row, i) => (
+                    <tr
+                      key={i}
+                      className={`${
+                        Number(row.minMax?.split("→")[1]) > THRESHOLD
+                          ? "bg-red-100 dark:bg-red-900/40"
+                          : ""
+                      }`}
+                    >
+                      <td className="p-2 border">{row.title}</td>
+                      <td className="p-2 border">{row.asset}</td>
+                      <td className="p-2 border">{row.signal}</td>
+                      <td className="p-2 border">{row.minMax}</td>
+                      <td className="p-2 border">{row.timeRange}</td>
+                      <td className="p-2 border">{row.duration}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {displayedReport.map((row, i) => (
-                      <tr
-                        key={i}
-                        className={Number(row.max) > THRESHOLD ? "bg-red-100 font-semibold" : ""}
-                      >
-                        {Object.values(row).map((v, j) => (
-                          <td key={j} className="p-2 border">{v}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+         </table>
               )}
             </div>
 
