@@ -80,6 +80,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
     connection.on("ReceiveNotification", (notif: NotificationType) => {
       toast.info(notif.title || notif.text);
+      console.log(notif.title || notif.text);
 
       // Increase unread count
       setUnreadCount((prev) => prev + 1);

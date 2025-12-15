@@ -13,7 +13,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-
+import {ChangeUserRole} from "@/api/userApi";
 
 // User API
 import {
@@ -98,48 +98,54 @@ export default function UserManagement() {
   // --------------------------------------------------
   // 📌 FETCH USERS FROM BACKEND
   // --------------------------------------------------
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        const data = await getAllUsers();
-        setUsers(data);
-      } catch (err) {
-        console.error("Error fetching users:", err);
-        setError("Failed to load users.");
-        toast.error("Failed to load users.");
-      } finally {
-        setLoading(false);
-      }
-    };
 
+  const fetchUsers = async () => {
+  try {
+    setLoading(true);
+    const data = await getAllUsers();
+    setUsers(data); 
+  } catch {
+    toast.error("Failed to load users");
+  } finally {
+    setLoading(false);
+  }
+};
+  useEffect(() => {
     fetchUsers();
   }, []);
 
   // --------------------------------------------------
   // 🔄 UPDATE ROLE
   // --------------------------------------------------
-  const updateRole = async (user: User, newRole: string) => {
-    try {
-      await updateUser(user.userId, {
-        username: user.username,
-        email: user.email,
-        role: newRole,
-      });
+  // const updateRole = async (user: User, newRole: string) => {
+  //   try {
+  //    const response=await ChangeUserRole(user.userId,{Role:newRole});
+  //    toast.success(response.data);
+  //     })
 
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.userId === user.userId ? { ...u, role: newRole } : u
-        )
-      );
+  //     setUsers((prev) =>
+  //       prev.map((u) =>
+  //         u.userId === user.userId ? { ...u, role: newRole } : u
+  //       )
+  //     );
 
-      toast.success("User role updated!");
-    } catch (err) {
-      console.error("Error updating user:", err);
-      toast.error("Failed to update user role.");
-    }
-  };
-
+  //     toast.success("User role updated!");
+  //   } catch (err) {
+  //     console.error("Error updating user:", err);
+  //     toast.error("Failed to update user role.");
+  //   }
+  // };
+const updateRole = async (user: User, newRole: string) => {
+  try {
+    const data = await ChangeUserRole(user.userId, { role: newRole });
+     await fetchUsers();
+    toast.success(
+      data?.message || "User role updated successfully"
+    );
+  } catch (error: any) { 
+    toast.error(error.message);
+  }
+};
   // --------------------------------------------------
   // ❌ DELETE USER
   // --------------------------------------------------
@@ -272,6 +278,7 @@ export default function UserManagement() {
                         <Trash2 className="h-4 w-4 inline-block mr-1" /> Delete
                       </Button>
                     </td>
+
                   )}
                 </tr>
               ))
