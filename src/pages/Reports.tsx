@@ -68,43 +68,49 @@ export default function Reports() {
   // ------------------------------------
   // 2. GENERATE REPORT
   // ------------------------------------
-  const generateReport = async () => {
-    if (!selectedDate) return toast.error("Select a date!");
+const generateReport = async () => {
+  if (!selectedDate) return toast.error("Select a date!");
 
-    try {
-      const allNotifs = await getAllNotifications();
-      if (!Array.isArray(allNotifs)) {
-        console.error("Invalid response from backend", allNotifs);
-        return toast.error("Invalid data received");
-      }
+  try {
+    const allNotifs = await getAllNotifications();
+    if (!Array.isArray(allNotifs)) {
+      console.error("Invalid response from backend", allNotifs);
+      return toast.error("Invalid data received");
+    }
 
-      // Filter by selected date
-      const filteredByDate = allNotifs.filter((n) =>
-        n.createdAt.startsWith(selectedDate)
-      );
+    // 1️⃣ Filter notifications by selected date
+    const filteredByDate = allNotifs.filter((n) =>
+      n.createdAt.startsWith(selectedDate)
+    );
 
-      let finalData = filteredByDate;
+    let finalData: typeof filteredByDate = filteredByDate;
 
-      // Filter by asset + children
-      if (selectedAssetId) {
-        const selectedAsset = allAssets.find(a => a.assetId === selectedAssetId);
-        if (selectedAsset) {
-          const subtree = getAllChildAssets(selectedAsset);
-          const assetNames = subtree.map(a => a.name);
+    // 2️⃣ Filter by selected asset (including children) if any
+    if (selectedAssetId) {
+      const selectedAsset = allAssets.find(a => a.assetId === selectedAssetId);
+      if (selectedAsset) {
+        const subtree = getAllChildAssets(selectedAsset);
+        const assetNames = subtree.map(a => a.name);
 
-          finalData = finalData.filter((n) => {
-            try {
-              const parsed = JSON.parse(n.text);
-              return assetNames.includes(parsed.asset);
-            } catch {
-              return false;
-            }
-          });
+        finalData = filteredByDate.filter((n) => {
+          try {
+            const parsed = JSON.parse(n.text);
+            return assetNames.includes(parsed.asset); // compare asset name
+          } catch {
+            return false;
+          }
+        });
+
+        // 3️⃣ Handle no notifications for selected asset
+        if (finalData.length === 0) {
+          setReportData([]);
+          return toast.info("No data available for selected asset.");
         }
       }
+    }
 
-      // Convert notification to table-ready format
-      const formatted = finalData.map((n) => {
+    // 4️⃣ Convert notifications to table-ready format
+    const formatted = finalData.map((n) => {
       let parsed: any = {};
       try {
         parsed = JSON.parse(n.text);
@@ -127,13 +133,16 @@ export default function Reports() {
       };
     });
 
-      setReportData(formatted);
-      toast.success("Report generated!");
-    } catch (err) {
-      toast.error("Failed to load notifications");
-      console.error(err);
-    }
-  };
+    // 5️⃣ Update state and show success
+    setReportData(formatted);
+    toast.success("Report generated!");
+  } catch (err) {
+    toast.error("Failed to load notifications");
+    console.error(err);
+  }
+};
+
+
   
   const cleanText = (value: any) => {
   if (!value) return "";
