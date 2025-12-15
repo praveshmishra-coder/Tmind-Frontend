@@ -36,8 +36,8 @@ export default function Sidebar() {
     <aside id="sidebar" className="sticky top-0 z-40 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col p-4 rounded-sm">
       <div className="h-12 flex items-center justify-center border-b border-sidebar-border px-4 mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-12 h-12 mb-2 bg-primary rounded flex items-center justify-center font-bold text-primary-foreground">
-            <img className="rounded" src="https://www.purppledesigns.com/wp-content/uploads/2023/11/download-4.png" alt="" />
+          <div className="w-10 h-10  bg-sidebar pb-2 rounded flex items-center justify-center font-bold text-sidebar-foreground">
+            <img className="rounded" src="https://www.clipartmax.com/png/middle/151-1514067_tata-logo-png.png" alt="" />
           </div>
           <span className="font-bold text-2xl mb-2 text-sidebar-foreground">Tmind</span>
         </div>
