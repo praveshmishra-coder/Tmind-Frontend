@@ -15,6 +15,8 @@ export default function Reports() {
   const [selectedDate, setSelectedDate] = useState("");
   const [allAssets, setAllAssets] = useState<Asset[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState("");
+  const [dateOpen, setDateOpen] = useState(false);
+
 
   const [reportData, setReportData] = useState<any[]>([]);
   const [showOnlyAlerts, setShowOnlyAlerts] = useState(false);
@@ -241,25 +243,31 @@ export default function Reports() {
 
             {/* DATE */}
             <label className="mb-1">Select Date</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  id="report-date"
-                  className="w-full p-2 border rounded-md flex justify-between"
-                >
-                  {selectedDate ? format(new Date(selectedDate), "PPP") : "Choose date"}
-                  <CalendarIcon />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="p-0 border-none shadow-none">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate ? new Date(selectedDate) : undefined}
-                  onSelect={(d) => d && setSelectedDate(format(d, "yyyy-MM-dd"))}
-                  disabled={(date) => date > new Date()} 
-                />
-              </PopoverContent>
-            </Popover>
+           <Popover open={dateOpen} onOpenChange={setDateOpen}>
+            <PopoverTrigger asChild>
+              <button
+                id="report-date"
+                className="w-full p-2 border rounded-md flex justify-between"
+                onClick={() => setDateOpen(true)}
+              >
+                {selectedDate ? format(new Date(selectedDate), "PPP") : "Choose date"}
+                <CalendarIcon />
+              </button>
+            </PopoverTrigger>
+
+            <PopoverContent className="p-0 border-none shadow-none">
+              <Calendar
+                mode="single"
+                selected={selectedDate ? new Date(selectedDate) : undefined}
+                onSelect={(d) => {
+                  if (!d) return;
+                  setSelectedDate(format(d, "yyyy-MM-dd"));
+                  setDateOpen(false); 
+                }}
+                disabled={(date) => date > new Date()}
+              />
+            </PopoverContent>
+          </Popover>
 
             {/* ASSET */}
             <div className="mt-4" ref={dropdownRef}>
