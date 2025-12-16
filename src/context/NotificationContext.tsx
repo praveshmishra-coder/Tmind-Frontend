@@ -68,7 +68,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   /** ===================================================
    *                 SIGNALR REAL TIME
    * =================================================== */
-  useEffect(() => {
+  useEffect(():any => {
     const connection = new signalR.HubConnectionBuilder()
       .withUrl("https://localhost:7208/hubs/notifications", {
         withCredentials: true,
@@ -79,6 +79,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     connection.start().catch(console.error);
 
     connection.on("ReceiveNotification", (notif: NotificationType) => {
+      playNotificationSound()
       toast.info(notif.title || notif.text);
       console.log(notif.title || notif.text);
 
@@ -124,6 +125,34 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("Failed to mark all read:", err);
     }
   };
+
+  function playNotificationSound() {
+  const audioCtx = new (window.AudioContext)();
+
+  // Helper function to play a single tone
+  function playTone(frequency:any, duration:any, startTime:any) {
+    const oscillator = audioCtx.createOscillator();
+    oscillator.type = 'triangle'; // softer than sine
+    oscillator.frequency.setValueAtTime(frequency, startTime);
+
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0.15, startTime);
+
+    // quick fade out
+    gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.start(startTime);
+    oscillator.stop(startTime + duration);
+  }
+
+  const now = audioCtx.currentTime;
+  playTone(1000, 0.15, now);       // first tone
+  playTone(1200, 0.15, now + 0.15); // second tone
+}
+
 
   return (
     <NotificationContext.Provider

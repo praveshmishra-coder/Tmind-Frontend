@@ -20,7 +20,7 @@ type Msg = {
 export default function AiRcaChat() {
   const [prompt, setPrompt] = useState("");
   const [system, setSystem] = useState("You are an industrial RCA assistant.");
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<Msg[]>([{id: String(Date.now()) + "-u", role: "assistant", fullText: "", displayedText: "hello! I am TMind Assistant, How can I Assist You today?" }]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSystemPrompt, setShowSystemPrompt] = useState(false);
@@ -285,7 +285,7 @@ export default function AiRcaChat() {
                   <MessageSquare className="w-8 h-8 text-slate-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-900 mb-1">No messages yet</h3>
-                <p className="text-slate-500 text-sm">Ask about asset status, voltage issues, or anomalies</p>
+                <p className="text-slate-500 text-sm">Ask about asset status, and get response</p>
               </div>
             ) : (
               messages.map((m) => (
@@ -382,14 +382,7 @@ export default function AiRcaChat() {
                 <span className="text-blue-600 font-bold">•</span>
                 <span>Be specific about assets and time windows</span>
               </li>
-              <li className="flex gap-2">
-                <span className="text-blue-600 font-bold">•</span>
-                <span>Include relevant parameters (voltage, current, temperature)</span>
-              </li>
-              <li className="flex gap-2">
-                <span className="text-blue-600 font-bold">•</span>
-                <span>Use historical data references when available</span>
-              </li>
+             
             </ul>
           </div>
 
@@ -397,10 +390,10 @@ export default function AiRcaChat() {
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4">
             <h4 className="font-semibold text-slate-900 mb-2 text-sm">Example Query</h4>
             <p className="text-xs text-slate-600 mb-3">
-              "what is status of varadasset for last 10 min"
+              "what is status of engine 4 for last 10 min"
             </p>
             <button
-              onClick={() => setPrompt("what is status of varadasset for last 10 min")}
+              onClick={() => setPrompt("what is status of engine 4 for last 10 min")}
               className="w-full px-3 py-2 bg-white border border-blue-300 rounded text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors"
             >
               Use Example
