@@ -19,11 +19,11 @@ interface Device {
 
 
 export const getDevices = async (pageNumber = 1, pageSize = 10, searchTerm = "") => {
-  console.log("calling getDevices with", { pageNumber, pageSize, searchTerm });
+  // console.log("calling getDevices with", { pageNumber, pageSize, searchTerm });
   const response = await api.get("/devices", {
     params: { pageNumber, pageSize, searchTerm },
   });
-  console.log("API Response:", response.status, response.data);
+  // console.log("API Response:", response.status, response.data);
   return response.data.data; // this contains items, pageNumber, pageSize, totalCount, totalPages
 };
 
@@ -68,4 +68,9 @@ export const getDeletedDeviced = async () => {
 export const match_by_regAddress = async (registerAddresses:any) => {
   const response = await api.post(`/devices/match-by-address`, registerAddresses);
   return response;
+};
+
+export const getAvgApiResponseTime = async () => {
+  const response = await api.get("/stats/avg-response-time");
+  return response.data.avgResponseTime;
 };

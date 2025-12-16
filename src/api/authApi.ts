@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://localhost:7023/api",
-  withCredentials: true, // important for cookies
+  baseURL: "http://localhost:5000/auth",
+  withCredentials: true,
 });
 
 api.interceptors.response.use(
@@ -10,22 +10,19 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-   
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        
-        await axios.post(
-          "http://localhost:5000/auth/User/refresh-token",
+        const response = await axios.post(
+        "http://localhost:5000/auth/User/refresh-token",
           {},
           { withCredentials: true }
-        );
+          );
 
-        
         return api(originalRequest);
       } catch (err) {
-        console.log("Refresh token failed, redirecting to Register");
+        console.log("Refresh token failed, redirecting to login");
         localStorage.removeItem("user");
         window.location.href = "/";
         return Promise.reject(err);

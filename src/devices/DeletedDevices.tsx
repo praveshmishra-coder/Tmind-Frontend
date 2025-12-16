@@ -1,155 +1,249 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Search } from "lucide-react";
-import { getDeletedDeviced, retriveDeviceById } from "@/api/deviceApi";
 import { toast } from "react-toastify";
-import {useAuth} from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
+
+// APIs
+import { getDeletedAssets, restoreAssetById } from "@/api/assetApi";
+import { getDeletedDeviced, retriveDeviceById } from "@/api/deviceApi";
+
+// ----------------------
+// Interfaces
+// ----------------------
+interface Asset {
+  id: string;
+  name: string;
+  isDeleted: boolean;
+}
 
 interface Device {
   deviceId: string;
   name: string;
-  description: string;
   protocol: string;
-  deviceConfiguration?: {
-    configurationId: string;
-    name: string;
-    pollIntervalMs: number;
-    protocolSettingsJson: string;
-  };
 }
 
-export default function DeletedDevices() {
+// -------------------------------------------------
+// MAIN COMPONENT
+// -------------------------------------------------
+export default function DeletedItems() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "Admin";
+
+  // ASSET STATES
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [assetSearch, setAssetSearch] = useState("");
+  const [loadingAssets, setLoadingAssets] = useState(true);
+  const [assetError, setAssetError] = useState<string | null>(null);
+
+  // DEVICE STATES
   const [devices, setDevices] = useState<Device[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [deviceSearch, setDeviceSearch] = useState("");
+  const [loadingDevices, setLoadingDevices] = useState(true);
+  const [deviceError, setDeviceError] = useState<string | null>(null);
 
-  const {user} = useAuth();
-
-  // Fetch deleted devices
+  // -------------------------------------------------
+  // FETCH DELETED ASSETS
+  // -------------------------------------------------
   useEffect(() => {
-    const fetchDevices = async () => {
+    const fetchAssets = async () => {
       try {
-        setLoading(true);
-        const data = await getDeletedDeviced();
-        setDevices(data);
-      } catch (err: any) {
-        console.error("Error fetching deleted devices:", err);
-        setError("Failed to fetch deleted devices.");
-        toast.error("Failed to load deleted devices.");
+        setLoadingAssets(true);
+        const data = await getDeletedAssets();
+        setAssets(data);
+      } catch (err) {
+        setAssetError("Failed to fetch deleted assets.");
+        toast.error("Failed to load deleted assets.");
       } finally {
-        setLoading(false);
+        setLoadingAssets(false);
       }
     };
-
-    fetchDevices();
+    fetchAssets();
   }, []);
 
-  // Retrieve a deleted device
-  const retriveDevice = async (deviceId: string) => {
+  const restoreAsset = async (assetId: string) => {
     try {
-      await retriveDeviceById(deviceId);
-      setDevices((prev) => prev.filter((d) => d.deviceId !== deviceId));
-      toast.success("Device retrieved successfully!", {
-        position: "top-right",
-        autoClose: 2000,
-        hideProgressBar: false,
-      });
+      await restoreAssetById(assetId);
+      setAssets((prev) => prev.filter((a) => a.id !== assetId));
+      toast.success("Asset restored successfully!", { autoClose: 2000 });
     } catch (err) {
-      console.error("Error retrieving device:", err);
-      toast.error("Failed to retrieve device.", {
-        position: "top-right",
-        autoClose: 2000,
-        hideProgressBar: false,
-      });
+      toast.error("Failed to restore asset.", { autoClose: 2000 });
     }
   };
 
-  // Filtered devices by search
-  const filteredDevices = devices.filter((d) =>
-    d.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAssets = assets.filter((a) =>
+    a.name.toLowerCase().includes(assetSearch.toLowerCase())
   );
 
-  const isAdmin = user?.role === 'Admin';
+  // -------------------------------------------------
+  // FETCH DELETED DEVICES
+  // -------------------------------------------------
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        setLoadingDevices(true);
+        const data = await getDeletedDeviced();
+        setDevices(data);
+      } catch (err) {
+        setDeviceError("Failed to fetch deleted devices.");
+        toast.error("Failed to load deleted devices.");
+      } finally {
+        setLoadingDevices(false);
+      }
+    };
+    fetchDevices();
+  }, []);
+
+  const retrieveDevice = async (deviceId: string) => {
+    try {
+      await retriveDeviceById(deviceId);
+      setDevices((prev) => prev.filter((d) => d.deviceId !== deviceId));
+      toast.success("Device retrieved successfully!", { autoClose: 2000 });
+    } catch (err) {
+      toast.error("Failed to retrieve device.", { autoClose: 2000 });
+    }
+  };
+
+  const filteredDevices = devices.filter((d) =>
+    d.name.toLowerCase().includes(deviceSearch.toLowerCase())
+  );
 
   return (
-    <div className="p-2 space-y-2">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Deleted Devices</h1>
-        <p className="text-muted-foreground">Manage all deleted devices</p>
-      </div>
+    <div className="p-4">
+      {/* SIDE-BY-SIDE CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-      {/* Search Bar */}
-      <div className="flex items-center gap-3">
-        <div className="relative w-full sm:w-1/3">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <input
-            id="deleted-device-search"
-            type="text"
-            placeholder="Search devices..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
-        </div>
-      </div>
+        {/* -------------------------------- */}
+        {/* LEFT CARD — Deleted Devices     */}
+        {/* -------------------------------- */}
+        <div className="rounded-lg border border-border bg-card p-4 shadow flex flex-col">
+          <h1 className="text-2xl font-bold mb-1">Deleted Devices</h1>
+          <p className="text-muted-foreground mb-4">Manage all deleted devices</p>
 
-      {/* Loading / Error */}
-      {loading && (
-        <div className="text-center text-muted-foreground">
-          Loading devices...
-        </div>
-      )}
-      {error && <div className="text-center text-destructive">{error}</div>}
+          {/* Search */}
+          <div className="relative w-full mb-3">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search devices..."
+              value={deviceSearch}
+              onChange={(e) => setDeviceSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-border rounded-md bg-background text-foreground"
+            />
+          </div>
 
-      {/* Device Table */}
-      {!loading && !error && (
-        <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-          <table id="deleted-device-table" className="w-full text-sm text-foreground">
-            <thead className="bg-muted/40 text-left">
-              <tr>
-                <th className="p-4 font-semibold">Device Name</th>
-                <th className="p-4 font-semibold">Description</th>
-                {isAdmin && <th className="p-4 font-semibold text-center">Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDevices.length > 0 ? (
-                filteredDevices.map((d) => (
-                  <tr
-                    key={d.deviceId}
-                    className="border-t border-border hover:bg-muted/20 transition-colors"
-                  >
-                    <td className="p-4 font-medium">{d.name}</td>
-                    <td className="p-4">{d.description}</td>
-                    {isAdmin && <td className="p-4 flex justify-center">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => retriveDevice(d.deviceId)}
-                        className="retrieve-device-btn flex items-center gap-1"
-                      >
-                        <RotateCcw className="h-4 w-4" /> Retrieve
-                      </Button>
-                    </td>}
-                  </tr>
-                ))
-              ) : (
+          {/* Loading / Error */}
+          {loadingDevices && <div className="text-muted-foreground">Loading devices...</div>}
+          {deviceError && <div className="text-destructive">{deviceError}</div>}
+
+          {/* Device Table */}
+          {!loadingDevices && !deviceError && (
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left">
                 <tr>
-                  <td
-                    colSpan={3}
-                    className="text-center p-6 text-muted-foreground"
-                  >
-                    No deleted devices found.
-                  </td>
+                  <th className="p-3 font-semibold">Device Name</th>
+                  {isAdmin && <th className="p-3 font-semibold text-center">Actions</th>}
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
 
+              <tbody>
+                {filteredDevices.length > 0 ? (
+                  filteredDevices.map((d) => (
+                    <tr key={d.deviceId} className="border-t hover:bg-muted/20">
+                      <td className="p-3">{d.name}</td>
+
+                      {isAdmin && (
+                        <td className="p-3 flex justify-center">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => retrieveDevice(d.deviceId)}
+                            className="flex items-center gap-1"
+                          >
+                            <RotateCcw className="h-4 w-4" /> Retrieve
+                          </Button>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="p-4 text-center text-muted-foreground" colSpan={2}>
+                      No deleted devices found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* -------------------------------- */}
+        {/* RIGHT CARD — Deleted Assets     */}
+        {/* -------------------------------- */}
+        <div className="rounded-lg border border-border bg-card p-4 shadow flex flex-col">
+          <h1 className="text-2xl font-bold mb-1">Deleted Assets</h1>
+          <p className="text-muted-foreground mb-4">Manage all deleted assets</p>
+
+          {/* Search */}
+          <div className="relative w-full mb-3">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search assets..."
+              value={assetSearch}
+              onChange={(e) => setAssetSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-border rounded-md bg-background text-foreground"
+            />
+          </div>
+
+          {/* Loading / Error */}
+          {loadingAssets && <div className="text-muted-foreground">Loading assets...</div>}
+          {assetError && <div className="text-destructive">{assetError}</div>}
+
+          {/* Assets Table */}
+          {!loadingAssets && !assetError && (
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-left">
+                <tr>
+                  <th className="p-3 font-semibold">Asset Name</th>
+                  {isAdmin && <th className="p-3 font-semibold text-center">Actions</th>}
+                </tr>
+              </thead>
+
+              <tbody>
+                {filteredAssets.length > 0 ? (
+                  filteredAssets.map((a) => (
+                    <tr key={a.id} className="border-t hover:bg-muted/20">
+                      <td className="p-3">{a.name}</td>
+
+                      {isAdmin && (
+                        <td className="p-3 flex justify-center">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => restoreAsset(a.id)}
+                            className="flex items-center gap-1"
+                          >
+                            <RotateCcw className="h-4 w-4" /> Restore
+                          </Button>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="p-4 text-center text-muted-foreground" colSpan={2}>
+                      No deleted assets found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+      </div>
     </div>
   );
 }

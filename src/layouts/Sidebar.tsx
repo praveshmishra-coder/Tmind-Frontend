@@ -6,10 +6,10 @@ import {
   File,
   Trash,
   UserRoundSearch ,
-  Tv
+  Tv,
+  Bell
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { Search } from "lucide-react";
 
 export default function Sidebar() {
   const { user } = useAuth();
@@ -22,22 +22,22 @@ export default function Sidebar() {
     { icon: <File size={18} />, label: "Reports", path: "/reports" },
     { icon: <Cpu size={18} />, label: "Devices", path: "/devices" },
     { icon: <Tv size={18} />, label: "Signal", path: "/signal" },
+    { icon: <Bell size={18} />, label: "Notifications", path: "/notifications" },
 
     // ADMIN ONLY
     ...(isAdmin
       ? [ { icon: <UserRoundSearch  size={18} />, label: "Manage User", path: "/manage-user" },
-          { icon: <Trash size={18} />, label: "Deleted Devices", path: "/deleted-devices" },
-          { icon: <Trash size={18} />, label: "Deleted Assets", path: "/deleted-assets" }
+          { icon: <Trash size={18} />, label: "Recently Deleted", path: "/deleted-devices" }
         ]
       : [])
   ];
 
   return (
-    <aside id="sidebar" className="sticky top-0 z-40 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col p-4">
+    <aside id="sidebar" className="sticky top-0 z-40 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col p-4 rounded-sm">
       <div className="h-12 flex items-center justify-center border-b border-sidebar-border px-4 mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-12 h-12 mb-2 bg-primary rounded flex items-center justify-center font-bold text-primary-foreground">
-            <img className="rounded" src="https://www.purppledesigns.com/wp-content/uploads/2023/11/download-4.png" alt="" />
+          <div className="w-10 h-10  bg-sidebar pb-2 rounded flex items-center justify-center font-bold text-sidebar-foreground">
+            <img className="rounded" src="https://www.clipartmax.com/png/middle/151-1514067_tata-logo-png.png" alt="" />
           </div>
           <span className="font-bold text-2xl mb-2 text-sidebar-foreground">Tmind</span>
         </div>

@@ -2,53 +2,53 @@
 
 export const dashboardTour = [
   // Sidebar steps
-  {
-    element: "#sidebar-dashboard",
-    popover: { title: "Dashboard", description: "Navigate to the dashboard." },
-  },
-  {
-    element: "#sidebar-assets",
-    popover: { title: "Assets", description: "Go to the assets page." },
-  },
-  {
-    element: "#sidebar-reports",
-    popover: { title: "Reports", description: "Go to the reports page." },
-  },
-  {
-    element: "#sidebar-devices",
-    popover: { title: "Devices", description: "Manage and monitor devices." },
-  },
-  {
-    element: "#sidebar-signal",
-    popover: { title: "Signal", description: "Check live and historical signals." },
-  },
-  // Admin only items (filtered if not present in DOM)
-  {
-    element: "#sidebar-manage-user",
-    popover: { title: "Manage Users", description: "Admin only: Manage users and roles." },
-  },
-  {
-    element: "#sidebar-deleted-devices",
-    popover: { title: "Deleted Devices", description: "Admin only: View deleted devices." },
-  },
-  {
-    element: "#sidebar-deleted-assets",
-    popover: { title: "Deleted Assets", description: "Admin only: View deleted assets." },
-  },
+  // {
+  //   element: "#sidebar-dashboard",
+  //   popover: { title: "Dashboard", description: "Navigate to the dashboard." },
+  // },
+  // {
+  //   element: "#sidebar-assets",
+  //   popover: { title: "Assets", description: "Go to the assets page." },
+  // },
+  // {
+  //   element: "#sidebar-reports",
+  //   popover: { title: "Reports", description: "Go to the reports page." },
+  // },
+  // {
+  //   element: "#sidebar-devices",
+  //   popover: { title: "Devices", description: "Manage and monitor devices." },
+  // },
+  // {
+  //   element: "#sidebar-signal",
+  //   popover: { title: "Signal", description: "Check live and historical signals." },
+  // },
+  // // Admin only items (filtered if not present in DOM)
+  // {
+  //   element: "#sidebar-manage-user",
+  //   popover: { title: "Manage Users", description: "Admin only: Manage users and roles." },
+  // },
+  // {
+  //   element: "#sidebar-deleted-devices",
+  //   popover: { title: "Deleted Devices", description: "Admin only: View deleted devices." },
+  // },
+  // {
+  //   element: "#sidebar-deleted-assets",
+  //   popover: { title: "Deleted Assets", description: "Admin only: View deleted assets." },
+  // },
 
-  // Topbar steps
-  {
-    element: "#topbar-tour-btn",
-    popover: { title: "Start Tour", description: "Click here to start the guided tour." },
-  },
-  {
-    element: "#topbar-notifications",
-    popover: { title: "Notifications", description: "Check alerts and notifications here." },
-  },
-  {
-    element: "#topbar-user",
-    popover: { title: "User Profile", description: "Access profile and logout options here." },
-  },
+  // // Topbar steps
+  // {
+  //   element: "#topbar-tour-btn",
+  //   popover: { title: "Start Tour", description: "Click here to start the guided tour." },
+  // },
+  // {
+  //   element: "#topbar-notifications",
+  //   popover: { title: "Notifications", description: "Check alerts and notifications here." },
+  // },
+  // {
+  //   element: "#topbar-user",
+  //   popover: { title: "User Profile", description: "Access profile and logout options here." },
+  // },
 
   // Dashboard KPI Steps
   {

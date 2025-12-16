@@ -1,62 +1,59 @@
+// src/tours/reportTour.ts
 export const reportTour = [
   {
     element: "#report-date",
     popover: {
       title: "Select Date",
-      description: "Choose the date for which you want to generate the signal report.",
-    },
+      description: "Choose the date for which you want to see the signal report."
+    }
   },
   {
     element: "#report-asset",
     popover: {
       title: "Select Asset",
-      description: "Pick an asset to fetch its assigned device and generate the report.",
-    },
+      description: "Pick an asset to load available signals."
+    }
   },
   {
     element: "#report-device",
     popover: {
       title: "Assigned Device",
-      description:
-        "This shows the device mapped to the selected asset. Report will be generated for this device.",
-    },
+      description: "Here you can see which device is mapped to the selected asset."
+    }
   },
   {
     element: "#report-alerts",
     popover: {
-      title: "Filter Alerts",
-      description:
-        "Enable this to show only readings crossing the defined alert threshold.",
-    },
+      title: "Show Only Alerts",
+      description: "Enable this to filter only high-priority signal alerts."
+    }
   },
   {
     element: "#generate-report-btn",
     popover: {
       title: "Generate Report",
-      description:
-        "Click to generate the daily signal report for the selected asset and date.",
-    },
+      description: "Click to generate the signal report."
+    }
   },
   {
     element: "#download-csv-btn",
     popover: {
       title: "Download CSV",
-      description: "Export the generated report in CSV format.",
-    },
+      description: "Export your report in CSV format."
+    }
   },
   {
     element: "#download-pdf-btn",
     popover: {
       title: "Download PDF",
-      description: "Export the generated report as a PDF with a formatted table.",
-    },
+      description: "Export your report as a PDF."
+    }
   },
   {
     element: "#report-table",
     popover: {
-      title: "Signal Report Table",
-      description:
-        "This table displays the generated signal data for the chosen asset and date. Alert values are highlighted.",
-    },
-  },
+      title: "Report Table",
+      description: "Your generated signal records will appear here."
+    }
+  }
 ];

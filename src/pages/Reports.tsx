@@ -1,334 +1,460 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "react-toastify";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { getAssetHierarchy, getSignalOnAsset } from "@/api/assetApi";
-import { getDeviceById } from "@/api/deviceApi";
-import type { Asset } from "@/api/assetApi";
 import { CalendarIcon, FileText, FileDown } from "lucide-react";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
-import { format } from "date-fns"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format, parseISO } from "date-fns";
 
-// Dummy report generator
-const generateReportData = (asset: Asset, deviceName: string, date: string) => {
-  const signals = ["Temperature", "Voltage", "Current", "RPM"];
-  const data: any[] = [];
-  for (let i = 0; i < 10; i++) {
-    const timestamp = `${date} ${9 + i}:00`;
-    signals.forEach((sig) => {
-      data.push({
-        device: deviceName,
-        asset: asset.name,
-        signal: sig,
-        value: (Math.random() * 100).toFixed(2),
-        timestamp,
-      });
-    });
-  }
-  return data;
-};
+import { getAssetHierarchy, getAllNotifications } from "@/api/assetApi";
+import type { Asset } from "@/api/assetApi";
+import { A } from "node_modules/framer-motion/dist/types.d-BJcRxCew";
+import { getAssetConfig } from "@/api/assetApi";
 
-// CSV helper
-const downloadCSV = (data: any[], filename = "signal-report.csv") => {
-  if (!data.length) return toast.error("No data to download!");
-  const headers = Object.keys(data[0]);
-  const csvRows: string[] = [];
-  csvRows.push(headers.join(","));
-  data.forEach((row) =>
-    csvRows.push(headers.map((h) => `"${row[h]}"`).join(","))
-  );
-  const blob = new Blob([csvRows.join("\n")], { type: "text/csv" });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  window.URL.revokeObjectURL(url);
-};
-
-// PDF helper
-const downloadPDF = (data: any[], filename = "signal-report.pdf") => {
-  if (!data.length) return toast.error("No data to download!");
-  const doc = new jsPDF();
-  doc.setFontSize(16);
-  doc.text("Daily Signal Report", 14, 16);
-  const headers = [Object.keys(data[0])];
-  const rows = data.map((row) => Object.values(row));
-  autoTable(doc, {
-    head: headers,
-    body: rows,
-    startY: 22,
-    theme: "grid",
-    headStyles: { fillColor: [33, 150, 243], textColor: 255 },
-    alternateRowStyles: { fillColor: [245, 245, 245] },
-    showHead: "everyPage",
-  });
-  doc.save(filename);
-};
-
-export default function DailySignalReport() {
+export default function Reports() {
   const [selectedDate, setSelectedDate] = useState("");
   const [allAssets, setAllAssets] = useState<Asset[]>([]);
-  const [selectedAssetId, setSelectedAssetId] = useState<string>("");
-  const [deviceName, setDeviceName] = useState("Unknown Device");
+  const [selectedAssetId, setSelectedAssetId] = useState("");
+  const [dateOpen, setDateOpen] = useState(false);
+  const [allSignalsOnAsset, setSignalOnasset] = useState<any[]>([]);
+  const [SelectSignalId, setSelectedSignalID] = useState("");
   const [reportData, setReportData] = useState<any[]>([]);
-  const [loadingAssets, setLoadingAssets] = useState(true);
   const [showOnlyAlerts, setShowOnlyAlerts] = useState(false);
+
   const [assetDropdownOpen, setAssetDropdownOpen] = useState(false);
+  const [signalDropdownOpen, setSignalDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const THRESHOLD = 70;
+  const THRESHOLD = 70; // for highlighting rows
 
-  // Fetch assets
+  // ------------------------------------
+  // 1. LOAD ALL ASSETS
+  // ------------------------------------
   useEffect(() => {
     const loadAssets = async () => {
-      setLoadingAssets(true);
       try {
         const hierarchy = await getAssetHierarchy();
-        const flatten = (assets: Asset[]): Asset[] => {
+
+        const flatten = (nodes: Asset[]): Asset[] => {
           const out: Asset[] = [];
-          const stack = [...assets];
-          while (stack.length) {
+          const stack = [...nodes];
+          while (stack.length > 0) {
             const a = stack.shift()!;
             out.push(a);
             if (a.childrens?.length) stack.unshift(...a.childrens);
           }
           return out;
         };
-        setAllAssets(flatten(hierarchy || []));
+
+        setAllAssets(flatten(hierarchy));
       } catch (err) {
-        console.error("Failed to fetch assets", err);
-      } finally {
-        setLoadingAssets(false);
+        console.error(err);
       }
     };
     loadAssets();
   }, []);
 
-  // Fetch device for selected asset
-  useEffect(() => {
-    const loadDevice = async () => {
-      if (!selectedAssetId) {
-        setDeviceName("Unknown Device");
-        return;
+  // ------------------------------------
+  // HELPER: GET ALL CHILDREN OF AN ASSET
+  // ------------------------------------
+  const getAllChildAssets = (asset: Asset): Asset[] => {
+    const out: Asset[] = [];
+    const stack = [asset];
+    while (stack.length > 0) {
+      const a = stack.shift()!;
+      out.push(a);
+      if (a.childrens?.length) stack.unshift(...a.childrens);
+    }
+    return out;
+  };
+
+
+  const GetSignalsonAsset = async (selectedID: any) => {
+    try {
+      if (selectedID != null) {
+        const response = await getAssetConfig(selectedID);
+        setSignalOnasset(response);
+        console.log(response);
       }
-      try {
-        const mappings = await getSignalOnAsset(selectedAssetId);
-        if (mappings.length > 0) {
-          const deviceId = mappings[0].deviceId;
-          const dev = await getDeviceById(deviceId);
-          const name = dev?.name ?? dev?.data?.name ?? "Unknown Device";
-          setDeviceName(name);
-        } else setDeviceName("Not Assigned");
-      } catch {
-        setDeviceName("Error");
+    } catch (error: any) {
+      console.log(error);
+    }
+  }
+
+
+
+  // ------------------------------------
+  // 2. GENERATE REPORT
+  // ------------------------------------
+  const generateReport = async () => {
+    if (!selectedDate) return toast.error("Select a date!");
+
+    try {
+      const allNotifs = await getAllNotifications();
+      if (!Array.isArray(allNotifs)) {
+        console.error("Invalid response from backend", allNotifs);
+        return toast.error("Invalid data received");
       }
-    };
-    loadDevice();
-  }, [selectedAssetId]);
+
+      // Filter by selected date
+      const filteredByDate = allNotifs.filter((n) =>
+        n.createdAt.startsWith(selectedDate)
+      );
+
+      let finalData = filteredByDate;
+
+      // Filter by asset + children
+      if (selectedAssetId) {
+        const selectedAsset = allAssets.find(a => a.assetId === selectedAssetId);
+        if (selectedAsset) {
+          const subtree = getAllChildAssets(selectedAsset);
+          const assetNames = subtree.map(a => a.name);
+
+          finalData = finalData.filter((n) => {
+            try {
+              const parsed = JSON.parse(n.text);
+              return assetNames.includes(parsed.asset);
+            } catch {
+              return false;
+            }
+          });
+        }
+      }
+
+      // Convert notification to table-ready format
+      const formatted = finalData.map((n) => {
+        let parsed: any = {};
+        try {
+          parsed = JSON.parse(n.text);
+        } catch { }
+
+        const fromTime = parsed.from
+          ? format(parseISO(parsed.from), "HH:mm:ss.SSSSS")
+          : "";
+        const toTime = parsed.to
+          ? format(parseISO(parsed.to), "HH:mm:ss.SSSSS")
+          : "";
+
+        return {
+          title: n.title,
+          asset: parsed.asset ?? "",
+          signal: parsed.signal ?? "",
+          minMax: `${parsed.min ?? "-"} → ${parsed.max ?? "-"}`,
+          timeRange: `${fromTime} – ${toTime}`,
+          duration: parsed.durationSeconds ?? "",
+        };
+      });
+
+      setReportData(formatted);
+      toast.success("Report generated!");
+    } catch (err) {
+      toast.error("Failed to load notifications");
+      console.error(err);
+    }
+  };
+
+  const cleanText = (value: any) => {
+    if (!value) return "";
+
+    return String(value)
+      .replace(/[^\d.:A-Za-z\s-]/g, "") // remove weird symbols like !’, etc.
+      .replace(/\s+/g, " ")             // collapse extra spaces
+      .trim();
+  };
+
+  const formatMinMax = (str: string) => {
+    if (!str) return "";
+    const cleaned = cleanText(str).replace(/!/g, "");
+    const parts = cleaned.split(/[^0-9.]+/).filter(Boolean);
+
+    if (parts.length === 2) {
+      return `${parts[0]} - ${parts[1]}`;
+    }
+    return cleaned;
+  };
+
+  const downloadCSV = (data: any[]) => {
+    if (!data.length) return toast.error("No data!");
+
+    const headers = ["title", "asset", "signal", "minMax", "timeRange", "duration"];
+
+
+    const rows = [
+      headers.join(","), // header row
+      ...data.map((r) =>
+        headers.map((h) => `"${r[h] ?? ""}"`).join(",")
+      ),
+    ];
+
+    const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `daily-report-${selectedDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+
+  // ------------------------------------
+  // EXPORT PDF
+  // ------------------------------------
+  const downloadPDF = (data: any[]) => {
+    if (!data.length) return toast.error("No data!");
+
+    const doc = new jsPDF();
+    doc.text(`Daily Signal Report for ${selectedDate}`, 14, 16);
+
+    const headers = [["Title", "Asset", "Signal", "Min - Max", "Time Range", "Duration (sec)"]];
+
+    const body = data.map((r) => {
+      const safeRow = [
+        cleanText(r.title),
+        cleanText(r.asset),
+        cleanText(r.signal),
+        formatMinMax(r.minMax),
+        cleanText(r.timeRange),
+        cleanText(r.duration),
+      ];
+      return safeRow;
+    });
+
+    autoTable(doc, {
+      head: headers,
+      body,
+      startY: 22,
+    });
+
+    doc.save(`daily-report-${selectedDate}.pdf`);
+  };
+
+
+  // ------------------------------------
+  // UI + TABLE
+  // ------------------------------------
+  const displayedReport = showOnlyAlerts
+    ? reportData.filter((r) => Number(r.max) > THRESHOLD)
+    : reportData;
 
   // Close dropdown on outside click
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+    const handler = (e: any) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setAssetDropdownOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
-
-  const handleGenerateReport = () => {
-    if (!selectedDate) return toast.error("Select a date!");
-    if (!selectedAssetId) return toast.error("Select an asset!");
-    const asset = allAssets.find((a) => a.assetId === selectedAssetId)!;
-    setReportData(generateReportData(asset, deviceName, selectedDate).reverse());
-    toast.success("Report generated!");
-  };
-
-  const displayedReport = showOnlyAlerts
-    ? reportData.filter((row) => parseFloat(row.value) > THRESHOLD)
-    : reportData;
-
-  const today = new Date().toISOString().split("T")[0]; // disable future dates
 
   return (
     <div className="p-4 bg-background">
-      <h2 className="text-3xl font-bold text-foreground mb-4">Daily Signal Report</h2>
+      <h2 className="text-3xl font-bold mb-4">Daily Signal Report</h2>
 
       <div className="grid grid-cols-12 gap-4">
-        {/* Left Card */}
+        {/* FILTER CARD */}
         <div className="col-span-12 lg:col-span-4">
-          <div className="bg-card text-card-foreground border border-border rounded-xl flex flex-col h-[570px] shadow-lg">
-            <div className="p-4 border-b border-border font-semibold text-lg bg-primary/10">Select Parameters</div>
-            <div className="flex-1 overflow-auto p-4 space-y-4">
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-gray-600 dark:text-gray-300">Date</label>
+          <div className="bg-card border rounded-xl p-4 h-[570px] flex flex-col">
 
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    className="
-                      w-full flex items-center justify-between 
-                      border border-border rounded-md p-2 
-                      bg-background hover:border-primary transition
-                    "
-                  >
-                    <span>
-                      {selectedDate ? format(new Date(selectedDate), "PPP") : "Select Date"}
-                    </span>
-
-                    {/* BIG Calendar Icon */}
-                    <CalendarIcon className="w-6 h-6 text-primary" />
-                  </button>
-                </PopoverTrigger>
-
-                <PopoverContent className="w-auto bg-background p-0">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate ? new Date(selectedDate) : undefined}
-                    onSelect={(date) => {
-                      if (date) setSelectedDate(format(date, "yyyy-MM-dd"));
-                    }}
-                    disabled={(date) => date > new Date()}
-                    className="rounded-md border"
-                  />
-                </PopoverContent>
-              </Popover>
-              </div>
-
-              {/* Asset Dropdown */}
-              <div ref={dropdownRef} className="relative">
-                <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block">Asset</label>
+            {/* DATE */}
+            <label className="mb-1">Select Date</label>
+            <Popover open={dateOpen} onOpenChange={setDateOpen}>
+              <PopoverTrigger asChild>
                 <button
-                  type="button"
-                  className="w-full p-2 border border-border rounded-md bg-background text-left hover:border-primary transition"
-                  onClick={() => setAssetDropdownOpen(!assetDropdownOpen)}
+                  id="report-date"
+                  className="w-full p-2 border rounded-md flex justify-between"
+                  onClick={() => setDateOpen(true)}
                 >
-                  {selectedAssetId
-                    ? allAssets.find((a) => a.assetId === selectedAssetId)?.name + ` (Level ${allAssets.find((a) => a.assetId === selectedAssetId)?.level})`
-                    : "Select Asset"}
+                  {selectedDate ? format(new Date(selectedDate), "PPP") : "Choose date"}
+                  <CalendarIcon />
                 </button>
-                {assetDropdownOpen && (
-                  <ul className="absolute z-50 mt-1 w-full max-h-44 overflow-auto border border-border rounded-md bg-background shadow-lg">
-                    {allAssets.map((a) => (
-                      <li
-                        key={a.assetId}
-                        className={`p-2 cursor-pointer hover:bg-primary/20 ${
-                          selectedAssetId === a.assetId ? "bg-primary/10 font-semibold" : ""
-                        }`}
-                        onClick={() => {
-                          setSelectedAssetId(a.assetId);
-                          setAssetDropdownOpen(false);
-                        }}
-                      >
-                        {a.name} (Level {a.level})
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              </PopoverTrigger>
 
-              {/* Device */}
-              <div>
-                <label className="text-sm text-gray-600 dark:text-gray-300">Assigned Device</label>
-                <div className="font-medium text-primary">{deviceName}</div>
-              </div>
-
-              {/* Alerts Checkbox */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={showOnlyAlerts}
-                  onChange={(e) => setShowOnlyAlerts(e.target.checked)}
-                  className="w-4 h-4 accent-primary"
+              <PopoverContent className="p-0 border-none shadow-none">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate ? new Date(selectedDate) : undefined}
+                  onSelect={(d) => {
+                    if (!d) return;
+                    setSelectedDate(format(d, "yyyy-MM-dd"));
+                    setDateOpen(false);
+                  }}
+                  disabled={(date) => date > new Date()}
                 />
-                <label className="text-sm">Show Only Alerts</label>
-              </div>
+              </PopoverContent>
+            </Popover>
 
-              <Button
-                className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-2"
-                onClick={handleGenerateReport}
+            {/* Asset */}
+            <div className="mt-4" ref={dropdownRef}>
+              <label>Asset (Optional)</label>
+              <button
+                id="report-asset"
+                className="w-full border p-2 rounded-md"
+                onClick={() => setAssetDropdownOpen(!assetDropdownOpen)}
               >
-                <FileText size={16} /> Generate Report
-              </Button>
-            </div>
-          </div>
-        </div>
+                {selectedAssetId
+                  ? allAssets.find((a) => a.assetId === selectedAssetId)?.name
+                  : "Select asset"}
+              </button>
 
-        {/* Right Card */}
-        <div className="col-span-12 lg:col-span-8">
-          <div className="bg-card text-card-foreground border border-border rounded-xl flex flex-col h-[570px] shadow-lg">
-
-            {/* Top Buttons */}
-            <div className="p-3 border-b border-border flex gap-2 flex-shrink-0 bg-primary/10 rounded-t-xl">
-              <h1 className="px-2 font-semibold flex-1 text-xl text-foreground">View Report</h1>
-              <Button
-                className="bg-green-500/20 text-green-700 border border-green-400 hover:bg-green-500/30 flex items-center gap-1"
-                onClick={() => downloadCSV(displayedReport)}
-              >
-                <FileText size={16} /> CSV
-              </Button>
-              <Button
-                className="bg-red-500/20 text-red-700 border border-red-400 hover:bg-red-500/30 flex items-center gap-1"
-                onClick={() => downloadPDF(displayedReport)}
-              >
-                <FileDown size={16} /> PDF
-              </Button>
-            </div>
-
-        {/* Table */}
-        {displayedReport.length > 0 ? (
-          <div className="flex-1 overflow-auto rounded-b-xl">
-            <table className="w-full text-foreground border border-border border-t-0">
-              {/* Sticky header */}
-              <thead className="bg-primary text-primary-foreground sticky top-0 z-20">
-                <tr>
-                  {Object.keys(displayedReport[0]).map((key) => (
-                    <th
-                      key={key}
-                      className="p-2 border-b border-border text-left font-semibold"
+              {assetDropdownOpen && (
+                <ul className="border mt-1 rounded bg-background max-h-40 overflow-auto">
+                  {allAssets.map((a) => (
+                    <li
+                      key={a.assetId}
+                      className="p-2 hover:bg-primary/10 cursor-pointer"
+                      onClick={() => {
+                        setSelectedAssetId(a.assetId);
+                        GetSignalsonAsset(a.assetId);
+                        setAssetDropdownOpen(false);
+                      }}
                     >
-                      {key}
-                    </th>
+                      {a.name}
+                    </li>
                   ))}
-                </tr>
-              </thead>
+                </ul>
+              )}
+            </div>
 
-              <tbody>
-                {displayedReport.map((row, i) => {
-                  const isAlert = parseFloat(row.value) > THRESHOLD;
-                  return (
-                    <tr
-                      key={i}
-                      className={`transition-colors ${
-                        isAlert
-                          ? "bg-red-100 dark:bg-red-700 font-semibold"
-                          : "hover:bg-primary/10 dark:hover:bg-primary/20"
-                      }`}
+
+
+            {/* signal */}
+            <div>
+              <label>Signal (Optional)</label>
+              <button
+                className="w-full border p-2 rounded-md"
+                onClick={() => setSignalDropdownOpen(!signalDropdownOpen)}
+                disabled={!selectedAssetId} // disable if no asset selected
+              >
+                {SelectSignalId
+                  ? allSignalsOnAsset.find((s) => s.signalTypeID === SelectSignalId)
+                    ?.signalName
+                  : "Select Signal On Asset"}
+              </button>
+
+              {signalDropdownOpen && (
+                <ul className="border mt-1 rounded bg-background max-h-40 overflow-auto">
+                  {allSignalsOnAsset.map((s) => (
+                    <li
+                      key={s.signalTypeID}
+                      className="p-2 hover:bg-primary/10 cursor-pointer"
+                      onClick={() => {
+                        setSelectedSignalID(s.signalTypeID);
+                        setSignalDropdownOpen(false);
+                      }}
                     >
-                      {Object.values(row).map((val, j) => (
-                        <td key={j} className="p-2 border-b border-border">
-                          {val}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-gray-500 dark:text-gray-400 text-center py-12">
-            No report generated. Select date and asset, then click "Generate Report".
-          </div>
-        )}
-      </div>
+                      {s.signalName}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
+            {/* DEVICE */}
+            <div id="report-device" className="mt-4 font-medium text-primary">
+              Assigned Device: {selectedAssetId ? "Device Name Here" : "None"}
+            </div>
+
+            {/* ALERT CHECKBOX */}
+            <div className="mt-4 flex items-center gap-2">
+              <input
+                id="report-alerts"
+                type="checkbox"
+                checked={showOnlyAlerts}
+                onChange={(e) => setShowOnlyAlerts(e.target.checked)}
+              />
+              <label>Show only alerts (max &gt; {THRESHOLD})</label>
+            </div>
+
+            {/* GENERATE */}
+            <Button
+              id="generate-report-btn"
+              className="mt-4 bg-primary text-white"
+              onClick={generateReport}
+            >
+              <FileText /> Generate Report
+            </Button>
+          </div>
         </div>
+
+        {/* REPORT TABLE */}
+        <div className="col-span-12 lg:col-span-8">
+          <div className="bg-card border rounded-xl h-[570px] flex flex-col">
+
+            {/* HEADER */}
+            <div className="p-3 border-b flex justify-between">
+              <h3 className="text-xl font-bold">Report</h3>
+
+              <div className="flex gap-2">
+                <Button
+                  id="download-csv-btn"
+                  className="
+                  bg-green-500/20 text-green-700 
+                  dark:bg-green-500/10 dark:text-green-300 
+                  hover:bg-green-500/30 dark:hover:bg-green-500/20"
+                  onClick={() => downloadCSV(displayedReport)}>
+                  <FileText /> CSV
+                </Button>
+
+                <Button
+                  id="download-pdf-btn"
+                  className="
+                  bg-red-500/20 text-red-700 
+                  dark:bg-red-500/10 dark:text-red-300 
+                  hover:bg-red-500/30 dark:hover:bg-red-500/20"
+                  onClick={() => downloadPDF(displayedReport)}>
+                  <FileDown /> PDF
+                </Button>
+              </div>
+            </div>
+
+            {/* TABLE */}
+            <div id="report-table" className="flex-1 overflow-auto">
+              {displayedReport.length === 0 ? (
+                <div className="text-center text-gray-500 py-10">
+                  No report generated yet.
+                </div>
+              ) : (
+                <table className="w-full border">
+                  <thead className="bg-primary text-white sticky top-0">
+                    <tr>
+                      <th className="p-2 border">Title</th>
+                      <th className="p-2 border">Asset</th>
+                      <th className="p-2 border">Signal</th>
+                      <th className="p-2 border">Min → Max</th>
+                      <th className="p-2 border">Time Range</th>
+                      <th className="p-2 border">Duration (sec)</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {displayedReport.map((row, i) => (
+                      <tr
+                        key={i}
+                        className={`${Number(row.minMax?.split("→")[1]) > THRESHOLD
+                          ? "bg-red-100 dark:bg-red-900/40"
+                          : ""
+                          }`}
+                      >
+                        <td className="p-2 border">{row.title}</td>
+                        <td className="p-2 border">{row.asset}</td>
+                        <td className="p-2 border">{row.signal}</td>
+                        <td className="p-2 border">{row.minMax}</td>
+                        <td className="p-2 border">{row.timeRange}</td>
+                        <td className="p-2 border">{row.duration}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </div>
   );

@@ -32,7 +32,6 @@ export interface TelemetryResponse {
   stats: TelemetryStats | null;
 }
 
-// 🔥 FIX: Change from string enum to numeric enum to match backend
 export enum TimeRange {
   LastHour = 0,
   Last6Hours = 1,
@@ -67,16 +66,15 @@ export const getTelemetryData = async (
       }
     );
     
-    console.log("✅ Response:", response.data); // Debug log
+    console.log("✅ Response:", response.data); 
     return response.data;
   } catch (error: any) {
-    console.error("❌ Full error:", error); // Debug log
-    console.error("❌ Error response:", error.response); // Debug log
+    console.error("❌ Full error:", error); 
+    console.error("❌ Error response:", error.response); 
     throw new Error(error.response?.data?.error || "Failed to fetch telemetry data");
   }
 };
 
-// 🔥 Quick endpoints for common time ranges
 export const getLastHourData = async (
   assetId: string,
   signalTypeId: string

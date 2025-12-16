@@ -9,9 +9,10 @@ import {
   CheckCircle2,
   Clock,
 } from "lucide-react";
-import { getDevices, getDeletedDeviced } from "@/api/deviceApi";
+import { getDevices, getDeletedDeviced,getAvgApiResponseTime } from "@/api/deviceApi";
 import { getAssetHierarchy } from "@/api/assetApi";
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationContext";
 
 // KPI Card Component
 const KPICard = ({ title, value, icon, trend, trendUp, status, borderColor }: any) => (
@@ -59,6 +60,9 @@ export default function Dashboard() {
   const [plantCount, setPlantCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const { unreadCount } = useNotifications();
+  const alertsToday = unreadCount;
+  const [avgResponse, setAvgResponse] = useState<number>(0);
   const { user } = useAuth();
   const isAdmin = user?.role === "Admin";
 
@@ -66,6 +70,9 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
+
+        const avgResTime = await getAvgApiResponseTime();
+        setAvgResponse(avgResTime);
 
         const deviceRes = await getDevices(1, 100);
         setTotalDevices(deviceRes.totalCount || deviceRes.items?.length || 0);
@@ -115,7 +122,6 @@ export default function Dashboard() {
 
   const activeDevices = totalDevices - deletedDevices;
   const uptime = 99.8;
-  const alertsToday = Math.floor(totalDevices * 0.05);
   const efficiency = 94.2;
 
   return (
@@ -163,7 +169,7 @@ export default function Dashboard() {
           <StatBox label="Plant Efficiency" value={`${efficiency}%`} icon={<TrendingUp className="w-5 h-5 text-primary" />} colorClass="bg-primary/20" borderColor="border-primary" />
         </div>
         <div id="stat-response">
-          <StatBox label="Avg Response Time" value="245ms" icon={<Clock className="w-5 h-5 text-amber-500" />} colorClass="bg-amber-500/20" borderColor="border-amber-500" />
+          <StatBox label="Avg Response Time" value={`${avgResponse.toFixed(2)} ms`} icon={<Clock className="w-5 h-5 text-amber-500" />} colorClass="bg-amber-500/20" borderColor="border-amber-500" />
         </div>
         <div id="stat-critical">
           <StatBox label="Critical Issues" value="0" icon={<AlertTriangle className="w-5 h-5 text-red-500" />} colorClass="bg-red-500/20" borderColor="border-red-500" />
