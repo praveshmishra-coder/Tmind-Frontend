@@ -8,18 +8,10 @@ import type { Asset } from "@/api/assetApi";
 import { getMappingById } from "@/api/assetApi";
 
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
@@ -85,16 +77,17 @@ export default function Signals() {
   const [telemetryData, setTelemetryData] = useState<any[]>([]);
   const [fetchingData, setFetchingData] = useState<boolean>(false);
 
-  const flattenAssets = (assets: Asset[]): Asset[] => {
-    const out: Asset[] = [];
-    const stack = [...assets];
-    while (stack.length) {
-      const a = stack.shift()!;
-      out.push(a);
-      if (a.childrens?.length) stack.unshift(...a.childrens);
-    }
-    return out;
-  };
+ const flattenAssets = (assets: Asset[]): Asset[] => {
+  const out: Asset[] = [];
+  const stack = [...assets];
+  while (stack.length) {
+    const a = stack.shift()!;
+    if (a.level > 2) out.push(a);
+    if (a.childrens?.length) stack.unshift(...a.childrens);
+  }
+  return out;
+};
+
 
   /* ---------------- Load asset hierarchy ---------------- */
   useEffect(() => {
@@ -180,7 +173,7 @@ export default function Signals() {
       uniqueDeviceIds.map(async (deviceId) => {
         try {
           const device = await getDeviceById(deviceId);
-          return device?.name ?? device?.data?.name ?? "Unknown Device";
+          return device?.name ?? device?.data?.name ?? "Not Assigned";
         } catch {
           return "Unknown Device";
         }
@@ -502,19 +495,21 @@ export default function Signals() {
               <span className="text-gray-500 dark:text-gray-400 text-sm">Loading...</span>
             ) : (
               <select
-                className="tour-compare-dropdown w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-                value={compareAssetId}
-                onChange={e => setCompareAssetId(e.target.value)}
-              >
-                <option value="">None</option>
-                {allAssets
-                  .filter(a => a.assetId !== mainAsset?.assetId)
-                  .map(a => (
-                    <option key={a.assetId} value={a.assetId}>
-                      {a.name} (Level {a.level})
-                    </option>
-                  ))}
-              </select>
+                      className="tour-compare-dropdown w-full p-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                      value={compareAssetId}
+                      onChange={e => setCompareAssetId(e.target.value)}
+                      disabled={!mainAsset} // <-- Disable if no main asset selected
+                    >
+                      <option value="">None</option>
+                      {allAssets
+                        .filter(a => a.assetId !== mainAsset?.assetId)
+                        .map(a => (
+                          <option key={a.assetId} value={a.assetId}>
+                            {a.name} (Level {a.level})
+                          </option>
+                        ))}
+                    </select>
+
             )}
           </div>
 
@@ -523,9 +518,9 @@ export default function Signals() {
               {/* Device */}
               <div className="tour-main-device flex flex-col">
               <span className="text-xs text-gray-500 dark:text-gray-400">Assigned Device:</span>
-              {deviceName ? (
+              {compareDeviceName ? (
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {deviceName.split(",").map((d, idx) => (
+                  {compareDeviceName.split(",").map((d, idx) => (
                     <span
                       key={idx}
                       className="px-3 py-1 text-sm font-medium text-green-800 dark:text-green-100 bg-green-100 dark:bg-green-800 rounded-full shadow"

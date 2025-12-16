@@ -22,10 +22,11 @@ type FieldError = {
   messages: string[];
   rowInfo?: string;
 };
-type ApiResposne={
-  addedAssets:[],
-  skippedAssets:[]
-}
+
+type ApiResponse = {
+  addedAssets: string[];
+  skippedAssets: string[];
+};
 
 const ASSET_NAME_RE = /^[A-Za-z0-9 _-]+$/;
 
@@ -36,18 +37,27 @@ export default function AssetBulkUpload() {
   const [fieldErrors, setFieldErrors] = useState<FieldError[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [apiResposne,setApiResponse]=useState<ApiResposne>();
+  const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const normalizeKey = (k: string | undefined) => String(k || "").replace(/\s+/g, "").toLowerCase();
+  /** Normalize column headers */
+  const normalizeKey = (k: string | undefined) =>
+    String(k || "")
+      .replace(/\s+/g, "")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .toLowerCase();
 
+  /** Convert rows to assets + deduplicate while merging rows */
   function dedupAndMap(parsedRows: ParsedRow[]): Asset[] {
     const map = new Map<string, Asset>();
 
     for (const r of parsedRows) {
       const normalized: Record<string, unknown> = {};
-      for (const k of Object.keys(r)) normalized[normalizeKey(k)] = r[k];
+
+      for (const k of Object.keys(r)) {
+        normalized[normalizeKey(k)] = r[k];
+      }
 
       const assetName = String(normalized["assetname"] ?? "").trim();
       const parentName = String(normalized["parentname"] ?? "").trim();
@@ -57,6 +67,7 @@ export default function AssetBulkUpload() {
       if (!assetName) continue;
 
       const key = assetName.toLowerCase();
+
       if (!map.has(key)) {
         map.set(key, {
           assetName,
@@ -64,78 +75,134 @@ export default function AssetBulkUpload() {
           level: isNaN(level) ? 0 : level,
           sourceRows: rowNum ? [rowNum] : [],
         });
-      } else map.get(key)!.sourceRows.push(rowNum!);
+      } else {
+        map.get(key)!.sourceRows.push(rowNum!);
+      }
     }
 
     return Array.from(map.values());
   }
 
+  /** Validation */
   function validate(astList: Asset[]) {
     const global: string[] = [];
-    const flatFieldErrors: FieldError[] = [];
+    const flatErrors: FieldError[] = [];
     const seen = new Map<string, number>();
 
-    if (astList.length > 20) global.push(`Maximum 20 assets allowed (found ${astList.length})`);
+    if (astList.length > 20) {
+      global.push(`Maximum 20 assets allowed (found ${astList.length})`);
+    }
 
     astList.forEach((a, i) => {
-      const rowInfo = a.sourceRows.length ? ` (rows: ${a.sourceRows.join(",")})` : "";
+      const rowInfo =
+        a.sourceRows.length ? `Rows: ${a.sourceRows.join(",")}` : "";
 
-      if (!a.assetName.trim())
-        flatFieldErrors.push({ assetIndex: i, field: "assetName", messages: ["AssetName is required"], rowInfo });
+      // Asset name required
+      if (!a.assetName.trim()) {
+        flatErrors.push({
+          assetIndex: i,
+          field: "assetName",
+          messages: ["AssetName is required"],
+          rowInfo,
+        });
+      }
 
-      if (a.assetName.trim().length < 3 || a.assetName.trim().length > 100)
-        flatFieldErrors.push({ assetIndex: i, field: "assetName", messages: ["3-100 characters allowed"], rowInfo });
+      // Length validation
+      if (a.assetName.length < 3 || a.assetName.length > 100) {
+        flatErrors.push({
+          assetIndex: i,
+          field: "assetName",
+          messages: ["AssetName must be 3-100 characters"],
+          rowInfo,
+        });
+      }
 
-      if (!ASSET_NAME_RE.test(a.assetName))
-        flatFieldErrors.push({ assetIndex: i, field: "assetName", messages: ["Invalid characters"], rowInfo });
+      // Character validation
+      if (!ASSET_NAME_RE.test(a.assetName)) {
+        flatErrors.push({
+          assetIndex: i,
+          field: "assetName",
+          messages: ["AssetName contains invalid characters"],
+          rowInfo,
+        });
+      }
 
-      if (a.level <= 0)
-        flatFieldErrors.push({ assetIndex: i, field: "level", messages: ["Level must be greater than 0"], rowInfo });
+      // Level validation
+      if (a.level <= 0) {
+        flatErrors.push({
+          assetIndex: i,
+          field: "level",
+          messages: ["Level must be greater than 0"],
+          rowInfo,
+        });
+      }
 
-      if (!Number.isInteger(a.level))
-        flatFieldErrors.push({ assetIndex: i, field: "level", messages: ["Level must be an integer"], rowInfo });
+      if (!Number.isInteger(a.level)) {
+        flatErrors.push({
+          assetIndex: i,
+          field: "level",
+          messages: ["Level must be an integer"],
+          rowInfo,
+        });
+      }
 
+      // Duplicate asset detection
       const key = a.assetName.toLowerCase();
       if (seen.has(key)) {
-        flatFieldErrors.push({
+        flatErrors.push({
           assetIndex: i,
           field: "assetName",
           messages: [`Duplicate asset name (row ${seen.get(key)! + 2})`],
-          rowInfo
+          rowInfo,
         });
-      } else seen.set(key, i);
+      } else {
+        seen.set(key, i);
+      }
     });
 
-    return { global, fieldErrors: flatFieldErrors };
+    return { global, fieldErrors: flatErrors };
   }
 
+  /** When assets change → revalidate */
   useEffect(() => {
     const { global, fieldErrors } = validate(assets);
     setGlobalErrors(global);
     setFieldErrors(fieldErrors);
   }, [assets]);
 
+  /** File picker */
   const openFilePicker = () => fileInputRef.current?.click();
 
+  /** File processing */
   function handleFile(file: File) {
     const fileName = file.name.toLowerCase();
 
     const processRows = (data: Record<string, unknown>[]) => {
-      const annotated = data.map((r, i) => ({ __rowNum: i + 2, ...r }));
-      
+      const annotated = data.map((r, i) => ({
+        __rowNum: i + 2,
+        ...r,
+      }));
+
+      const parsedAssets = dedupAndMap(annotated);
+
       setRows(annotated);
-      console.log(rows)
-      setAssets(dedupAndMap(annotated));
+      setAssets(parsedAssets);
     };
 
+    // CSV
     if (fileName.endsWith(".csv")) {
-      Papa.parse(file, { header: true, skipEmptyLines: true, complete: (res) => processRows(res.data as Record<string, unknown>[]) });
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (res) => processRows(res.data as Record<string, unknown>[]),
+      });
       return;
     }
 
+    // Excel
     if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
       const reader = new FileReader();
-      reader.onload = e => {
+      reader.onload = (e) => {
         const buffer = e.target?.result as ArrayBuffer;
         const workbook = XLSX.read(new Uint8Array(buffer), { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -143,26 +210,31 @@ export default function AssetBulkUpload() {
         processRows(json);
       };
       reader.readAsArrayBuffer(file);
+
       return;
     }
 
     setGlobalErrors(["Unsupported file type. Please upload CSV or Excel"]);
   }
 
+  /** Save to API */
   async function handleSave() {
     const { global, fieldErrors } = validate(assets);
-    setGlobalErrors(global);
-    setFieldErrors(fieldErrors);
+
     if (global.length || fieldErrors.length) return;
 
     setSaving(true);
 
     try {
-    const response=  await apiAsset.post("/AssetHierarchy/bulk-upload", {
-         assets : assets.map(a => ({ AssetName: a.assetName.trim(), ParentName: a.parentName?.trim() ?? null, Level: a.level }))
+      const response = await apiAsset.post("/AssetHierarchy/bulk-upload", {
+        assets: assets.map((a) => ({
+          assetName: a.assetName.trim(),
+          parentName: a.parentName?.trim() ?? null,
+          level: a.level,
+        })),
       });
-     setApiResponse(response.data);
-     
+
+      setApiResponse(response.data);
       setRows([]);
       setAssets([]);
       setGlobalErrors([]);
@@ -177,57 +249,108 @@ export default function AssetBulkUpload() {
   return (
     <Card className="p-4">
       <CardHeader>
-        <CardTitle className="text-sm text-foreground">Asset Bulk Upload</CardTitle>
+        <CardTitle className="text-sm text-foreground">
+          Asset Bulk Upload
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* File Drop */}
         <div
-          onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; f && handleFile(f); }}
-          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            const f = e.dataTransfer.files[0];
+            if (f) handleFile(f);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
           onDragLeave={() => setDragOver(false)}
-           className={`rounded-lg p-4 flex items-center justify-between transition-shadow border cursor-pointer
+          className={`rounded-lg p-4 flex items-center justify-between transition-shadow border cursor-pointer 
           ${dragOver ? "shadow-lg border-primary/40 bg-primary/5" : "bg-card"}`}
-      >
+        >
           <div className="leading-tight">
-            <div className="text-sm font-medium text-foreground">Upload CSV / Excel</div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Columns: <span className="font-semibold">AssetName</span>, <span className="font-semibold">ParentName</span>, <span className="font-semibold">Level</span>
+            <div className="text-sm font-medium text-foreground">
+              Upload CSV / Excel
             </div>
-            <div className="text-xs text-muted-foreground mt-1">Drag & drop or click “Choose file”</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Columns: <strong>AssetName</strong>,{" "}
+              <strong>ParentName</strong>, <strong>Level</strong>
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Drag & drop or click “Choose file”
+            </div>
           </div>
+
           <div className="flex items-center gap-3">
-            <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
-              onChange={e => { const f = e.target.files?.[0]; f && handleFile(f); if (fileInputRef.current) fileInputRef.current.value = ""; }} />
-            <Button size="sm" onClick={openFilePicker}>Choose file</Button>
-            <Button variant="ghost" size="sm" onClick={() => { setRows([]); setAssets([]); setGlobalErrors([]); setFieldErrors([]); }}>Clear</Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFile(f);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+            />
+            <Button size="sm" onClick={openFilePicker}>
+              Choose file
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setRows([]);
+                setAssets([]);
+                setGlobalErrors([]);
+                setFieldErrors([]);
+                setApiResponse(null);
+              }}
+            >
+              Clear
+            </Button>
           </div>
         </div>
 
         <Separator />
 
+        {/* Global Errors */}
         {globalErrors.length > 0 && (
-        <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive rounded text-sm">
-          <ul className="list-disc ml-5">
-              {globalErrors.map((e, i) => <li key={i}>{e}</li>)}
+          <div className="p-3 bg-destructive/10 border border-destructive/30 text-destructive rounded text-sm">
+            <ul className="list-disc ml-5">
+              {globalErrors.map((e, i) => (
+                <li key={i}>{e}</li>
+              ))}
             </ul>
           </div>
         )}
 
+        {/* Field-level Errors */}
         <div>
           {fieldErrors.length > 0 ? (
             <div className="p-3 bg-warning/10 border border-warning/30 rounded text-sm">
-            <div className="font-medium mb-2 text-warning">
-              Validation issues
-            </div>
+              <div className="font-medium mb-2 text-warning">
+                Validation issues
+              </div>
               <ScrollArea className="h-auto overflow-auto">
                 <ul className="space-y-2">
                   {fieldErrors.map((fe, i) => (
-                    <li key={i} className="p-2 bg-card border rounded shadow-sm">
+                    <li
+                      key={i}
+                      className="p-2 bg-card border rounded shadow-sm"
+                    >
                       <div className="text-xs text-muted-foreground">
-                        {fe.rowInfo || assets[fe.assetIndex]?.sourceRows?.join(",") || "?"}
+                        {fe.rowInfo}
                       </div>
-                      <div className="font-medium text-foreground">Field: {fe.field}</div>
+                      <div className="font-medium text-foreground">
+                        Field: {fe.field}
+                      </div>
                       <div className="text-xs text-red-700 mt-1">
-                        {fe.messages.map((m, i2) => <div key={i2}>• {m}</div>)}
+                        {fe.messages.map((m, i2) => (
+                          <div key={i2}>• {m}</div>
+                        ))}
                       </div>
                     </li>
                   ))}
@@ -235,30 +358,32 @@ export default function AssetBulkUpload() {
               </ScrollArea>
             </div>
           ) : (
-            <div className="p-3 bg-emerald-50/20 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded text-sm">
-            {assets.length > 0
-              ? "🎉 CSV is ready to upload."
-              : "Upload a CSV/XLSX to validate."}
-          </div>
+            <div className="p-3 bg-emerald-50/20 border border-emerald-500/20 text-emerald-600 rounded text-sm">
+              {assets.length > 0
+                ? "🎉 CSV is ready to upload."
+                : "Upload a CSV/XLSX to validate."}
+            </div>
           )}
         </div>
 
+        {/* Save Button */}
         <div className="flex justify-end gap-2">
           <Button onClick={handleSave} disabled={assets.length === 0 || saving}>
             {saving ? "Saving..." : "Save Assets"}
           </Button>
         </div>
 
-         {apiResposne && (
+        {/* API Response */}
+        {apiResponse && (
           <div className="space-y-3 mt-4">
-            {apiResposne.addedAssets?.length > 0 && (
-            <div className="p-3 bg-emerald-50/20 border border-emerald-500/20 rounded text-sm">
-              <div className="font-medium text-emerald-600 dark:text-emerald-400 mb-1">
-                ✅ Successfully Added ({apiResposne.addedAssets.length})
-              </div>
+            {apiResponse.addedAssets?.length > 0 && (
+              <div className="p-3 bg-emerald-50/20 border border-emerald-500/20 rounded text-sm">
+                <div className="font-medium text-emerald-600 mb-1">
+                  ✅ Successfully Added ({apiResponse.addedAssets.length})
+                </div>
                 <ScrollArea className="max-h-40">
-                  <ul className="list-disc ml-5 text-emerald-800 dark:text-emerald-400">
-                    {apiResposne.addedAssets.map((msg, i) => (
+                  <ul className="list-disc ml-5 text-emerald-800">
+                    {apiResponse.addedAssets.map((msg, i) => (
                       <li key={i}>{msg}</li>
                     ))}
                   </ul>
@@ -266,14 +391,14 @@ export default function AssetBulkUpload() {
               </div>
             )}
 
-            {apiResposne.skippedAssets?.length > 0 && (
-               <div className="p-3 bg-destructive/10 border border-destructive/30 rounded text-sm">
-              <div className="font-medium text-destructive mb-1">
-                ⚠️ Skipped ({apiResposne.skippedAssets.length})
-              </div>
+            {apiResponse.skippedAssets?.length > 0 && (
+              <div className="p-3 bg-destructive/10 border border-destructive/30 rounded text-sm">
+                <div className="font-medium text-destructive mb-1">
+                  ⚠️ Skipped ({apiResponse.skippedAssets.length})
+                </div>
                 <ScrollArea className="max-h-40">
                   <ul className="list-disc ml-5 text-red-800">
-                    {apiResposne.skippedAssets.map((msg, i) => (
+                    {apiResponse.skippedAssets.map((msg, i) => (
                       <li key={i}>{msg}</li>
                     ))}
                   </ul>
