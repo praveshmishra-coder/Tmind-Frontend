@@ -13,12 +13,11 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import {ChangeUserRole} from "@/api/userApi";
 
 // User API
 import {
   getAllUsers,
-  updateUser,
+  ChangeUserRole,
   deleteUser as apiDeleteUser,
 } from "../api/userApi";
 

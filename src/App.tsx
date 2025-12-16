@@ -48,7 +48,6 @@ export default function App() {
 
   return (
     <TooltipProvider>
-      <NotificationProvider>
       
         <ToastContainer position="top-right" autoClose={2000} theme="light" />
         <PageLoader isVisible={showLoader} /> {/* <- mounted at app root so it shows on any full-page load */}
@@ -56,7 +55,11 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Login />} />
 
-            <Route element={<DashboardLayout />}>
+            <Route element={
+          <NotificationProvider>
+            <DashboardLayout />
+          </NotificationProvider>
+          }>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/assets" element={<Assets />} />
               {/* <Route path="/deleted-assets" element={<DeletedAsset />} /> */}
@@ -83,7 +86,6 @@ export default function App() {
             {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
           </Routes>
         </Router>
-      </NotificationProvider>
     </TooltipProvider>
   );
 }
