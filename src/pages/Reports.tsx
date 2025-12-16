@@ -10,18 +10,21 @@ import { format, parseISO } from "date-fns";
 
 import { getAssetHierarchy, getAllNotifications } from "@/api/assetApi";
 import type { Asset } from "@/api/assetApi";
+import { A } from "node_modules/framer-motion/dist/types.d-BJcRxCew";
+import { getAssetConfig } from "@/api/assetApi";
 
 export default function Reports() {
   const [selectedDate, setSelectedDate] = useState("");
   const [allAssets, setAllAssets] = useState<Asset[]>([]);
   const [selectedAssetId, setSelectedAssetId] = useState("");
   const [dateOpen, setDateOpen] = useState(false);
-
-
+  const [allSignalsOnAsset, setSignalOnasset] = useState<any[]>([]);
+  const [SelectSignalId, setSelectedSignalID] = useState("");
   const [reportData, setReportData] = useState<any[]>([]);
   const [showOnlyAlerts, setShowOnlyAlerts] = useState(false);
 
   const [assetDropdownOpen, setAssetDropdownOpen] = useState(false);
+  const [signalDropdownOpen, setSignalDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const THRESHOLD = 70; // for highlighting rows
@@ -67,97 +70,103 @@ export default function Reports() {
     return out;
   };
 
+
+  const GetSignalsonAsset = async (selectedID: any) => {
+    try {
+      if (selectedID != null) {
+        const response = await getAssetConfig(selectedID);
+        setSignalOnasset(response);
+        console.log(response);
+      }
+    } catch (error: any) {
+      console.log(error);
+    }
+  }
+
+
+
   // ------------------------------------
   // 2. GENERATE REPORT
   // ------------------------------------
-const generateReport = async () => {
-  if (!selectedDate) return toast.error("Select a date!");
+  const generateReport = async () => {
+    if (!selectedDate) return toast.error("Select a date!");
 
-  try {
-    const allNotifs = await getAllNotifications();
-    if (!Array.isArray(allNotifs)) {
-      console.error("Invalid response from backend", allNotifs);
-      return toast.error("Invalid data received");
-    }
+    try {
+      const allNotifs = await getAllNotifications();
+      if (!Array.isArray(allNotifs)) {
+        console.error("Invalid response from backend", allNotifs);
+        return toast.error("Invalid data received");
+      }
 
-    // 1️⃣ Filter notifications by selected date
-    const filteredByDate = allNotifs.filter((n) =>
-      n.createdAt.startsWith(selectedDate)
-    );
+      // Filter by selected date
+      const filteredByDate = allNotifs.filter((n) =>
+        n.createdAt.startsWith(selectedDate)
+      );
 
-    let finalData: typeof filteredByDate = filteredByDate;
+      let finalData = filteredByDate;
 
-    // 2️⃣ Filter by selected asset (including children) if any
-    if (selectedAssetId) {
-      const selectedAsset = allAssets.find(a => a.assetId === selectedAssetId);
-      if (selectedAsset) {
-        const subtree = getAllChildAssets(selectedAsset);
-        const assetNames = subtree.map(a => a.name);
+      // Filter by asset + children
+      if (selectedAssetId) {
+        const selectedAsset = allAssets.find(a => a.assetId === selectedAssetId);
+        if (selectedAsset) {
+          const subtree = getAllChildAssets(selectedAsset);
+          const assetNames = subtree.map(a => a.name);
 
-        finalData = filteredByDate.filter((n) => {
-          try {
-            const parsed = JSON.parse(n.text);
-            return assetNames.includes(parsed.asset); // compare asset name
-          } catch {
-            return false;
-          }
-        });
-
-        // 3️⃣ Handle no notifications for selected asset
-        if (finalData.length === 0) {
-          setReportData([]);
-          return toast.info("No data available for selected asset.");
+          finalData = finalData.filter((n) => {
+            try {
+              const parsed = JSON.parse(n.text);
+              return assetNames.includes(parsed.asset);
+            } catch {
+              return false;
+            }
+          });
         }
       }
+
+      // Convert notification to table-ready format
+      const formatted = finalData.map((n) => {
+        let parsed: any = {};
+        try {
+          parsed = JSON.parse(n.text);
+        } catch { }
+
+        const fromTime = parsed.from
+          ? format(parseISO(parsed.from), "HH:mm:ss.SSSSS")
+          : "";
+        const toTime = parsed.to
+          ? format(parseISO(parsed.to), "HH:mm:ss.SSSSS")
+          : "";
+
+        return {
+          title: n.title,
+          asset: parsed.asset ?? "",
+          signal: parsed.signal ?? "",
+          minMax: `${parsed.min ?? "-"} → ${parsed.max ?? "-"}`,
+          timeRange: `${fromTime} – ${toTime}`,
+          duration: parsed.durationSeconds ?? "",
+        };
+      });
+
+      setReportData(formatted);
+      toast.success("Report generated!");
+    } catch (err) {
+      toast.error("Failed to load notifications");
+      console.error(err);
     }
-
-    // 4️⃣ Convert notifications to table-ready format
-    const formatted = finalData.map((n) => {
-      let parsed: any = {};
-      try {
-        parsed = JSON.parse(n.text);
-      } catch {}
-
-      const fromTime = parsed.from
-        ? format(parseISO(parsed.from), "HH:mm:ss.SSSSS")
-        : "";
-      const toTime = parsed.to
-        ? format(parseISO(parsed.to), "HH:mm:ss.SSSSS")
-        : "";
-
-      return {
-        title: n.title,
-        asset: parsed.asset ?? "",
-        signal: parsed.signal ?? "",
-        minMax: `${parsed.min ?? "-"} → ${parsed.max ?? "-"}`,
-        timeRange: `${fromTime} – ${toTime}`,
-        duration: parsed.durationSeconds ?? "",
-      };
-    });
-
-    // 5️⃣ Update state and show success
-    setReportData(formatted);
-    toast.success("Report generated!");
-  } catch (err) {
-    toast.error("Failed to load notifications");
-    console.error(err);
-  }
-};
-
-
-  
-  const cleanText = (value: any) => {
-  if (!value) return "";
-
-  return String(value)
-    .replace(/[^\d.:A-Za-z\s-]/g, "") // remove weird symbols like !’, etc.
-    .replace(/\s+/g, " ")             // collapse extra spaces
-    .trim();
   };
 
-    const formatMinMax = (str: string) => {
+  const cleanText = (value: any) => {
+    if (!value) return "";
+
+    return String(value)
+      .replace(/[^\d.:A-Za-z\s-]/g, "") // remove weird symbols like !’, etc.
+      .replace(/\s+/g, " ")             // collapse extra spaces
+      .trim();
+  };
+
+  const formatMinMax = (str: string) => {
     if (!str) return "";
-    const cleaned = cleanText(str).replace(/!/g, ""); 
+    const cleaned = cleanText(str).replace(/!/g, "");
     const parts = cleaned.split(/[^0-9.]+/).filter(Boolean);
 
     if (parts.length === 2) {
@@ -167,10 +176,10 @@ const generateReport = async () => {
   };
 
   const downloadCSV = (data: any[]) => {
-  if (!data.length) return toast.error("No data!");
+    if (!data.length) return toast.error("No data!");
 
     const headers = ["title", "asset", "signal", "minMax", "timeRange", "duration"];
-    
+
 
     const rows = [
       headers.join(","), // header row
@@ -193,7 +202,7 @@ const generateReport = async () => {
   // ------------------------------------
   // EXPORT PDF
   // ------------------------------------
-    const downloadPDF = (data: any[]) => {
+  const downloadPDF = (data: any[]) => {
     if (!data.length) return toast.error("No data!");
 
     const doc = new jsPDF();
@@ -252,33 +261,33 @@ const generateReport = async () => {
 
             {/* DATE */}
             <label className="mb-1">Select Date</label>
-           <Popover open={dateOpen} onOpenChange={setDateOpen}>
-            <PopoverTrigger asChild>
-              <button
-                id="report-date"
-                className="w-full p-2 border rounded-md flex justify-between"
-                onClick={() => setDateOpen(true)}
-              >
-                {selectedDate ? format(new Date(selectedDate), "PPP") : "Choose date"}
-                <CalendarIcon />
-              </button>
-            </PopoverTrigger>
+            <Popover open={dateOpen} onOpenChange={setDateOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  id="report-date"
+                  className="w-full p-2 border rounded-md flex justify-between"
+                  onClick={() => setDateOpen(true)}
+                >
+                  {selectedDate ? format(new Date(selectedDate), "PPP") : "Choose date"}
+                  <CalendarIcon />
+                </button>
+              </PopoverTrigger>
 
-            <PopoverContent className="p-0 border-none shadow-none">
-              <Calendar
-                mode="single"
-                selected={selectedDate ? new Date(selectedDate) : undefined}
-                onSelect={(d) => {
-                  if (!d) return;
-                  setSelectedDate(format(d, "yyyy-MM-dd"));
-                  setDateOpen(false); 
-                }}
-                disabled={(date) => date > new Date()}
-              />
-            </PopoverContent>
-          </Popover>
+              <PopoverContent className="p-0 border-none shadow-none">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate ? new Date(selectedDate) : undefined}
+                  onSelect={(d) => {
+                    if (!d) return;
+                    setSelectedDate(format(d, "yyyy-MM-dd"));
+                    setDateOpen(false);
+                  }}
+                  disabled={(date) => date > new Date()}
+                />
+              </PopoverContent>
+            </Popover>
 
-            {/* ASSET */}
+            {/* Asset */}
             <div className="mt-4" ref={dropdownRef}>
               <label>Asset (Optional)</label>
               <button
@@ -299,10 +308,45 @@ const generateReport = async () => {
                       className="p-2 hover:bg-primary/10 cursor-pointer"
                       onClick={() => {
                         setSelectedAssetId(a.assetId);
+                        GetSignalsonAsset(a.assetId);
                         setAssetDropdownOpen(false);
                       }}
                     >
                       {a.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+
+
+            {/* signal */}
+            <div>
+              <label>Signal (Optional)</label>
+              <button
+                className="w-full border p-2 rounded-md"
+                onClick={() => setSignalDropdownOpen(!signalDropdownOpen)}
+                disabled={!selectedAssetId} // disable if no asset selected
+              >
+                {SelectSignalId
+                  ? allSignalsOnAsset.find((s) => s.signalTypeID === SelectSignalId)
+                    ?.signalName
+                  : "Select Signal On Asset"}
+              </button>
+
+              {signalDropdownOpen && (
+                <ul className="border mt-1 rounded bg-background max-h-40 overflow-auto">
+                  {allSignalsOnAsset.map((s) => (
+                    <li
+                      key={s.signalTypeID}
+                      className="p-2 hover:bg-primary/10 cursor-pointer"
+                      onClick={() => {
+                        setSelectedSignalID(s.signalTypeID);
+                        setSignalDropdownOpen(false);
+                      }}
+                    >
+                      {s.signalName}
                     </li>
                   ))}
                 </ul>
@@ -346,24 +390,24 @@ const generateReport = async () => {
 
               <div className="flex gap-2">
                 <Button
-                id="download-csv-btn"
-                className="
+                  id="download-csv-btn"
+                  className="
                   bg-green-500/20 text-green-700 
                   dark:bg-green-500/10 dark:text-green-300 
                   hover:bg-green-500/30 dark:hover:bg-green-500/20"
-                onClick={() => downloadCSV(displayedReport)}>
+                  onClick={() => downloadCSV(displayedReport)}>
                   <FileText /> CSV
                 </Button>
 
                 <Button
-                id="download-pdf-btn"
-                className="
+                  id="download-pdf-btn"
+                  className="
                   bg-red-500/20 text-red-700 
                   dark:bg-red-500/10 dark:text-red-300 
                   hover:bg-red-500/30 dark:hover:bg-red-500/20"
-                onClick={() => downloadPDF(displayedReport)}>
-                <FileDown /> PDF
-              </Button>
+                  onClick={() => downloadPDF(displayedReport)}>
+                  <FileDown /> PDF
+                </Button>
               </div>
             </div>
 
@@ -376,36 +420,35 @@ const generateReport = async () => {
               ) : (
                 <table className="w-full border">
                   <thead className="bg-primary text-white sticky top-0">
-                  <tr>
-                    <th className="p-2 border">Title</th>
-                    <th className="p-2 border">Asset</th>
-                    <th className="p-2 border">Signal</th>
-                    <th className="p-2 border">Min → Max</th>
-                    <th className="p-2 border">Time Range</th>
-                    <th className="p-2 border">Duration (sec)</th>
-                  </tr>
-                </thead>
+                    <tr>
+                      <th className="p-2 border">Title</th>
+                      <th className="p-2 border">Asset</th>
+                      <th className="p-2 border">Signal</th>
+                      <th className="p-2 border">Min → Max</th>
+                      <th className="p-2 border">Time Range</th>
+                      <th className="p-2 border">Duration (sec)</th>
+                    </tr>
+                  </thead>
 
-                <tbody>
-                  {displayedReport.map((row, i) => (
-                    <tr
-                      key={i}
-                      className={`${
-                        Number(row.minMax?.split("→")[1]) > THRESHOLD
+                  <tbody>
+                    {displayedReport.map((row, i) => (
+                      <tr
+                        key={i}
+                        className={`${Number(row.minMax?.split("→")[1]) > THRESHOLD
                           ? "bg-red-100 dark:bg-red-900/40"
                           : ""
-                      }`}
-                    >
-                      <td className="p-2 border">{row.title}</td>
-                      <td className="p-2 border">{row.asset}</td>
-                      <td className="p-2 border">{row.signal}</td>
-                      <td className="p-2 border">{row.minMax}</td>
-                      <td className="p-2 border">{row.timeRange}</td>
-                      <td className="p-2 border">{row.duration}</td>
-                    </tr>
-                  ))}
-                </tbody>
-         </table>
+                          }`}
+                      >
+                        <td className="p-2 border">{row.title}</td>
+                        <td className="p-2 border">{row.asset}</td>
+                        <td className="p-2 border">{row.signal}</td>
+                        <td className="p-2 border">{row.minMax}</td>
+                        <td className="p-2 border">{row.timeRange}</td>
+                        <td className="p-2 border">{row.duration}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
 

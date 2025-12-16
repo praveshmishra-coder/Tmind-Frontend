@@ -27,7 +27,9 @@ apiAsset.interceptors.response.use(
       } catch (err) {
         console.error("Refresh token failed. Redirecting...");
         localStorage.removeItem("user");
-        //window.location.href = "/";
+        if (window.location.pathname !== "/") {
+          window.location.href = "/";
+        }
         return Promise.reject(err);
       }
     }
