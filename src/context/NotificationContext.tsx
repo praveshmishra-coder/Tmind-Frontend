@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import * as signalR from "@microsoft/signalr";
 import { toast } from "react-toastify";
+import { AssetAlertToast } from "../notification/AssetAlertToast";
 
 import {
   getAllNotifications,
@@ -79,16 +80,37 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     connection.start().catch(console.error);
 
     connection.on("ReceiveNotification", (notif: NotificationType) => {
-      playNotificationSound()
-      toast.info(notif.title || notif.text);
-      console.log(notif.title || notif.text);
+    playNotificationSound();
 
-      // Increase unread count
-      setUnreadCount((prev) => prev + 1);
+    let parsed = null;
+    try {
+      parsed =
+        typeof notif.text === "string"
+          ? JSON.parse(notif.text)
+          : notif.text;
+    } catch (e) {
+      console.error("JSON parse failed", e);
+    }
 
-      // Reload list if on ALL or UNREAD tabs
-      if (activeTab !== "read") loadNotifications();
-    });
+    const data = parsed ? structuredClone(parsed) : null;
+
+    console.log("FINAL DATA (CLONED):", data);
+
+    toast(
+      () => <AssetAlertToast data={data} />,
+      {
+        position: "top-right",
+        autoClose: 7000,
+        pauseOnHover: true,
+        closeOnClick: true,
+        draggable: true,
+      }
+    );
+
+  setUnreadCount((prev) => prev + 1);
+  if (activeTab !== "read") loadNotifications();
+});
+
 
     return () => connection.stop();
   }, [activeTab]);
