@@ -136,15 +136,14 @@ export default function UserManagement() {
   // };
 const updateRole = async (user: User, newRole: string) => {
   try {
-    const data = await ChangeUserRole(user.userId, { role: newRole });
-     await fetchUsers();
-    toast.success(
-      data?.message || "User role updated successfully"
-    );
-  } catch (error: any) { 
+    await ChangeUserRole(user.userId, { Role: newRole });
+    await fetchUsers();
+    toast.success("User role updated successfully");
+  } catch (error: any) {
     toast.error(error.message);
   }
 };
+
   // --------------------------------------------------
   // ❌ DELETE USER
   // --------------------------------------------------
@@ -248,7 +247,7 @@ const updateRole = async (user: User, newRole: string) => {
                                         >
                         <option>User</option>
                         <option>Engineer</option>
-                        <option>Operator</option>
+                        <option>Manager</option>
                         <option>Admin</option>
                       </select>
                     ) : (
