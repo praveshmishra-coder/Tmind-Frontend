@@ -2,6 +2,7 @@ import React, { useEffect, useState, type DragEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Bot } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 import {
@@ -17,7 +18,7 @@ import AssetDetails from "@/asset/AssetDetails";
 import AssignDevice from "@/asset/AssignDevice";
 
 import { getAssetHierarchy } from "@/api/assetApi";
-import { useAuth } from "@/context/AuthContext"; 
+import { useAuth } from "@/context/AuthContext";
 import UploadAssetCsv from "@/asset/UploadAssetCsv";
 
 import { toast } from "react-toastify";
@@ -84,24 +85,24 @@ export default function Assets() {
     loadAssets();
   }, []);
 
- const loadAssets = async () => {
-  try {
-    setLoading(true);
-    const backendData: BackendAsset[] = await getAssetHierarchy();
-    setAssets(normalizeAssets(backendData));
-  } catch (err: any) {
-    console.error("Failed to load assets:", err);
+  const loadAssets = async () => {
+    try {
+      setLoading(true);
+      const backendData: BackendAsset[] = await getAssetHierarchy();
+      setAssets(normalizeAssets(backendData));
+    } catch (err: any) {
+      console.error("Failed to load assets:", err);
 
-    const message =
-      err?.response?.data?.message ||
-      err?.message ||
-      "Failed to load assets. Please try again.";
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to load assets. Please try again.";
 
-    toast.error(message, { autoClose: 4000 });
-  } finally {
-    setLoading(false);
-  }
-};
+      toast.error(message, { autoClose: 4000 });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // -------------------- Assign Device --------------------
   const onAssignDevice = () => {
@@ -132,7 +133,26 @@ export default function Assets() {
           </p>
         </div>
         {isAdmin && (
-          <Button id="import-bulk-btn" onClick={() => setShowUploadModal(true)}>Import Bulk</Button>
+          <div className="flex items-center gap-4">
+            <Bot
+            onClick={()=>navigate('/ai')}
+              className="
+    w-9 h-9
+    p-1.5
+    rounded-xl
+    border border-neutral-300
+    bg-white
+    shadow-sm
+    text-neutral-700
+    hover:shadow-md
+    transition-all
+    duration-200
+    scale-110
+    cursor-pointer
+  "
+            />
+            <Button id="import-bulk-btn" onClick={() => setShowUploadModal(true)}>Import Bulk</Button>
+          </div>
         )}
       </div>
 
@@ -171,7 +191,7 @@ export default function Assets() {
                 <AssetDetails
                   selectedAsset={selectedAsset}
                   assignedDevice={assignedDevice}
-                  onRestore={() => {}}
+                  onRestore={() => { }}
                   onAssignDevice={onAssignDevice}
                 />
               )}
@@ -194,23 +214,23 @@ export default function Assets() {
         />
       )}
 
-     <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
-      <DialogContent className="sm:max-w-md p-6 bg-card rounded-2xl border shadow-xl">
-        <DialogHeader>
-          <DialogTitle>Upload CSV</DialogTitle>
-          <DialogDescription>Upload asset hierarchy file</DialogDescription>
-        </DialogHeader>
+      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+        <DialogContent className="sm:max-w-md p-6 bg-card rounded-2xl border shadow-xl">
+          <DialogHeader>
+            <DialogTitle>Upload CSV</DialogTitle>
+            <DialogDescription>Upload asset hierarchy file</DialogDescription>
+          </DialogHeader>
 
-        <UploadAssetCsv 
-          onClose={() => setShowUploadModal(false)}
-          onSuccess={(file) => {
-            console.log("File received:", file);
-            loadAssets();
-            setShowUploadModal(false);
-          }}
-        />
-      </DialogContent>
-    </Dialog>
+          <UploadAssetCsv
+            onClose={() => setShowUploadModal(false)}
+            onSuccess={(file) => {
+              console.log("File received:", file);
+              loadAssets();
+              setShowUploadModal(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

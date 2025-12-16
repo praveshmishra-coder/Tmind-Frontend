@@ -59,3 +59,4 @@ div[aria-hidden="true"][data-state="open"].fixed.inset-0.z-50 {
 div[data-aria-hidden="true"][data-state="open"] {
   pointer-events: none !important; /* disables click-to-close */
 }
+

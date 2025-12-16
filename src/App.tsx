@@ -26,6 +26,7 @@ import DeletedAsset from "./AssetsHierarchy/DeletedAssets";
 import { useEffect, useState } from "react";
 import PageLoader from "./components/Loader";
 import { NotificationProvider } from "./context/NotificationContext";
+import AiRcaChat from "./pages/Ai";
 
 export default function App() {
   const [showLoader, setShowLoader] = useState(true);
@@ -72,6 +73,7 @@ export default function App() {
               <Route path="/manage-user" element={<ManageUser />} />
               <Route path="/deleted-devices" element={<DeletedDevices />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/ai" element={<AiRcaChat />} />
               <Route path="/map-device-to-asset/:assetid" element={<Map_Device_To_Asset />} />
             </Route>
 
