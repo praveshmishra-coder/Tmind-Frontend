@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import apiAsset from "@/api/axiosAsset";
+import { toast } from "react-toastify";
+
 
 type ParsedRow = Record<string, unknown> & { __rowNum?: number };
 
@@ -173,49 +175,93 @@ export default function AssetBulkUpload() {
   /** File picker */
   const openFilePicker = () => fileInputRef.current?.click();
 
+  const REQUIRED_HEADERS = ["assetname", "level"];
+
+  function hasRequiredHeaders(data: Record<string, unknown>[]) {
+    if (!data.length) return false;
+
+    const headers = Object.keys(data[0]).map((h) =>
+      h.replace(/\s+/g, "").replace(/[^a-zA-Z0-9]/g, "").toLowerCase()
+    );
+
+    return REQUIRED_HEADERS.every((h) => headers.includes(h));
+    }
+
+
+  
   /** File processing */
-  function handleFile(file: File) {
-    const fileName = file.name.toLowerCase();
+function handleFile(file: File) {
+  const fileName = file.name.toLowerCase();
 
-    const processRows = (data: Record<string, unknown>[]) => {
-      const annotated = data.map((r, i) => ({
-        __rowNum: i + 2,
-        ...r,
-      }));
-
-      const parsedAssets = dedupAndMap(annotated);
-
-      setRows(annotated);
-      setAssets(parsedAssets);
-    };
-
-    // CSV
-    if (fileName.endsWith(".csv")) {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (res) => processRows(res.data as Record<string, unknown>[]),
-      });
+  const processRows = (data: Record<string, unknown>[]) => {
+    if (!data.length) {
+      toast.error("Uploaded file is empty");
       return;
     }
 
-    // Excel
-    if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
+    if (!hasRequiredHeaders(data)) {
+      toast.error(
+        "Invalid file format. Required columns: AssetName, ParentName, Level"
+      );
+      return;
+    }
+
+    const annotated = data.map((r, i) => ({
+      __rowNum: i + 2,
+      ...r,
+    }));
+
+    const parsedAssets = dedupAndMap(annotated);
+
+    if (!parsedAssets.length) {
+      toast.error("No valid assets found in file");
+      return;
+    }
+
+    setRows(annotated);
+    setAssets(parsedAssets);
+
+    toast.success(`${parsedAssets.length} assets uploaded successfully`);
+  };
+
+  // ✅ CSV ONLY
+  if (fileName.endsWith(".csv")) {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (res) => {
+        if (res.errors?.length) {
+          toast.error("Error parsing CSV file");
+          return;
+        }
+        processRows(res.data as Record<string, unknown>[]);
+      },
+      error: () => toast.error("Failed to read CSV file"),
+    });
+    return;
+  }
+
+  // ✅ EXCEL ONLY
+  if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
         const buffer = e.target?.result as ArrayBuffer;
         const workbook = XLSX.read(new Uint8Array(buffer), { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-        processRows(json);
-      };
-      reader.readAsArrayBuffer(file);
-
-      return;
-    }
-
-    setGlobalErrors(["Unsupported file type. Please upload CSV or Excel"]);
+        processRows(json as Record<string, unknown>[]);
+      } catch {
+        toast.error("Error reading Excel file");
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    return;
   }
+
+  // ❌ INVALID FILE
+  toast.error("Invalid file format. Please upload CSV or Excel");
+}
 
   /** Save to API */
   async function handleSave() {
