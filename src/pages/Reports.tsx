@@ -379,6 +379,7 @@ toast.success("Report generated successfully!");
             <div>
               <label>Signal (Optional)</label>
               <button
+                id="report-signal"
                 className="w-full border p-2 rounded-md"
                 onClick={() => setSignalDropdownOpen(!signalDropdownOpen)}
                 disabled={!selectedAssetId} // disable if no asset selected

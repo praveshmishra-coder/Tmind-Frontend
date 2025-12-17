@@ -119,8 +119,10 @@ export default function AssetDetails({
     }
   };
 
+  const isEngineer = user?.role === "Engineer";
+
   const hasDeviceAssigned = assetConfig && assetConfig.length > 0;
-  const canShowDeviceButton = isAdmin && [3, 4, 5].includes(selectedAsset?.level);
+  const canShowDeviceButton = (isAdmin || isEngineer) && [3, 4, 5].includes(selectedAsset?.level);
 
   const assetType = selectedAsset ? levelToType(selectedAsset.level) : "";
   const subAssetCount = selectedAsset?.childrens?.length || 0;
@@ -206,12 +208,13 @@ export default function AssetDetails({
               {selectedAsset.isDeleted && (
                 <Button onClick={onRestore} size="sm" variant="outline">Restore</Button>
               )}
-              {canShowDeviceButton && (
+              {canShowDeviceButton && (isAdmin || isEngineer) && (
                 hasDeviceAssigned ? (
                   <Button onClick={handleDetachDevice} disabled={detaching} size="sm" className="bg-green-600 hover:bg-green-700 text-white">
                     <Unplug className="h-4 w-4 mr-2" /> {detaching ? "Detaching..." : "Detach Device"}
                   </Button>
                 ) : (
+                  
                   <Button onClick={() => navigate(`/map-device-to-asset/${selectedAsset.assetId}`)} size="sm" className="bg-green-600 hover:bg-green-700 text-white">
                     <Link2 className="h-4 w-4 mr-2" /> Manage Connection
                   </Button>
