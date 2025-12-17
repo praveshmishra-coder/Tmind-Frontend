@@ -61,14 +61,36 @@ export interface IMapping {
 }
 
 // ------------------ Notifications ------------------
-export interface Notification {
+export interface GlobalNotification {
   id: string;
   title: string;
   text: string;
   createdAt: string;
+  expiresAt: string;
+  priority: number;
+}
+
+export interface UserNotification {
+  recipientId: string;
+  notificationId: string;
+  title: string;
+  text: string;
   isRead: boolean;
   isAcknowledged: boolean;
+  createdAt: string;
+  readAt: string | null;
+  acknowledgedAt: string | null;
 }
+
+// ------------------ Pagination ------------------
+export interface PaginatedResponse<T> {
+  data: T[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+
+
 
 /* --------------------------------------------------------
     HELPER FOR API ERRORS
@@ -209,39 +231,56 @@ export const getMappingById = async (id: string): Promise<IMapping[]> => {
 /* --------------------------------------------------------
     NOTIFICATIONS APIS
 -------------------------------------------------------- */
-export const getAllNotifications = async (): Promise<Notification[]> => {
+
+// -------- Global Notifications --------
+export const getAllNotifications = async (params?: {
+  limit?: number;
+  cursor?: string | null;
+}): Promise<PaginatedResponse<GlobalNotification>> => {
   try {
-    const res = await apiAsset.get("/Notifications/all");
-    return res.data?.data as Notification[];
+    const res = await apiAsset.get("/Notifications/all", {
+      params: {
+        limit: params?.limit ?? 10,
+        cursor: params?.cursor ?? undefined,
+      },
+    });
+
+    return res.data as PaginatedResponse<GlobalNotification>;
   } catch (err) {
     throw handleApiError(err, "Failed to fetch notifications");
   }
 };
 
-export const getUnreadNotifications = async (): Promise<Notification[]> => {
+// -------- User Notifications --------
+export const getMyNotifications = async (params: {
+  unread?: boolean;
+  limit?: number;
+  cursor?: string | null;
+}): Promise<PaginatedResponse<UserNotification>> => {
   try {
-    const res = await apiAsset.get("/Notifications/my?unread=true");
-    return res.data?.data as Notification[];
+    const res = await apiAsset.get("/Notifications/my", {
+      params: {
+        unread: params.unread,
+        limit: params.limit ?? 10,
+        cursor: params.cursor ?? undefined,
+      },
+    });
+
+    return res.data as PaginatedResponse<UserNotification>;
   } catch (err) {
-    throw handleApiError(err, "Failed to fetch unread notifications");
+    throw handleApiError(err, "Failed to fetch my notifications");
   }
 };
 
-export const getReadNotifications = async (): Promise<Notification[]> => {
-  try {
-    const res = await apiAsset.get("/Notifications/my?unread=false");
-    return res.data?.data as Notification[];
-  } catch (err) {
-    throw handleApiError(err, "Failed to fetch read notifications");
-  }
-};
-
+// -------- Actions --------
 export const markNotificationAsRead = async (id: string) => {
   try {
-    console.log("ID:",{id})
     await apiAsset.post(`/Notifications/read/${id}`);
   } catch (err) {
-    throw handleApiError(err, `Failed to mark notification ${id} as read`);
+    throw handleApiError(
+      err,
+      `Failed to mark notification ${id} as read`
+    );
   }
 };
 
@@ -257,6 +296,10 @@ export const acknowledgeNotification = async (id: string) => {
   try {
     await apiAsset.post(`/Notifications/ack/${id}`);
   } catch (err) {
-    throw handleApiError(err, `Failed to acknowledge notification ${id}`);
+    throw handleApiError(
+      err,
+      `Failed to acknowledge notification ${id}`
+    );
   }
 };
+

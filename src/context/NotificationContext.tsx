@@ -6,25 +6,34 @@ import { AssetAlertToast } from "../notification/AssetAlertToast";
 
 import {
   getAllNotifications,
-  getUnreadNotifications,
-  getReadNotifications,
+  getMyNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  Notification as NotificationType,
+  UserNotification,
 } from "@/api/assetApi";
+
+type NotificationType = UserNotification;
 
 interface NotificationContextProps {
   notifications: NotificationType[];
   unreadCount: number;
+  activeTab: "all" | "unread" | "read";
+  setActiveTab: (tab: "all" | "unread" | "read") => void;
+
+  loadMore: () => void;
+  hasMore: boolean;
+  loading: boolean;
+
   markRead: (id: string) => void;
   markAllRead: () => void;
-  setActiveTab: (tab: "all" | "unread" | "read") => void;
-  activeTab: "all" | "unread" | "read";
 }
 
-const NotificationContext = createContext<NotificationContextProps | undefined>(
-  undefined
-);
+/* --------------------------------------------------------
+   CONTEXT
+-------------------------------------------------------- */
+const NotificationContext = createContext<
+  NotificationContextProps | undefined
+>(undefined);
 
 export const useNotifications = () => {
   const ctx = useContext(NotificationContext);
@@ -33,38 +42,82 @@ export const useNotifications = () => {
   return ctx;
 };
 
+
+
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [notifications, setNotifications] = useState<NotificationType[]>([]);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<"all" | "unread" | "read">("all");
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] =
+    useState<"all" | "unread" | "read">("all");
 
-  /** ===================================================
-   *                LOAD NOTIFICATIONS + UNREAD COUNT
-   * =================================================== */
-  const loadNotifications = async () => {
-    try {
-      let list: NotificationType[] = [];
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 6;
+  
 
-      if (activeTab === "all") list = await getAllNotifications();
-      else if (activeTab === "unread") list = await getUnreadNotifications();
-      else if (activeTab === "read") list = await getReadNotifications();
+  const loadNotifications = async (reset = false) => {
+  if (loading) return;
+  setLoading(true);
 
-      setNotifications(list);
+  try {
+    let res;
 
-      // Always fetch unread count
-      const unread = await getUnreadNotifications();
-      setUnreadCount(unread.length);
-
-    } catch (err) {
-      console.error("Failed to load notifications:", err);
+    if (activeTab === "all") {
+      // ✅ GLOBAL + USER notifications
+      res = await getAllNotifications({
+        limit: PAGE_SIZE,
+        cursor: reset ? null : cursor,
+      });
+    } else {
+      // ✅ USER notifications only
+      res = await getMyNotifications({
+        unread: activeTab === "unread",
+        limit: PAGE_SIZE,
+        cursor: reset ? null : cursor,
+      });
     }
-  };
 
+    setNotifications(prev =>
+      reset ? res.data : [...prev, ...res.data]
+    );
+
+    setCursor(res.nextCursor);
+    setHasMore(res.hasMore);
+
+    // unread count always from "my" notifications
+    const unreadRes = await getMyNotifications({
+      unread: true,
+      limit: 50,
+    });
+    setUnreadCount(unreadRes.data.length);
+
+  } catch (err) {
+    console.error("Failed to load notifications:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+/* Reload when tab changes */
   useEffect(() => {
+  setNotifications([]);
+  setCursor(null);
+  setHasMore(true);
+  loadNotifications(true);
+}, [activeTab]);
+
+
+  /* --------------------------------------------------------
+     LOAD MORE (PAGINATION)
+  -------------------------------------------------------- */
+  const loadMore = () => {
+    if (!hasMore) return;
     loadNotifications();
-  }, [activeTab]);
+  };
 
   /** ===================================================
    *                 SIGNALR REAL TIME
@@ -108,7 +161,9 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
     );
 
   setUnreadCount((prev) => prev + 1);
-  if (activeTab !== "read") loadNotifications();
+  if (activeTab !== "read") {
+        setNotifications((prev) => [notif, ...prev]);
+  }
 });
 
 
@@ -119,33 +174,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
    *            MARK SINGLE NOTIFICATION READ
    * =================================================== */
   const markRead = async (id: string) => {
-    try {
-      await markNotificationAsRead(id);
-
-      // Decrease unread count safely
-      setUnreadCount((prev) => Math.max(prev - 1, 0));
-
-      loadNotifications();
-    } catch (err) {
-      console.error("Failed to mark as read:", err);
-    }
+    await markNotificationAsRead(id);
+    setUnreadCount((c) => Math.max(c - 1, 0));
+    loadNotifications(true);
   };
 
-  /** ===================================================
-   *            MARK ALL NOTIFICATIONS READ
-   * =================================================== */
   const markAllRead = async () => {
-    try {
-      await markAllNotificationsAsRead();
-
-      // Reset unread count
-      setUnreadCount(0);
-
-      setActiveTab("read");
-      loadNotifications();
-    } catch (err) {
-      console.error("Failed to mark all read:", err);
-    }
+    await markAllNotificationsAsRead();
+    setUnreadCount(0);
+    setActiveTab("read");
   };
 
   function playNotificationSound() {
@@ -181,10 +218,13 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         notifications,
         unreadCount,
-        markRead,
-        markAllRead,
         activeTab,
         setActiveTab,
+        loadMore,
+        hasMore,
+        loading,
+        markRead,
+        markAllRead,
       }}
     >
       {children}
