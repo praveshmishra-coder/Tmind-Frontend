@@ -23,30 +23,14 @@ interface TopbarProps {
 
 export default function Topbar({ onToggleSidebar }: TopbarProps) {
   const navigate = useNavigate();
-  const { logout } = useAuth();
   const location = useLocation();
 
-  const isLoggedInFromState = location.state?.IsLoggedIn || false;
+  const { logout, user, loading } = useAuth();
+  const { unreadCount } = useNotifications();
 
+  if (loading) return null; // or skeleton
 
-  // Read user from localStorage
-  const [user, setUser] = useState<any>(() => {
-    try {
-      return JSON.parse(localStorage.getItem("user") || "null");
-    } catch {
-      return null;
-    }
-  });
-
-  // Update user state
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "null");
-      setUser(storedUser);
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+  const isUser = user?.role === "User";
 
   const handleLogout = async () => {
     try {
@@ -68,9 +52,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
       navigate("/notifications"); // Open notification page
     }
   };
-
-   const { unreadCount } = useNotifications();
-
+  
   return (
     <header className="sticky top-0 z-40 h-16  flex items-center justify-between px-4 sm:px-6 bg-sidebar backdrop-blur-md border-b border-border shadow-sm transition-colors rounded-sm">
       <div className="flex items-center gap-3">
@@ -96,7 +78,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
         {/* Theme toggle */}
         <ThemeToggle />
         <StartTourButton/>
-
+      {isUser ? null : (
         <Button
           variant="ghost"
           onClick={handleNotificationClick}
@@ -109,11 +91,11 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
               {unreadCount}
             </span>
           )}
-        </Button>
+        </Button>)}
 
       {/* <NotificationDrawer open={open} onOpenChange={setOpen}/> */}
 
-        {user || isLoggedInFromState ? (
+        {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

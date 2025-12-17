@@ -26,10 +26,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load user if already logged
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) setUser(JSON.parse(storedUser));
-    setLoading(false);
-  }, []);
+  const storedUser = localStorage.getItem("user");
+  if (storedUser) {
+    setUser(JSON.parse(storedUser));
+  }
+  setLoading(false);
+}, []);
+
 
 
   const login = async (email: string, password: string) => {
