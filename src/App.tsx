@@ -8,12 +8,10 @@ import Devices from "./pages/Devices";
 import AddDeviceForm from "./devices/AddDevice";
 import EditDeviceForm from "./devices/EditDevice";
 import ConfigureDeviceForm from "./devices/ConfigureDevice";
-import PortSettings from "./devices/PortSettings";
 import UploadCsvModal from "./devices/UploadDeviceCsv";
-import Signals from "./pages/Signals";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
-import DeletedDevices from "./devices/DeletedDevices";
+import DeletedItems from "./devices/DeletedItems";
 import Profile from "./pages/Profile";
 import ManageUser from "./pages/ManageUser";
 import Signal from "./pages/Signal";
@@ -22,13 +20,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Map_Device_To_Asset from "./asset/Map-Device-To-Asset";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-// import DeletedAsset from "./AssetsHierarchy/DeletedAssets";
 import { useEffect, useState } from "react";
 import PageLoader from "./components/Loader";
 import { NotificationProvider } from "./context/NotificationContext";
 import AiRcaChat from "./pages/Ai";
 import AssetBulkUpload from "./asset/UploadAssetCsv";
 import Notifications from "./pages/Notifications";
+import ProtectedRoute from "./config/ProtectedRoute";
 
 export default function App() {
   const [showLoader, setShowLoader] = useState(true);
@@ -58,26 +56,25 @@ export default function App() {
 
             <Route element={
           <NotificationProvider>
-            <DashboardLayout />
+             <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
           </NotificationProvider>
           }>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/assets" element={<Assets />} />
-              {/* <Route path="/deleted-assets" element={<DeletedAsset />} /> */}
               <Route path="/devices" element={<Devices />} />
               <Route path="/devices/add" element={<AddDeviceForm />} />
               <Route path="/devices/edit/:deviceId" element={<EditDeviceForm />} />
               <Route path="/devices/config/:deviceId" element={<ConfigureDeviceForm />} />
-              {/* <Route path="/devices/ports" element={<PortSettings />} />   */}
               <Route path="/devices/ports/:id" element={<AddPortForm />} />
               <Route path="/devices/upload" element={<UploadCsvModal />} />
-              <Route path="/signals" element={<Signals />} />
               <Route path="/signal" element={<Signal />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/manage-user" element={<ManageUser />} />
-              <Route path="/deleted-devices" element={<DeletedDevices />} />
+              <Route path="/deleted-items" element={<DeletedItems />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/ai" element={<AiRcaChat />} />
               <Route path="/map-device-to-asset/:assetid" element={<Map_Device_To_Asset />} />
@@ -85,7 +82,7 @@ export default function App() {
               
             </Route>
 
-            {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Router>
     </TooltipProvider>

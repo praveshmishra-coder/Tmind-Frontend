@@ -9,7 +9,7 @@ export const ROLE_SIDEBAR_ACCESS: Record<UserRole, string[]> = {
     "reports",
     "notifications",
     "manage-user",
-    "deleted-devices",
+    "deleted-items",
   ],
 
   Engineer: [

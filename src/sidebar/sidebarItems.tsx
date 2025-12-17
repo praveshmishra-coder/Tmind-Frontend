@@ -1,3 +1,4 @@
+// src/config/sidebarItems.tsx
 import {
   Home,
   Network,
@@ -19,5 +20,5 @@ export const SIDEBAR_ITEMS = [
 
   // Admin-only
   { key: "manage-user", icon: UserRoundSearch, label: "Manage User", path: "/manage-user" },
-  { key: "deleted-devices", icon: Trash, label: "Recently Deleted", path: "/deleted-devices" },
+  { key: "deleted-items", icon: Trash, label: "Recently Deleted", path: "/deleted-items" },
 ];
