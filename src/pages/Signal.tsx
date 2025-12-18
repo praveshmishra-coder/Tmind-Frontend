@@ -447,6 +447,21 @@ export default function Signals() {
                 ))}
               </select>
             </div>
+            {/* Device */}
+          <div>
+            <p className="font-semibold">Assigned Device:</p>
+            {deviceName ? (
+              <div className="flex flex-wrap gap-2 mt-1">
+                {deviceName.split(",").map((d, idx) => (
+                  <span key={idx} className="px-2 py-1 bg-blue-100 rounded text-sm">
+                    {d}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">Not Assigned</p>
+            )}
+          </div>
           </CardContent>
         </Card>
 
