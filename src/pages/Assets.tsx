@@ -199,6 +199,7 @@ export default function Assets() {
           </Card>
         </div>
       </div>
+      
 
       {/* Assign Device Modal */}
       {showAssignDevice && selectedAsset && (

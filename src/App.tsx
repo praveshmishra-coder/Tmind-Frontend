@@ -29,6 +29,7 @@ import { NotificationProvider } from "./context/NotificationContext";
 import AiRcaChat from "./pages/Ai";
 import AssetBulkUpload from "./asset/UploadAssetCsv";
 import Notifications from "./pages/Notifications";
+import AlertsPage from "./pages/Alerts";
 
 export default function App() {
   const [showLoader, setShowLoader] = useState(true);
@@ -82,6 +83,7 @@ export default function App() {
               <Route path="/ai" element={<AiRcaChat />} />
               <Route path="/map-device-to-asset/:assetid" element={<Map_Device_To_Asset />} />
               <Route path="Asset/BulkUpload" element={<AssetBulkUpload/>} />
+              <Route path="Asset/Alerts/:assetId" element={<AlertsPage/>} />
               
             </Route>
 
