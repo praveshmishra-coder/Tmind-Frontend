@@ -12,6 +12,9 @@ import { getAssetHierarchy, getAllNotifications } from "@/api/assetApi";
 import type { Asset } from "@/api/assetApi";
 import { A } from "node_modules/framer-motion/dist/types.d-BJcRxCew";
 import { getAssetConfig } from "@/api/assetApi";
+import { getSignalOnAsset } from "@/api/assetApi";
+import { getDeviceById } from "@/api/deviceApi";
+
 
 export default function Reports() {
   const [selectedDate, setSelectedDate] = useState("");
@@ -26,6 +29,8 @@ export default function Reports() {
   const [assetDropdownOpen, setAssetDropdownOpen] = useState(false);
   const [signalDropdownOpen, setSignalDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [assignedDeviceName, setAssignedDeviceName] = useState<string>("None");
+
 
   const THRESHOLD = 70; // for highlighting rows
 
@@ -82,6 +87,26 @@ export default function Reports() {
       console.log(error);
     }
   }
+
+  const resolveAssignedDevice = async (assetId: string) => {
+  try {
+    const mappings = await getSignalOnAsset(assetId);
+
+    if (!mappings || mappings.length === 0) {
+      setAssignedDeviceName("None");
+      return;
+    }
+
+    const deviceId = mappings[0].deviceId; // same device for all mappings
+
+    const device = await getDeviceById(deviceId);
+    setAssignedDeviceName(device?.name || "None");
+  } catch (err) {
+    console.error("Failed to resolve device", err);
+    setAssignedDeviceName("None");
+  }
+};
+
 
 
 
@@ -147,8 +172,15 @@ export default function Reports() {
         };
       });
 
-      setReportData(formatted);
-      toast.success("Report generated!");
+      if (formatted.length === 0) {
+  setReportData([]);
+  toast.warn("No data found for selected filters");
+  return;
+}
+
+setReportData(formatted);
+toast.success("Report generated successfully!");
+
     } catch (err) {
       toast.error("Failed to load notifications");
       console.error(err);
@@ -196,6 +228,7 @@ export default function Reports() {
     a.download = `daily-report-${selectedDate}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("CSV report downloaded successfully!");
   };
 
 
@@ -229,6 +262,7 @@ export default function Reports() {
     });
 
     doc.save(`daily-report-${selectedDate}.pdf`);
+    toast.success("PDF report downloaded successfully!");
   };
 
 
@@ -249,6 +283,15 @@ export default function Reports() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const clearAssetSelection = () => {
+  setSelectedAssetId("");
+  setSelectedSignalID("");
+  setSignalOnasset([]);
+  setAssignedDeviceName("None");
+  setAssetDropdownOpen(false);
+};
+
 
   return (
     <div className="p-4 bg-background">
@@ -301,22 +344,33 @@ export default function Reports() {
               </button>
 
               {assetDropdownOpen && (
-                <ul className="border mt-1 rounded bg-background max-h-40 overflow-auto">
-                  {allAssets.map((a) => (
-                    <li
-                      key={a.assetId}
-                      className="p-2 hover:bg-primary/10 cursor-pointer"
-                      onClick={() => {
-                        setSelectedAssetId(a.assetId);
-                        GetSignalsonAsset(a.assetId);
-                        setAssetDropdownOpen(false);
-                      }}
-                    >
-                      {a.name}
-                    </li>
-                  ))}
-                </ul>
-              )}
+  <ul className="border mt-1 rounded bg-background max-h-40 overflow-auto">
+
+    {/* NONE OPTION */}
+    <li
+      className="p-2 text-muted-foreground hover:bg-primary/10 cursor-pointer border-b"
+      onClick={clearAssetSelection}
+    >
+      None
+    </li>
+
+    {allAssets.map((a) => (
+      <li
+        key={a.assetId}
+        className="p-2 hover:bg-primary/10 cursor-pointer"
+        onClick={() => {
+          setSelectedAssetId(a.assetId);
+          GetSignalsonAsset(a.assetId);
+          resolveAssignedDevice(a.assetId);
+          setAssetDropdownOpen(false);
+        }}
+      >
+        {a.name}
+      </li>
+    ))}
+  </ul>
+)}
+
             </div>
 
 
@@ -325,6 +379,7 @@ export default function Reports() {
             <div>
               <label>Signal (Optional)</label>
               <button
+                id="report-signal"
                 className="w-full border p-2 rounded-md"
                 onClick={() => setSignalDropdownOpen(!signalDropdownOpen)}
                 disabled={!selectedAssetId} // disable if no asset selected
@@ -355,7 +410,7 @@ export default function Reports() {
 
             {/* DEVICE */}
             <div id="report-device" className="mt-4 font-medium text-primary">
-              Assigned Device: {selectedAssetId ? "Device Name Here" : "None"}
+                Assigned Device: {assignedDeviceName}
             </div>
 
             {/* ALERT CHECKBOX */}

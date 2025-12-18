@@ -247,7 +247,7 @@ const updateRole = async (user: User, newRole: string) => {
                                         >
                         <option>User</option>
                         <option>Engineer</option>
-                        <option>Manager</option>
+                        <option>Operator</option>
                         <option>Admin</option>
                       </select>
                     ) : (

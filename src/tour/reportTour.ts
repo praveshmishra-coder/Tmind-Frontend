@@ -15,6 +15,13 @@ export const reportTour = [
     }
   },
   {
+  element: "#report-signal",
+  popover: {
+    title: "Select Signal",
+    description: "Choose a specific signal related to the selected asset."
+  }
+},
+  {
     element: "#report-device",
     popover: {
       title: "Assigned Device",

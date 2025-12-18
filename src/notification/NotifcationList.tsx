@@ -1,10 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNotifications } from "../context/NotificationContext";
 import { Bell ,Eye} from "lucide-react";
 
 export const NotificationList = () => {
-    const { notifications, markAllRead, markRead, activeTab, setActiveTab } = useNotifications();
+  const {
+  notifications,
+  markAllRead,
+  markRead,
+  activeTab,
+  setActiveTab,
+  loadMore,
+  hasMore,
+  loading,
+} = useNotifications();
+
   const [filter, setFilter] = useState<"all" | "read" | "unread">(activeTab);
+  const loaderRef = useRef<HTMLDivElement | null>(null);
+
 
   const fmt = (n: number | null | undefined) =>
     typeof n === "number" && Number.isFinite(n)
@@ -44,6 +56,29 @@ export const NotificationList = () => {
 
   const cardBase =
     "relative p-4 mb-4 bg-card border border-border rounded-xl shadow-sm hover:shadow-md transition";
+  useEffect(() => {
+  if (!hasMore || loading) return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) {
+        loadMore(); // 🔥 CURSOR FETCH HERE
+      }
+    },
+    {
+      root: null,
+      rootMargin: "200px", // prefetch early
+      threshold: 0,
+    }
+  );
+
+  if (loaderRef.current) {
+    observer.observe(loaderRef.current);
+  }
+
+  return () => observer.disconnect();
+}, [hasMore, loading, loadMore]);
+
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -216,6 +251,14 @@ export const NotificationList = () => {
             </div>
           );
         })}
+        {hasMore && (
+        <div
+          ref={loaderRef}
+          className="h-10 flex items-center justify-center text-xs text-muted-foreground"
+        >
+          {loading ? "Loading more..." : "Scroll for more"}
+        </div>
+      )}
       </div>
     </div>
   );

@@ -155,8 +155,10 @@ export default function AssetDetails({
     }
   };
 
+  const isEngineer = user?.role === "Engineer";
+
   const hasDeviceAssigned = assetConfig && assetConfig.length > 0;
-  const canShowDeviceButton = isAdmin && [3, 4, 5].includes(selectedAsset?.level);
+  const canShowDeviceButton = (isAdmin || isEngineer) && [3, 4, 5].includes(selectedAsset?.level);
 
   const assetType = selectedAsset ? levelToType(selectedAsset.level) : "";
   const subAssetCount = selectedAsset?.childrens?.length || 0;

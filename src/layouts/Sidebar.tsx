@@ -1,36 +1,17 @@
 import { NavLink } from "react-router-dom";
-import {
-  Home,
-  Network,
-  Cpu,
-  File,
-  Trash,
-  UserRoundSearch ,
-  Tv,
-  Bell
-} from "lucide-react";
+import { SIDEBAR_ITEMS } from "../sidebar/sidebarItems";
+import { ROLE_SIDEBAR_ACCESS } from "../sidebar/roleSidebarConfig";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Sidebar() {
   const { user } = useAuth();
-  const isAdmin = user?.role === "Admin";
+  const role = user?.role ?? "Viewer";
 
-  // Show admin-only menu items only if `isAdmin = true`
-  const menuItems = [
-    { icon: <Home size={18} />, label: "Dashboard", path: "/dashboard" },
-    { icon: <Network size={18} />, label: "Assets", path: "/assets" },
-    { icon: <File size={18} />, label: "Reports", path: "/reports" },
-    { icon: <Cpu size={18} />, label: "Devices", path: "/devices" },
-    { icon: <Tv size={18} />, label: "Signal", path: "/signal" },
-    { icon: <Bell size={18} />, label: "Notifications", path: "/notifications" },
+  const allowedKeys = ROLE_SIDEBAR_ACCESS[role] ?? [];
 
-    // ADMIN ONLY
-    ...(isAdmin
-      ? [ { icon: <UserRoundSearch  size={18} />, label: "Manage User", path: "/manage-user" },
-          { icon: <Trash size={18} />, label: "Recently Deleted", path: "/deleted-devices" }
-        ]
-      : [])
-  ];
+  const visibleItems = SIDEBAR_ITEMS.filter(item =>
+    allowedKeys.includes(item.key)
+  );
 
   return (
     <aside id="sidebar" className="sticky top-0 z-40 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col p-4 rounded-sm">
@@ -43,27 +24,29 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <nav className="space-y-2">
-  {menuItems.map((item, idx) => (
-    <NavLink
-      key={idx}
-      id={`sidebar-${item.label.toLowerCase().replace(/\s+/g, "-")}`}   // <-- ADD THIS
-      to={item.path}
-      className={({ isActive }) =>
-        `flex items-center gap-3 p-2 rounded-lg transition cursor-pointer ${
-          isActive
-            ? "bg-sidebar-primary text-sidebar-primary-foreground"
-            : "hover:bg-sidebar-primary hover:text-sidebar-primary-foreground"
-        }`
-      }
-    >
-      {item.icon}
-      <span>{item.label}</span>
-    </NavLink>
-  ))}
-</nav>
+       <nav className="space-y-2">
+        {visibleItems.map((item) => {
+          const Icon = item.icon;
 
-
+          return (
+            <NavLink
+              key={item.key}
+              to={item.path}
+              id={`sidebar-${item.key}`}
+              className={({ isActive }) =>
+                `flex items-center gap-3 p-2 rounded-lg transition ${
+                  isActive
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                    : "hover:bg-sidebar-primary hover:text-sidebar-primary-foreground"
+                }`
+              }
+            >
+              <Icon size={18} />
+              <span>{item.label}</span>
+            </NavLink>
+          );
+        })}
+      </nav>
     </aside>
   );
 }
