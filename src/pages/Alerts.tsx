@@ -102,6 +102,7 @@ const istToUtcISOString = (ist: string) => {
 };
 
 const [fromUtc, toUtc] = useMemo(() => {
+  // If user selected 'to', otherwise default to now
   const toIST = toLocal ? new Date(toLocal) : new Date();
   let fromIST: Date;
 
@@ -109,19 +110,30 @@ const [fromUtc, toUtc] = useMemo(() => {
     fromIST = new Date(fromLocal);
   } else {
     switch (preset) {
-      case "24h": fromIST = new Date(toIST.getTime() - 24 * 60 * 60 * 1000); break;
-      case "2d": fromIST = new Date(toIST.getTime() - 2 * 24 * 60 * 60 * 1000); break;
-      case "7d": fromIST = new Date(toIST.getTime() - 7 * 24 * 60 * 60 * 1000); break;
-      case "1m": fromIST = new Date(toIST.getTime() - 30 * 24 * 60 * 60 * 1000); break;
-      default: fromIST = new Date(toIST.getTime() - 24 * 60 * 60 * 1000);
+      case "24h":
+        fromIST = new Date(toIST.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case "2d":
+        fromIST = new Date(toIST.getTime() - 2 * 24 * 60 * 60 * 1000);
+        break;
+      case "7d":
+        fromIST = new Date(toIST.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case "1m":
+        fromIST = new Date(toIST.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        fromIST = new Date(toIST.getTime() - 24 * 60 * 60 * 1000);
     }
   }
 
-  return [
-    istToUtcISOString(fromIST.toISOString()),
-    istToUtcISOString(toIST.toISOString())
-  ];
+  // Convert IST -> UTC
+  const toUtcString = new Date(toIST.getTime() - 5.5 * 60 * 60 * 1000).toISOString();
+  const fromUtcString = new Date(fromIST.getTime() - 5.5 * 60 * 60 * 1000).toISOString();
+
+  return [fromUtcString, toUtcString];
 }, [fromLocal, toLocal, preset]);
+
 
 
   const loadAlerts = async () => {
@@ -152,7 +164,7 @@ const [fromUtc, toUtc] = useMemo(() => {
   const filtered = enrichedAlerts.filter(a => {
     if (signalFilter !== "ALL" && a.signalName !== signalFilter) return false;
     if (severityFilter !== "ALL" && a.severity !== severityFilter) return false;
-    if (a.deviationPercent < deviationRange[0] || a.deviationPercent > deviationRange[1]) return false;
+    //if (a.deviationPercent < deviationRange[0] || a.deviationPercent > deviationRange[1]) return false;
     return true;
   });
 
