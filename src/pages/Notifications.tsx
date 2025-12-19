@@ -15,9 +15,10 @@ export default function Notifications() {
 
       {/* Header + Close button */}
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-2xl font-semibold">Notifications</h1>
+        <h1 id="notifications-title" className="text-2xl font-semibold">Notifications</h1>
 
         <button
+          id="notifications-close-btn"
           onClick={handleClose}
           className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition"
         >

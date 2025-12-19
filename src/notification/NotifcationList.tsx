@@ -88,6 +88,7 @@ export const NotificationList = () => {
         <div className="flex items-center gap-6">
           {["all", "unread", "read"].map(key => (
             <button
+              id={`notif-filter-${key}`}
               key={key}
               onClick={() => {
                 setFilter(key as any);
@@ -116,7 +117,7 @@ export const NotificationList = () => {
       </div>
 
       {/* ===================== LIST ===================== */}
-      <div className="flex-1 overflow-y-auto p-4 bg-background">
+      <div  id="notification-list" className="flex-1 overflow-y-auto p-4 bg-background">
         {filtered.length === 0 && (
           <p className="text-muted-foreground text-center py-10">No notifications found</p>
         )}
