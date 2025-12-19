@@ -18,9 +18,9 @@ import { useParams } from "react-router-dom";
 
 
 // -------------------- Utilities --------------------
-const formatLocalDateTimeIndian = (utc: string) => {
-  const date = new Date(utc);
-  const formatter = new Intl.DateTimeFormat("en-IN", {
+const formatLocalTime = (utcString: string | undefined) => {
+  if (!utcString) return "-";
+  return new Date(utcString + "Z").toLocaleString("en-IN", {
     timeZone: "Asia/Kolkata",
     year: "numeric",
     month: "2-digit",
@@ -30,21 +30,39 @@ const formatLocalDateTimeIndian = (utc: string) => {
     second: "2-digit",
     hour12: true
   });
-  return formatter.format(date);
 };
 
-const formatDateIndian = (utc: string) => {
-  const date = new Date(utc);
-  return date.toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" });
+const formatLocalDate = (utcString: string | undefined) => {
+  if (!utcString) return "-";
+  return new Date(utcString + "Z").toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
 };
 
-const formatTimeOnly = (utc: string) => {
-  const date = new Date(utc);
-  return date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+
+
+const formatLocalHourMin = (utcString: string | undefined) => {
+  if (!utcString) return "-";
+  return new Date(utcString + "Z").toLocaleTimeString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
+  });
 };
 
-const getDurationSec = (a: any) =>
-  (new Date(a.alertEndUtc).getTime() - new Date(a.alertStartUtc).getTime()) / 1000;
+
+const getDurationSec = (a: any) => {
+  const start = new Date(a.alertStartUtc).getTime();
+  const end = a.alertEndUtc
+    ? new Date(a.alertEndUtc).getTime()
+    : Date.now();
+  return (end - start) / 1000;
+};
+
 
 const getDeviation = (a: any) => {
   if (a.maxObservedValue > a.maxThreshold) {
@@ -75,22 +93,36 @@ export default function AlertsAnalyticsPage() {
   const chartsRef = useRef<HTMLDivElement>(null);
   let {assetId} = useParams()
 
-  const [fromUtc, toUtc] = useMemo(() => {
-    const to = toLocal ? new Date(toLocal) : new Date();
-    let from: Date;
-    if (fromLocal) {
-      from = new Date(fromLocal);
-    } else {
-      switch (preset) {
-        case "24h": from = new Date(to.getTime() - 24 * 60 * 60 * 1000); break;
-        case "2d": from = new Date(to.getTime() - 2 * 24 * 60 * 60 * 1000); break;
-        case "7d": from = new Date(to.getTime() - 7 * 24 * 60 * 60 * 1000); break;
-        case "1m": from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000); break;
-        default: from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
-      }
+const istToUtcISOString = (ist: string) => {
+  const localDate = new Date(ist);
+  const utcTime = new Date(
+    localDate.getTime() - localDate.getTimezoneOffset() * 60000
+  );
+  return utcTime.toISOString();
+};
+
+const [fromUtc, toUtc] = useMemo(() => {
+  const toIST = toLocal ? new Date(toLocal) : new Date();
+  let fromIST: Date;
+
+  if (fromLocal) {
+    fromIST = new Date(fromLocal);
+  } else {
+    switch (preset) {
+      case "24h": fromIST = new Date(toIST.getTime() - 24 * 60 * 60 * 1000); break;
+      case "2d": fromIST = new Date(toIST.getTime() - 2 * 24 * 60 * 60 * 1000); break;
+      case "7d": fromIST = new Date(toIST.getTime() - 7 * 24 * 60 * 60 * 1000); break;
+      case "1m": fromIST = new Date(toIST.getTime() - 30 * 24 * 60 * 60 * 1000); break;
+      default: fromIST = new Date(toIST.getTime() - 24 * 60 * 60 * 1000);
     }
-    return [from.toISOString(), to.toISOString()];
-  }, [fromLocal, toLocal, preset]);
+  }
+
+  return [
+    istToUtcISOString(fromIST.toISOString()),
+    istToUtcISOString(toIST.toISOString())
+  ];
+}, [fromLocal, toLocal, preset]);
+
 
   const loadAlerts = async () => {
     setLoading(true);
@@ -168,7 +200,7 @@ export default function AlertsAnalyticsPage() {
     const tableData = filtered.slice(0, 50).map(a => [
       a.assetName,
       a.signalName,
-      formatLocalDateTimeIndian(a.alertStartUtc),
+      formatLocalTime(a.alertStartUtc),
       `${a.deviationPercent.toFixed(2)}%`,
       a.severity,
       a.isActive ? "Active" : "Closed"
@@ -195,8 +227,8 @@ export default function AlertsAnalyticsPage() {
     const ws1 = XLSX.utils.json_to_sheet(filtered.map(a => ({
       Asset: a.assetName,
       Signal: a.signalName,
-      StartTime: formatLocalDateTimeIndian(a.alertStartUtc),
-      EndTime: formatLocalDateTimeIndian(a.alertEndUtc),
+      StartTime: formatLocalTime(a.alertStartUtc),
+      EndTime: formatLocalTime(a.alertEndUtc),
       DurationSec: a.durationSec,
       DeviationPercent: a.deviationPercent,
       Severity: a.severity,
@@ -221,8 +253,8 @@ export default function AlertsAnalyticsPage() {
     const data = filtered.map(a => ({
       Asset: a.assetName,
       Signal: a.signalName,
-      StartTime: formatLocalDateTimeIndian(a.alertStartUtc),
-      EndTime: formatLocalDateTimeIndian(a.alertEndUtc),
+      StartTime: formatLocalTime(a.alertStartUtc),
+      EndTime: formatLocalTime(a.alertEndUtc),
       DurationSec: a.durationSec,
       DeviationPercent: a.deviationPercent,
       Severity: a.severity,
@@ -239,37 +271,40 @@ export default function AlertsAnalyticsPage() {
 
   // -------------------- UI --------------------
   return (
-    <div className="min-h-screen bg-gray-50">
+<div className="h-full overflow-hidden bg-gray-50">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          <div className="flex justify-between items-center">
-            <div className="space-y-1">
-              <h1 className="text-3xl font-bold text-gray-900">
-                Alerts Analytics Dashboard
-              </h1>
-              <p className="text-gray-500 text-sm">Real-time monitoring and insights</p>
-            </div>
-            <div className="flex gap-3">
-              <Button onClick={exportCSV} variant="outline" className="gap-2 border-gray-300 hover:bg-gray-50">
-                <Download size={16} /> CSV
-              </Button>
-              <Button onClick={exportExcel} variant="outline" className="gap-2 border-gray-300 hover:bg-gray-50">
-                <Download size={16} /> Excel
-              </Button>
-              <Button onClick={exportWithChartsPDF} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-                <Download size={16} /> PDF + Charts
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
+<div className="flex items-center justify-between max-w-7xl mx-4 px-0 py-2">
+  <div>
+    <h1 className="text-3xl font-bold text-gray-900">
+      Alerts Analytics Dashboard
+    </h1>
+    <p className="text-gray-500 text-sm">
+      Real-time monitoring and insights
+    </p>
+  </div>
+
+  <div className="flex gap-3">
+    <Button onClick={exportCSV} variant="outline" className="gap-2 border-gray-300 hover:bg-gray-50">
+      <Download size={16} /> CSV
+    </Button>
+    <Button onClick={exportExcel} variant="outline" className="gap-2 border-gray-300 hover:bg-gray-50">
+      <Download size={16} /> Excel
+    </Button>
+    <Button onClick={exportWithChartsPDF} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+      <Download size={16} /> PDF + Charts
+    </Button>
+  </div>
+</div>
+
+
+
+
+      <div className="max-w mx-auto px-2 py-2 space-y-4">
 
 
         {/* Filters */}
-        <Card className="border-gray-200 shadow-sm">
+        <Card className="border-gray-200 shadow-sm ">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
               <div className="space-y-2">
@@ -296,11 +331,11 @@ export default function AlertsAnalyticsPage() {
                   <SelectTrigger className="border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="24h">Past 1 Day</SelectItem>
-                    <SelectItem value="2d">Past 2 Days</SelectItem>
-                    <SelectItem value="7d">Past 7 Days</SelectItem>
-                    <SelectItem value="1m">Past 1 Month</SelectItem>
+                  <SelectContent className="bg-white border border-gray-200 shadow-md">
+                    <SelectItem value="24h" className="text-gray-900">Past 1 Day</SelectItem>
+                    <SelectItem value="2d" className="text-gray-900">Past 2 Days</SelectItem>
+                    <SelectItem value="7d" className="text-gray-900">Past 7 Days</SelectItem>
+                    <SelectItem value="1m" className="text-gray-900">Past 1 Month</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -310,7 +345,7 @@ export default function AlertsAnalyticsPage() {
                   <SelectTrigger className="border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border border-gray-200 shadow-md">
                     <SelectItem value="ALL">All Signals</SelectItem>
                     {signals.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
@@ -322,7 +357,7 @@ export default function AlertsAnalyticsPage() {
                   <SelectTrigger className="border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border border-gray-200 shadow-md">
                     <SelectItem value="ALL">All Severity</SelectItem>
                     <SelectItem value="Low">Low</SelectItem>
                     <SelectItem value="Medium">Medium</SelectItem>
@@ -348,122 +383,154 @@ export default function AlertsAnalyticsPage() {
         {/* Main Content - Left: Signals, Right: Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* LEFT SIDE - Alert Cards */}
-          <div className="lg:col-span-3 space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Alert Details</h2>
-              <Badge variant="outline" className="border-gray-300 text-gray-700">{filtered.length} items</Badge>
-            </div>
-            
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+          <Card className="border-gray-200 w-full lg:col-span-3 shadow-sm h-[520px]">
+  <CardContent className="p-4 h-full flex flex-col">
+    
+    {/* Header (Fixed) */}
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-xl font-bold text-gray-900">Alert Details</h2>
+      <Badge variant="outline" className="border-gray-300 text-gray-700">
+        {filtered.length} items
+      </Badge>
+    </div>
+
+    {/* Content Area */}
+    {loading ? (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+      </div>
+    ) : filtered.length === 0 ? (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-gray-500 text-sm">
+          No alerts found matching your criteria
+        </p>
+      </div>
+    ) : (
+      /* 🔥 Scrollable List */
+      <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+        {filtered.map((a) => (
+          <Card
+            key={a.alertId}
+            className={`border-l-4 shadow-sm hover:shadow-md transition-all ${
+              a.severity === "Critical"
+                ? "border-l-red-600 bg-red-50"
+                : a.severity === "Medium"
+                ? "border-l-amber-600 bg-amber-50"
+                : "border-l-green-600 bg-green-50"
+            }`}
+          >
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-bold text-gray-900">{a.assetName}</p>
+                  <p className="text-xs text-gray-600">{a.signalName}</p>
+                </div>
+                <Badge
+                  className={
+                    a.severity === "Critical"
+                      ? "bg-red-600"
+                      : a.severity === "Medium"
+                      ? "bg-amber-600"
+                      : "bg-green-600"
+                  }
+                >
+                  {a.severity}
+                </Badge>
               </div>
-            ) : filtered.length === 0 ? (
-              <Card className="border-gray-200">
-                <CardContent className="p-8 text-center">
-                  <p className="text-gray-500 text-sm">No alerts found matching your criteria</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                {filtered.map((a) => (
-                  <Card key={a.alertId} className={`border-l-4 border-gray-200 shadow-sm hover:shadow-md transition-all ${
-                    a.severity === "Critical" ? "border-l-red-600 bg-red-50" :
-                    a.severity === "Medium" ? "border-l-amber-600 bg-amber-50" : "border-l-green-600 bg-green-50"
-                  }`}>
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <p className="font-bold text-gray-900">{a.assetName}</p>
-                          <p className="text-xs text-gray-600">{a.signalName}</p>
-                        </div>
-                        <Badge className={`${
-                          a.severity === "Critical" ? "bg-red-600" :
-                          a.severity === "Medium" ? "bg-amber-600" : "bg-green-600"
-                        }`}>
-                          {a.severity}
-                        </Badge>
-                      </div>
-                      
-                      <div className="space-y-2 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Start Time:</span>
-                          <span className="font-mono font-semibold text-gray-900">{formatLocalDateTimeIndian(a.alertStartUtc)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Threshold:</span>
-                          <span className="font-mono text-gray-900">{a.minThreshold} – {a.maxThreshold}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Observed:</span>
-                          <span className="font-mono text-gray-900">{a.minObservedValue} – {a.maxObservedValue}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Duration:</span>
-                          <span className="font-semibold text-gray-900">{(a.durationSec / 60).toFixed(1)} min</span>
-                        </div>
-                      </div>
-                      
-                      <div className="pt-2 border-t border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-600">Deviation</span>
-                          <span className="text-lg font-bold text-blue-600">{a.deviationPercent}%</span>
-                        </div>
-                        <p className="text-xs text-gray-600 text-right">
-                          {a.deviationDirection === "UP" ? "↑ Over Threshold" : a.deviationDirection === "DOWN" ? "↓ Under Threshold" : "Within Range"}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Start Time:</span>
+                  <span className="font-mono font-semibold">
+                    {formatLocalTime(a.alertStartUtc)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Threshold:</span>
+                  <span className="font-mono">
+                    {a.minThreshold} – {a.maxThreshold}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Observed:</span>
+                  <span className="font-mono">
+                    {a.minObservedValue} – {a.maxObservedValue}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Duration:</span>
+                  <span className="font-semibold">
+                    {(a.durationSec / 60).toFixed(1)} min
+                  </span>
+                </div>
               </div>
-            )}
-          </div>
+
+              <div className="pt-2 border-t">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-600">Deviation</span>
+                  <span className="text-lg font-bold text-blue-600">
+                    {a.deviationPercent}%
+                  </span>
+                </div>
+                <p className="text-xs text-right text-gray-600">
+                  {a.deviationDirection === "UP"
+                    ? "↑ Over Threshold"
+                    : a.deviationDirection === "DOWN"
+                    ? "↓ Under Threshold"
+                    : "Within Range"}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )}
+  </CardContent>
+</Card>
+
 
           {/* RIGHT SIDE - Charts */}
           <div className="lg:col-span-2" ref={chartsRef}>
-            <div className="space-y-6 bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900">Analytics Charts</h2>
-              
-              <div className="space-y-6">
-                <Card className="border-gray-200">
-                  <CardContent className="h-80 p-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={filtered}>
-                        <defs>
-                          <linearGradient id="colorDev" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.8}/>
-                            <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="alertStartUtc" tickFormatter={formatTimeOnly} stroke="#6b7280" />
-                        <YAxis stroke="#6b7280" />
-                        <Tooltip labelFormatter={formatLocalDateTimeIndian} contentStyle={{ backgroundColor: "#f9fafb", border: "1px solid #e5e7eb" }} />
-                        <Legend />
-                        <Area type="monotone" dataKey="deviationPercent" stroke="#2563eb" fill="url(#colorDev)" name="Deviation %" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
+  <div className="space-y-4 bg-white p-6 rounded-lg border border-gray-200 shadow-sm h-[520px]">
+    <h2 className="text-xl font-bold text-gray-900">Analytics Charts</h2>
 
-                <Card className="border-gray-200">
-                  <CardContent className="h-80 p-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={filtered} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis dataKey="signalName" stroke="#6b7280" />
-                        <YAxis stroke="#6b7280" />
-                        <Tooltip contentStyle={{ backgroundColor: "#f9fafb", border: "1px solid #e5e7eb" }} />
-                        <Legend />
-                        <Bar dataKey="deviationPercent" fill="#0ea5e9" radius={[8, 8, 0, 0]} name="Deviation %" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
+    <div className="space-y-2">
+      {/* Chart Card */}
+      <Card className="border-gray-200 ">
+        <CardContent className="h-80 p-4">
+          
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={filtered}>
+              <defs>
+                <linearGradient id="colorDev" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="alertStartUtc" tickFormatter={formatLocalHourMin} stroke="#6b7280" />
+              <YAxis stroke="#6b7280" />
+              <Tooltip labelFormatter={formatLocalTime} contentStyle={{ backgroundColor: "#f9fafb", border: "1px solid #e5e7eb" }} />
+              <Legend />
+              <Area type="monotone" dataKey="deviationPercent" stroke="#2563eb" fill="url(#colorDev)" name="Deviation %" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Warning Note */}
+      <div className="p-2 bg-yellow-50 border-l-4 border-red-700 text-yellow-700 text-sm rounded">
+        <p><strong>Warning Levels:</strong></p>
+        <ul className="ml-4 list-disc">
+          <li>Critical: deviation ≥ 25%</li>
+          <li>Medium: deviation ≥ 10%</li>
+          <li>Low: deviation &lt; 10%</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
         </div>
       </div>
     </div>
