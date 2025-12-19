@@ -105,6 +105,33 @@ export default function AssetDetails({
   };
 
 
+  const POLL_INTERVAL_MS = 2000;
+
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!selectedAsset?.assetId) return;
+
+    const assetId = selectedAsset.assetId;
+
+    // Initial fetch
+    getAlerts(assetId);
+
+    // Start polling
+    pollingRef.current = setInterval(() => {
+      getAlerts(assetId);
+    }, POLL_INTERVAL_MS);
+
+    // Cleanup when page unmounts or asset changes
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [selectedAsset?.assetId]);
+
+
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     if (!selectedAsset?.assetId) {
@@ -337,7 +364,7 @@ export default function AssetDetails({
                       </h3>
                       <Button className="text-sm" onClick={() => navigate(`/Asset/Alerts/${selectedAsset?.assetId}`)}>show Previous Alerts</Button>
                     </div>
-                    
+
                     <div className="space-y-3">
                       {Array.isArray(alerts) && alerts.length > 0 ? (
                         alerts.map((alert) => (
