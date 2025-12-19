@@ -11,7 +11,7 @@ import ConfigureDeviceForm from "./devices/ConfigureDevice";
 import UploadCsvModal from "./devices/UploadDeviceCsv";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
-import DeletedItems from "./devices/DeletedItems";
+import DeletedItems from "./pages/DeletedItems";
 import Profile from "./pages/Profile";
 import ManageUser from "./pages/ManageUser";
 import Signal from "./pages/Signal";

@@ -151,7 +151,12 @@ export default function Assets() {
     cursor-pointer
   "
             />
-            <Button id="import-bulk-btn" onClick={() => setShowUploadModal(true)}>Import Bulk</Button>
+            <Button
+              id="import-bulk-btn"
+              onClick={() => navigate("/Asset/BulkUpload")}
+            >
+              Import Bulk
+            </Button>
           </div>
         )}
       </div>
@@ -216,22 +221,22 @@ export default function Assets() {
       )}
 
       <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
-        <DialogContent className="sm:max-w-md p-6 bg-card rounded-2xl border shadow-xl">
-          <DialogHeader>
-            <DialogTitle>Upload CSV</DialogTitle>
-            <DialogDescription>Upload asset hierarchy file</DialogDescription>
-          </DialogHeader>
+      <DialogContent className="sm:max-w-md p-6 bg-card rounded-2xl border shadow-xl">
+        <DialogHeader>
+          <DialogTitle>Upload CSV</DialogTitle>
+          <DialogDescription>Upload asset hierarchy file</DialogDescription>
+        </DialogHeader>
 
-          <UploadAssetCsv
-            onClose={() => setShowUploadModal(false)}
-            onSuccess={(file) => {
-              console.log("File received:", file);
-              loadAssets();
-              setShowUploadModal(false);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+        <UploadAssetCsv 
+          onClose={() => setShowUploadModal(false)}
+          onSuccess={(file) => {
+            console.log("File received:", file);
+            loadAssets();
+            setShowUploadModal(false);
+          }}
+        />
+      </DialogContent>
+    </Dialog>
 
     </div>
   );

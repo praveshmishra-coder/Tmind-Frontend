@@ -20,10 +20,10 @@ import { dashboardTour } from "../tour/dashboardTour";
 import { devicesTour } from "../tour/deviceTour";
 import { assetsTour } from "@/tour/assetTour";
 import { userManagementTour } from "@/tour/userManagementTour";
-import { deletedDevicesTour } from "@/tour/deletedDeviceTour";
-import { deletedAssetsTour } from "@/tour/deletedAssetTour";
+import { deletedItemsTour } from "@/tour/deletedItemsTour";
 import { signalTour } from "@/tour/signalTour";
 import { reportTour } from "@/tour/reportTour";
+import { notificationsTour } from "@/tour/notificationTour";
 
 import { Info } from "lucide-react";
 
@@ -37,10 +37,10 @@ export default function StartTourButton() {
     if (location.pathname.startsWith("/devices")) return "devices";
     if (location.pathname.startsWith("/assets")) return "assets";
     if (location.pathname.startsWith("/manage-user")) return "user-management";
-    if (location.pathname.startsWith("/deleted-devices")) return "deleted-devices";
-    if (location.pathname.startsWith("/deleted-assets")) return "deleted-assets";
+    if (location.pathname.startsWith("/deleted-items")) return "deleted-items";
     if (location.pathname.startsWith("/signal")) return "signal";
     if (location.pathname.startsWith("/reports")) return "reports";
+    if (location.pathname.startsWith("/notifications")) return "notifications";
     return null;
   };
 
@@ -49,8 +49,8 @@ export default function StartTourButton() {
     "devices",
     "assets",
     "user-management",
-    "deleted-devices",
-    "deleted-assets",
+    "deleted-items",
+    "notifications",
     "signal",
     "reports",
   ];
@@ -61,10 +61,10 @@ export default function StartTourButton() {
     if (location.pathname.startsWith("/devices")) return devicesTour;
     if (location.pathname.startsWith("/assets")) return assetsTour;
     if (location.pathname.startsWith("/manage-user")) return userManagementTour;
-    if (location.pathname.startsWith("/deleted-devices")) return deletedDevicesTour;
-    if (location.pathname.startsWith("/deleted-assets")) return deletedAssetsTour;
+    if (location.pathname.startsWith("/deleted-items")) return deletedItemsTour;
     if (location.pathname.startsWith("/signal")) return signalTour;
     if (location.pathname.startsWith("/reports")) return reportTour;
+    if (location.pathname.startsWith("/notifications")) return notificationsTour;
     return null;
   };
 
