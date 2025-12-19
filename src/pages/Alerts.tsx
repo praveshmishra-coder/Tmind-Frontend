@@ -283,15 +283,15 @@ const [fromUtc, toUtc] = useMemo(() => {
 
   // -------------------- UI --------------------
   return (
-<div className="h-full overflow-hidden bg-gray-50">
+<div className="h-full bg-background text-foreground">
       {/* Header */}
 
 <div className="flex items-center justify-between max-w-7xl mx-4 px-0 py-2">
   <div>
-    <h1 className="text-3xl font-bold text-gray-900">
+   <h1 className="text-3xl font-bold text-foreground">
       Alerts Analytics Dashboard
     </h1>
-    <p className="text-gray-500 text-sm">
+    <p className="text-sm text-foreground/70">
       Real-time monitoring and insights
     </p>
   </div>
@@ -316,31 +316,31 @@ const [fromUtc, toUtc] = useMemo(() => {
 
 
         {/* Filters */}
-        <Card className="border-gray-200 shadow-sm ">
+        <Card className="bg-card text-card-foreground border border-border shadow-sm">
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-700">From (IST)</label>
+                <label className="text-xs font-semibold text-foreground">From (IST)</label>
                 <Input 
                   type="datetime-local" 
                   value={fromLocal} 
                   onChange={e => setFromLocal(e.target.value)} 
-                  className="border-gray-300"
+                  className="border-border bg-background text-foreground"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-700">To (IST)</label>
+                <label className="text-xs font-semibold text-foreground">To (IST)</label>
                 <Input 
                   type="datetime-local" 
                   value={toLocal} 
                   onChange={e => setToLocal(e.target.value)} 
-                  className="border-gray-300"
+                  className="border-border bg-background text-foreground"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-700">Preset</label>
+                <label className="text-xs font-semibold text-foreground">Preset</label>
                 <Select value={preset} onValueChange={setPreset}>
-                  <SelectTrigger className="border-gray-300">
+                  <SelectTrigger className="border-border bg-background text-foreground">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200 shadow-md">
@@ -352,9 +352,9 @@ const [fromUtc, toUtc] = useMemo(() => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-700">Signal</label>
+                <label className="text-xs font-semibold text-foreground">Signal</label>
                 <Select value={signalFilter} onValueChange={setSignalFilter}>
-                  <SelectTrigger className="border-gray-300">
+                  <SelectTrigger className="border-border bg-background text-foreground">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200 shadow-md">
@@ -364,9 +364,9 @@ const [fromUtc, toUtc] = useMemo(() => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-700">Severity</label>
+                <label className="text-xs font-semibold text-foreground">Severity</label>
                 <Select value={severityFilter} onValueChange={setSeverityFilter}>
-                  <SelectTrigger className="border-gray-300">
+                  <SelectTrigger className="border-border bg-background text-foreground">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200 shadow-md">
@@ -378,7 +378,7 @@ const [fromUtc, toUtc] = useMemo(() => {
                 </Select>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-700">Deviation %</label>
+                <label className="text-xs font-semibold text-foreground">Deviation %</label>
                 <Slider 
                   value={deviationRange} 
                   max={1000} 
@@ -386,7 +386,7 @@ const [fromUtc, toUtc] = useMemo(() => {
                   onValueChange={setDeviationRange}
                   className="mt-3"
                 />
-                <p className="text-xs text-gray-500 mt-1">{deviationRange[0]} - {deviationRange[1]}%</p>
+                <p className="text-xs text-muted-foreground mt-1">{deviationRange[0]} - {deviationRange[1]}%</p>
               </div>
             </div>
           </CardContent>
@@ -400,8 +400,8 @@ const [fromUtc, toUtc] = useMemo(() => {
     
     {/* Header (Fixed) */}
     <div className="flex justify-between items-center mb-4">
-      <h2 className="text-xl font-bold text-gray-900">Alert Details</h2>
-      <Badge variant="outline" className="border-gray-300 text-gray-700">
+      <h2 className="text-xl font-bold text-foreground">Alert Details</h2>
+      <Badge variant="outline" className="border-border bg-background text-foreground">
         {filtered.length} items
       </Badge>
     </div>
@@ -423,19 +423,19 @@ const [fromUtc, toUtc] = useMemo(() => {
         {filtered.map((a) => (
           <Card
             key={a.alertId}
-            className={`border-l-4 shadow-sm hover:shadow-md transition-all ${
+            className={`border-l-4 border-border bg-card text-card-foreground hover:shadow-md transition-all ${
               a.severity === "Critical"
-                ? "border-l-red-600 bg-red-50"
+                ? "border-l-red-600 bg-red-50 dark:bg-red-900/10"
                 : a.severity === "Medium"
-                ? "border-l-amber-600 bg-amber-50"
-                : "border-l-green-600 bg-green-50"
+                ? "border-l-amber-600 bg-amber-50 dark:bg-amber-900/10"
+                : "border-l-green-600 bg-green-50 dark:bg-green-900/10"
             }`}
           >
             <CardContent className="p-4 space-y-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="font-bold text-gray-900">{a.assetName}</p>
-                  <p className="text-xs text-gray-600">{a.signalName}</p>
+                  <p className="font-bold text-foreground">{a.assetName}</p>
+                  <p className="text-xs text-muted-foreground">{a.signalName}</p>
                 </div>
                 <Badge
                   className={
@@ -452,25 +452,25 @@ const [fromUtc, toUtc] = useMemo(() => {
 
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Start Time:</span>
+                  <span className="text-muted-foreground">Start Time:</span>
                   <span className="font-mono font-semibold">
                     {formatLocalTime(a.alertStartUtc)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Threshold:</span>
+                  <span className="text-muted-foreground">Threshold:</span>
                   <span className="font-mono">
                     {a.minThreshold} – {a.maxThreshold}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Observed:</span>
+                  <span className="text-muted-foreground">Observed:</span>
                   <span className="font-mono">
                     {a.minObservedValue} – {a.maxObservedValue}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Duration:</span>
+                  <span className="text-muted-foreground">Duration:</span>
                   <span className="font-semibold">
                     {(a.durationSec / 60).toFixed(1)} min
                   </span>
@@ -479,12 +479,12 @@ const [fromUtc, toUtc] = useMemo(() => {
 
               <div className="pt-2 border-t">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-600">Deviation</span>
+                  <span className="text-xs text-muted-foreground">Deviation</span>
                   <span className="text-lg font-bold text-blue-600">
                     {a.deviationPercent}%
                   </span>
                 </div>
-                <p className="text-xs text-right text-gray-600">
+                <p className="text-xs text-right text-muted-foreground">
                   {a.deviationDirection === "UP"
                     ? "↑ Over Threshold"
                     : a.deviationDirection === "DOWN"
@@ -503,8 +503,8 @@ const [fromUtc, toUtc] = useMemo(() => {
 
           {/* RIGHT SIDE - Charts */}
           <div className="lg:col-span-2" ref={chartsRef}>
-  <div className="space-y-4 bg-white p-6 rounded-lg border border-gray-200 shadow-sm h-[520px]">
-    <h2 className="text-xl font-bold text-gray-900">Analytics Charts</h2>
+  <div className="space-y-4 bg-background p-6 rounded-lg border border-gray-200 shadow-sm h-[520px]">
+    <h2 className="text-xl font-bold text-foreground">Analytics Charts</h2>
 
     <div className="space-y-2">
       {/* Chart Card */}
