@@ -67,19 +67,35 @@ export default function DeleteAsset({ asset, open, onClose, onDeleted }: DeleteA
             <p className="text-xs text-red-500">This asset is already deleted.</p>
           )}
 
-          <DialogFooter className="flex w-full justify-between pt-4">
-            <Button variant="outline" onClick={onClose} className="w-[45%]">
+          <DialogFooter className="flex w-full gap-2 pt-3 sm:pt-4">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="
+                flex-1 
+                h-9 sm:h-10 
+                text-sm sm:text-base
+              "
+            >
               Cancel
             </Button>
+
 
             <Button
               variant="destructive"
               onClick={handleDelete}
-              className="w-[45%] flex gap-2 bg-red-600 hover:bg-red-700 text-white"
+              className="
+                flex-1 
+                h-9 sm:h-10
+                text-sm sm:text-base
+                flex items-center justify-center gap-1 sm:gap-2
+                bg-red-600 hover:bg-red-700 text-white
+              "
             >
               <Trash2 className="h-4 w-4" />
               Delete
             </Button>
+
           </DialogFooter>
         </div>
       </DialogContent>

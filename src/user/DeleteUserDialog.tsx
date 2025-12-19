@@ -63,16 +63,32 @@ export default function DeleteUserDialog({
 
           {/* <p className="text-xs text-muted-foreground">{user.email}</p> */}
 
-          <DialogFooter className="flex w-full justify-between pt-4">
-            <Button variant="outline" onClick={onClose} className="w-[45%]">
-              Cancel
-            </Button>
+          <DialogFooter
+            className="
+              flex w-full gap-2 pt-3
+              sm:gap-4 sm:pt-4
+            "
+          >
 
             <Button
-              variant="destructive"
-              onClick={handleDelete}
-              className="w-[45%] flex gap-2 bg-red-600 hover:bg-red-700 text-white"
-            >
+            variant="outline"
+            onClick={onClose}
+            className="flex-1 h-9 sm:h-10 text-sm sm:text-base"
+          >
+            Cancel
+          </Button>
+          
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                className="
+                  flex-1 h-9 sm:h-10
+                  flex items-center justify-center gap-1 sm:gap-2
+                  bg-red-600 hover:bg-red-700 text-white
+                  text-sm sm:text-base
+                "
+              >
+
               <Trash2 className="h-4 w-4" />
               Delete
             </Button>

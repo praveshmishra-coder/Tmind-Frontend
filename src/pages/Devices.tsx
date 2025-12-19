@@ -376,23 +376,37 @@ export default function Devices() {
               </span>
               ?
             </p>
-            <DialogFooter className="flex w-full justify-between pt-4">
+            <DialogFooter className="flex w-full gap-2 pt-3 sm:pt-4">
               <Button
                 variant="outline"
                 onClick={() => setOpenDialog(false)}
-                className="w-[45%] hover:bg-muted"
+                className="
+                  flex-1
+                  h-9 sm:h-10
+                  text-xs sm:text-sm
+                  hover:bg-muted
+                "
               >
                 No, Keep it
               </Button>
+
               <Button
                 variant="destructive"
                 onClick={handleDelete}
-                className="w-[45%] bg-red-600 hover:bg-red-700 text-white flex items-center justify-center gap-2 shadow-md transition-all"
+                className="
+                  flex-1
+                  h-9 sm:h-10
+                  text-xs sm:text-sm
+                  flex items-center justify-center gap-1 sm:gap-2
+                  bg-red-600 hover:bg-red-700 text-white
+                  shadow-md transition-all
+                "
               >
                 <Trash2 className="h-4 w-4" />
                 Yes, Delete it
               </Button>
             </DialogFooter>
+
           </div>
         </DialogContent>
       </Dialog>

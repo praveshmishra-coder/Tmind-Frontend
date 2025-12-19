@@ -175,6 +175,7 @@ const updateRole = async (user: User, newRole: string) => {
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
+            id="user-search"
             placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => {
@@ -187,6 +188,7 @@ const updateRole = async (user: User, newRole: string) => {
 
         {isAdmin && (
           <Button
+            id="download-csv-btn"
             onClick={() =>
               downloadCSV(
                 filteredUsers.map((u) => ({
@@ -214,71 +216,142 @@ const updateRole = async (user: User, newRole: string) => {
       {/* Table */}
       {!loading && !error && (
         <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-sm text-foreground">
+        <table id="user-table" className="w-full text-sm text-foreground">
           <thead className="bg-muted/40">
             <tr>
-              <th className="p-4 text-center font-semibold">Username</th>
-              <th className="p-4 text-center font-semibold">Email</th>
-              <th className="p-4 text-center font-semibold">Role</th>
+              <th className="p-4 text-left font-semibold">User</th>
+
+              <th className="p-4 text-center font-semibold hidden sm:table-cell">
+                Email
+              </th>
+
+              <th className="p-4 text-center font-semibold hidden sm:table-cell">
+                Role
+              </th>
+
               {isAdmin && (
-                <th className="p-4 text-center font-semibold">Actions</th>
+                <th className="p-4 text-center font-semibold hidden sm:table-cell">
+                  Actions
+                </th>
               )}
             </tr>
           </thead>
+
 
           <tbody>
             {paginatedUsers.length > 0 ? (
               paginatedUsers.map((u) => (
                 <tr
-                  key={u.userId}
-                  className="border-t border-border hover:bg-muted/20"
-                >
-                  <td className="p-4 text-center">{u.username}</td>
-                  <td className="p-4 text-center">{u.email}</td>
+  key={u.userId}
+  className="border-t border-border hover:bg-muted/20"
+>
+  {/* USER INFO (Always visible) */}
+  <td className="p-4 text-left">
+    <div className="flex flex-col">
+      <span className="font-medium">{u.username}</span>
+      <span className="text-xs text-muted-foreground sm:hidden">
+        {u.email}
+      </span>
+    </div>
+  </td>
 
-                  <td className="p-4 text-center">
-                    {isAdmin ? (
-                      <select
-                        value={u.role}
-                        onChange={(e) => updateRole(u, e.target.value)}
-                        disabled={u.email === user?.email || u.email === "admin@example.com"}   
-                        className={`border border-border rounded-md bg-background px-1 py-1 
-                          ${u.email === user?.email ? "opacity-50 cursor-not-allowed" : ""}`}
-                                        >
-                        <option>User</option>
-                        <option>Engineer</option>
-                        <option>Operator</option>
-                        <option>Admin</option>
-                      </select>
-                    ) : (
-                      u.role
-                    )}
-                  </td>
+  {/* EMAIL (Desktop only) */}
+  <td className="p-4 text-center hidden sm:table-cell">
+    {u.email}
+  </td>
 
-                  {isAdmin && (
-                    <td className="p-4 text-center">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          if (u.email === user?.email) {
-                            toast.error("You cannot delete your own account!");
-                            return;
-                          }else if(u.email === "admin@example.com"){
-                            toast.error("You cannot delete main admin account");
-                            return;
-                          }
+  {/* ROLE (Desktop only) */}
+  <td className="p-4 text-center hidden sm:table-cell">
+    {isAdmin ? (
+      <select
+        value={u.role}
+        onChange={(e) => updateRole(u, e.target.value)}
+        disabled={
+          u.email === user?.email ||
+          u.email === "admin@example.com"
+        }
+        className="role-dropdown border border-border rounded-md bg-background px-2 py-1"
+      >
+        <option>User</option>
+        <option>Engineer</option>
+        <option>Operator</option>
+        <option>Admin</option>
+      </select>
+    ) : (
+      u.role
+    )}
+  </td>
 
-                          setSelectedUser(u);
-                          setShowDeleteDialog(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 inline-block mr-1" /> Delete
-                      </Button>
-                    </td>
+  {/* ACTIONS (Desktop only) */}
+  {isAdmin && (
+    <td className="p-4 text-center hidden sm:table-cell">
+      <Button
+        variant="destructive"
+        size="sm"
+        className="delete-user-btn"
+        onClick={() => {
+          if (u.email === user?.email) {
+            toast.error("You cannot delete your own account!");
+            return;
+          }
+          if (u.email === "admin@example.com") {
+            toast.error("You cannot delete main admin account");
+            return;
+          }
+          setSelectedUser(u);
+          setShowDeleteDialog(true);
+        }}
+      >
+        <Trash2 className="h-4 w-4 mr-1" />
+        Delete
+      </Button>
+    </td>
+  )}
 
-                  )}
-                </tr>
+  {/* 🔥 MOBILE ACTION COLUMN */}
+  {isAdmin && (
+    <td className="p-4 sm:hidden">
+      <div className="flex flex-col gap-2">
+        <select
+          value={u.role}
+          onChange={(e) => updateRole(u, e.target.value)}
+          disabled={
+            u.email === user?.email ||
+            u.email === "admin@example.com"
+          }
+          className=" role-dropdown border border-border rounded-md bg-background px-2 py-1 text-sm"
+        >
+          <option>User</option>
+          <option>Engineer</option>
+          <option>Operator</option>
+          <option>Admin</option>
+        </select>
+
+        <Button
+          variant="destructive"
+          size="sm"
+          className="delete-user-btn"
+          onClick={() => {
+            if (u.email === user?.email) {
+              toast.error("You cannot delete your own account!");
+              return;
+            }
+            if (u.email === "admin@example.com") {
+              toast.error("You cannot delete main admin account");
+              return;
+            }
+            setSelectedUser(u);
+            setShowDeleteDialog(true);
+          }}
+        >
+          <Trash2 className="h-4 w-4 mr-1" />
+          Delete
+        </Button>
+      </div>
+    </td>
+  )}
+</tr>
+
               ))
             ) : (
               <tr>
