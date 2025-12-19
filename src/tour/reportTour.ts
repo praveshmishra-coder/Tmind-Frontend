@@ -1,66 +1,59 @@
 // src/tours/reportTour.ts
 export const reportTour = [
   {
-    element: "#report-date",
+    element: ".report-start-date",
     popover: {
-      title: "Select Date",
-      description: "Choose the date for which you want to see the signal report."
-    }
+      title: "Start Date",
+      description: "Select the start date for the report.",
+    },
   },
   {
-    element: "#report-asset",
+    element: ".report-end-date",
+    popover: {
+      title: "End Date",
+      description: "Select the end date for the report.",
+    },
+  },
+  {
+    element: ".report-asset",
     popover: {
       title: "Select Asset",
-      description: "Pick an asset to load available signals."
-    }
+      description: "Choose the asset for which you want to generate the report.",
+    },
   },
   {
-  element: "#report-signal",
-  popover: {
-    title: "Select Signal",
-    description: "Choose a specific signal related to the selected asset."
-  }
-},
+    element: ".report-signal",
+    popover: {
+      title: "Select Signals",
+      description: "Select one or more signals related to the chosen asset.",
+    },
+  },
   {
-    element: "#report-device",
+    element: ".report-device",
     popover: {
       title: "Assigned Device",
-      description: "Here you can see which device is mapped to the selected asset."
-    }
+      description: "View the device assigned to the selected asset.",
+    },
   },
   {
-    element: "#report-alerts",
+    element: ".report-format",
     popover: {
-      title: "Show Only Alerts",
-      description: "Enable this to filter only high-priority signal alerts."
-    }
+      title: "Report Format",
+      description: "Choose the report format such as Excel, CSV, or PDF.",
+    },
   },
   {
-    element: "#generate-report-btn",
+    element: ".request-report-btn",
     popover: {
-      title: "Generate Report",
-      description: "Click to generate the signal report."
-    }
+      title: "Request Report",
+      description: "Click here to request report generation.",
+    },
   },
   {
-    element: "#download-csv-btn",
+    element: ".requested-reports",
     popover: {
-      title: "Download CSV",
-      description: "Export your report in CSV format."
-    }
+      title: "Requested Reports",
+      description: "View the status and history of requested reports here.",
+    },
   },
-  {
-    element: "#download-pdf-btn",
-    popover: {
-      title: "Download PDF",
-      description: "Export your report as a PDF."
-    }
-  },
-  {
-    element: "#report-table",
-    popover: {
-      title: "Report Table",
-      description: "Your generated signal records will appear here."
-    }
-  }
 ];

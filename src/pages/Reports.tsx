@@ -254,7 +254,7 @@ export default function Reports() {
             <label className="block text-sm font-medium mb-2">Start Date</label>
             <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="report-start-date w-full justify-start">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {startDate ? format(new Date(startDate), "PPP") : "Choose start date"}
                 </Button>
@@ -280,7 +280,7 @@ export default function Reports() {
             <label className="block text-sm font-medium mb-2">End Date</label>
             <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="report-end-date w-full justify-start">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {endDate ? format(new Date(endDate), "PPP") : "Choose end date"}
                 </Button>
@@ -309,7 +309,7 @@ export default function Reports() {
             <label className="block text-sm font-medium mb-2">Asset *</label>
             <Button
               variant="outline"
-              className="w-full justify-between"
+              className="report-asset w-full justify-between"
               onClick={() => setAssetDropdownOpen(!assetDropdownOpen)}
             >
               {selectedAssetId
@@ -350,7 +350,7 @@ export default function Reports() {
             </label>
             <Button
               variant="outline"
-              className="w-full justify-between"
+              className="report-signal w-full justify-between"
               onClick={() => setSignalDropdownOpen(!signalDropdownOpen)}
               disabled={!selectedAssetId}
             >
@@ -381,7 +381,7 @@ export default function Reports() {
 
           {/* DEVICE INFO */}
           <div>
-            <label className="block text-sm font-medium mb-2">Assigned Device</label>
+            <label className="report-device block text-sm font-medium mb-2">Assigned Device</label>
             <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded border">
               {assignedDeviceName}
             </div>
@@ -393,7 +393,7 @@ export default function Reports() {
             <select
               value={reportFormat}
               onChange={(e) => setReportFormat(e.target.value)}
-              className="w-full p-2 border rounded-md dark:bg-gray-700"
+              className="report-format w-full p-2 border rounded-md dark:bg-gray-700"
             >
               <option value="excel">Excel/CSV</option>
              
@@ -403,7 +403,7 @@ export default function Reports() {
 
         {/* GENERATE BUTTON */}
         <div className="flex justify-end">
-          <Button onClick={requestReport} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={requestReport} className="request-report-btn bg-blue-600 hover:bg-blue-700">
             <FileText className="mr-2 h-4 w-4" />
             Request Report
           </Button>
@@ -413,7 +413,7 @@ export default function Reports() {
       {/* REQUESTED REPORTS TABLE */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
         <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Requested Reports</h2>
+          <h2 className="requested-reports text-xl font-semibold">Requested Reports</h2>
           <Button
             variant="outline"
             size="sm"

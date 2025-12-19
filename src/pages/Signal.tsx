@@ -535,7 +535,7 @@ export default function Signals() {
 
 
       {/* TIME RANGE SECTION */}
-      <Card>
+      <Card className="tour-time-range">
         <CardHeader>
           <CardTitle>Time Range</CardTitle>
         </CardHeader>
@@ -589,7 +589,7 @@ export default function Signals() {
                 onChange={e =>
                   setMainAsset(allAssets.find(a => a.assetId === e.target.value) ?? null)
                 }
-                className="border p-2 rounded w-full"
+                className="tour-main-asset-dropdown border p-2 rounded w-full"
               >
                 <option value="">--Select Asset--</option>
                 {allAssets.map(a => (
@@ -611,7 +611,7 @@ export default function Signals() {
                 value={selectedSignals.map(s => s.signalTypeId)}
                 onChange={handleMainSignalChange}
                 disabled={!mainSignals.length}
-                className="border p-2 rounded w-full h-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="tour-main-signals border p-2 rounded w-full h-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {mainSignals.length === 0 ? (
                   <option disabled>No signals available</option>
@@ -633,8 +633,8 @@ export default function Signals() {
 
             {/* Device */}
             <div>
-              <label className="block mb-2 font-semibold">Assigned Device:</label>
-              <p className="text-gray-700">{deviceName ? deviceName.split(",").map((d, idx) => <span key={idx}>{d}</span>) : "Not Assigned"}</p>
+              <label className=" block mb-2 font-semibold">Assigned Device:</label>
+              <p className="tour-main-device text-gray-700">{deviceName ? deviceName.split(",").map((d, idx) => <span key={idx}>{d}</span>) : "Not Assigned"}</p>
             </div>
           </CardContent>
         </Card>
@@ -655,7 +655,7 @@ export default function Signals() {
                   value={compareAssetId}
                   onChange={e => setCompareAssetId(e.target.value)}
                   disabled={!mainAsset}
-                  className="border p-2 rounded w-full"
+                  className="tour-compare-dropdown border p-2 rounded w-full"
                 >
                   <option value="">None</option>
                   {allAssets
@@ -719,7 +719,7 @@ export default function Signals() {
 
 
       {/* GRAPH CARD */}
-      <Card>
+      <Card className="tour-graph-card">
         <CardHeader>
           <CardTitle>Signals Graph</CardTitle>
           {fetchingData && <p className="text-sm text-gray-500">Loading data...</p>}
