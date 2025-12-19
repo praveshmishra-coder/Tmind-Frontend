@@ -11,7 +11,7 @@ import { getDeviceById } from "@/api/deviceApi";
 import type { Asset } from "@/api/assetApi";
 
 // API Base URL - adjust this to your backend URL
-const API_BASE_URL = "https://localhost:7208/api"
+const API_BASE_URL = "http://localhost:5000/asset"
 
 export default function Reports() {
   const [startDate, setStartDate] = useState("");

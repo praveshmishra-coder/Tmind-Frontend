@@ -1,14 +1,14 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000/asset";
+const baseURL = import.meta.env.VITE_API_URL || "http://localhost:5000/ai";
 
-const apiAsset = axios.create({
+const AiApi = axios.create({
   baseURL,
   withCredentials: true,
 });
 
 // 🔁 Auto-refresh token interceptor
-apiAsset.interceptors.response.use(
+AiApi.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
@@ -23,7 +23,7 @@ apiAsset.interceptors.response.use(
         { withCredentials: true }
        );
 
-        return apiAsset(originalRequest);
+        return AiApi(originalRequest);
       } catch (err) {
         console.error("Refresh token failed. Redirecting...");
         localStorage.removeItem("user");
@@ -38,4 +38,4 @@ apiAsset.interceptors.response.use(
   }
 );
 
-export default apiAsset;
+export default AiApi;

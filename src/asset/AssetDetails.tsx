@@ -167,7 +167,7 @@ export default function AssetDetails({
     if (!selectedAsset?.assetId) return;
     try {
       setDetaching(true);
-      await axios.delete(`https://localhost:7208/api/Mapping/${selectedAsset.assetId}`);
+      await apiAsset.delete(`/Mapping/${selectedAsset.assetId}`);
       toast.success("Device detached successfully!");
       setAssetConfig(null);
       setTypedText("")

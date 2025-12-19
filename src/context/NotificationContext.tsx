@@ -124,7 +124,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
    * =================================================== */
   useEffect(():any => {
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("https://localhost:7208/hubs/notifications", {
+      .withUrl("http://localhost:5000/asset/hubs/notifications", {
         withCredentials: true,
       })
       .withAutomaticReconnect()

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Send, AlertCircle, Zap, Settings2, MessageSquare } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import AiApi from "@/api/aiApi";
 
 // Improved AI RCA Chat component
 // - Parses the `res.data` payload you showed (data is a YAML-ish string inside data)
@@ -90,52 +91,84 @@ export default function AiRcaChat() {
     return out;
   }
 
-  async function sendPrompt() {
-    if (!user) {
-      return navigate('/auth')
-    }
-
-
-    setError(null);
-    const userText = prompt.trim();
-    if (!userText) return;
-
-    const userMsg: Msg = { id: String(Date.now()) + "-u", role: "user", fullText: userText, displayedText: userText };
-    setMessages((m) => [...m, userMsg]);
-
-    setLoading(true);
-    setPrompt("");
-
-    try {
-      const res = await fetch("http://localhost:4000/api/ai/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: userText, system,  sessionId : user.username }),
-      });
-
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`Server error: ${res.status} ${txt}`);
-      }
-
-      const data = await res.json();
-      // Based on your example the useful string sits at data.data
-      const raw = (data && (data.data || data.result || data.answer || data.response || data.rca || data.message)) ?? JSON.stringify(data);
-      const text = typeof raw === "string" ? raw : JSON.stringify(raw);
-
-      // Add assistant message with typing animation
-      const assistantMsg: Msg = { id: String(Date.now()) + "-a", role: "assistant", fullText: text, displayedText: "" };
-      setMessages((m) => [...m, assistantMsg]);
-
-      // Start typing animation for the last message
-      startTyping(assistantMsg.id, text);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Unknown error");
-    } finally {
-      setLoading(false);
-    }
+ 
+async function sendPrompt() {
+  if (!user) {
+    return navigate("/auth");
   }
+
+  setError(null);
+  const userText = prompt.trim();
+  if (!userText) return;
+
+  const userMsg: Msg = {
+    id: String(Date.now()) + "-u",
+    role: "user",
+    fullText: userText,
+    displayedText: userText,
+  };
+
+  setMessages((m) => [...m, userMsg]);
+
+  setLoading(true);
+  setPrompt("");
+
+  try {
+    const res = await AiApi.post(
+      "/ai/ask",
+      {
+        prompt: userText,
+        system,
+        sessionId: user.username,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const data = res.data;
+
+    // Same fallback logic as your fetch version
+    const raw =
+      (data &&
+        (data.data ||
+          data.result ||
+          data.answer ||
+          data.response ||
+          data.rca ||
+          data.message)) ??
+      JSON.stringify(data);
+
+    const text = typeof raw === "string" ? raw : JSON.stringify(raw);
+
+    const assistantMsg: Msg = {
+      id: String(Date.now()) + "-a",
+      role: "assistant",
+      fullText: text,
+      displayedText: "",
+    };
+
+    setMessages((m) => [...m, assistantMsg]);
+
+    // Start typing animation
+    startTyping(assistantMsg.id, text);
+  } catch (err: any) {
+    console.error(err);
+
+    // Axios error handling
+    const message =
+      err.response?.data?.message ||
+      err.response?.statusText ||
+      err.message ||
+      "Unknown error";
+
+    setError(message);
+  } finally {
+    setLoading(false);
+  }
+}
 
   function startTyping(msgId: string, fullText: string) {
     // conservative typing speed
@@ -406,7 +439,7 @@ export default function AiRcaChat() {
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               <p className="text-xs font-medium text-slate-600">API Status</p>
             </div>
-            <p className="text-xs text-slate-500">localhost:4000</p>
+            <p className="text-xs text-slate-500">T am TMind Assistant</p>
           </div>
         </div>
       </div>
