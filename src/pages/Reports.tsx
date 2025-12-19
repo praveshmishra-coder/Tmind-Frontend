@@ -259,13 +259,14 @@ export default function Reports() {
                   {startDate ? format(new Date(startDate), "PPP") : "Choose start date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent>
+              <PopoverContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-md">
                 <Calendar
                   mode="single"
                   selected={startDate ? new Date(startDate) : undefined}
                   onSelect={(d) => {
                     if (!d) return;
                     setStartDate(format(d, "yyyy-MM-dd"));
+                    setEndDate(null);
                     setStartDateOpen(false);
                   }}
                   disabled={(date) => date > new Date()}
@@ -284,7 +285,7 @@ export default function Reports() {
                   {endDate ? format(new Date(endDate), "PPP") : "Choose end date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent>
+              <PopoverContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-md">
                 <Calendar
                   mode="single"
                   selected={endDate ? new Date(endDate) : undefined}
@@ -293,7 +294,11 @@ export default function Reports() {
                     setEndDate(format(d, "yyyy-MM-dd"));
                     setEndDateOpen(false);
                   }}
-                  disabled={(date) => date > new Date()}
+                  disabled={(d) =>
+                  d.getTime() > Date.now() ||
+                  (startDate && d.getTime() < new Date(startDate).getTime() - 86400000)
+                }
+
                 />
               </PopoverContent>
             </Popover>

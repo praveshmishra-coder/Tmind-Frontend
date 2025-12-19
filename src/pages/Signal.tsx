@@ -9,7 +9,7 @@ import { getMappingById } from "@/api/assetApi";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon, X } from "lucide-react";
+import { Calendar as CalendarIcon, Pin, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import {
   LineChart,
@@ -20,12 +20,11 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  ReferenceArea,
   ReferenceLine,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
+  Dot,
 } from "recharts";
+
 
 /* ------------------------------ Helpers ------------------------------ */
 function mulberry32(a: number) {
@@ -37,6 +36,7 @@ function mulberry32(a: number) {
   };
 }
 
+
 function hashStringToInt(s: string) {
   let h = 2166136261 >>> 0;
   for (let i = 0; i < s.length; i++) {
@@ -45,8 +45,9 @@ function hashStringToInt(s: string) {
   return h >>> 0;
 }
 
-function colorForAsset(assetId: string) {
-  const seed = hashStringToInt(assetId);
+
+function colorForString(str: string) {
+  const seed = hashStringToInt(str);
   const rnd = mulberry32(seed);
   const r = Math.floor(rnd() * 200) + 20;
   const g = Math.floor(rnd() * 200) + 20;
@@ -54,40 +55,37 @@ function colorForAsset(assetId: string) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-/* ---------------------------- Main Component ---------------------------- */
+
+/* ---------------------------- Types & Component ---------------------------- */
 export default function Signals() {
   const { state } = useLocation();
   const passedAsset = (state as any)?.asset as Asset | undefined | null;
-
   const [mainAsset, setMainAsset] = useState<Asset | null>(passedAsset ?? null);
-  const [deviceName, setDeviceName] = useState<string>("Loading...");
+  const [deviceName, setDeviceName] = useState("Loading...");
   const [allAssets, setAllAssets] = useState<Asset[]>([]);
-  const [compareAssetId, setCompareAssetId] = useState<string>("");
-  const [mainSignals, setMainSignals] = useState<any[]>([]);
+  const [compareAssetId, setCompareAssetId] = useState("");
+  const [mainSignals, setMainSignals] = useState<SignalType[]>([]);
   const [compareSignals, setCompareSignals] = useState<SignalType[]>([]);
-  const [compareDeviceName, setCompareDeviceName] = useState<string>("Loading...");
+  const [compareDeviceName, setCompareDeviceName] = useState("Loading...");
   const [timeRange, setTimeRange] = useState<"24h" | "7d" | "today" | "custom">("today");
   const [customStart, setCustomStart] = useState<Date | null>(null);
   const [customEnd, setCustomEnd] = useState<Date | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [telemetryData, setTelemetryData] = useState<any[]>([]);
-  const [fetchingData, setFetchingData] = useState<boolean>(false);
-  const [signalSelected, setSignalSelected] = useState<any | null>(null);
-  const [compareSignalSelected, setCompareSignalSelected] = useState<SignalType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fullTelemetryData, setFullTelemetryData] = useState<any[]>([]);
+  const [displayedTelemetryData, setDisplayedTelemetryData] = useState<any[]>([]);
+  const [fetchingData, setFetchingData] = useState(false);
+  const [selectedSignals, setSelectedSignals] = useState<SignalType[]>([]);
+  const [compareSelectedSignals, setCompareSelectedSignals] = useState<SignalType[]>([]);
+  const [refAreaLeft, setRefAreaLeft] = useState<number | undefined>(undefined);
+  const [refAreaRight, setRefAreaRight] = useState<number | undefined>(undefined);
+ 
+  // Reference Point States
+  const [referencePoint, setReferencePoint] = useState<{
+    time: number;
+    values: { [key: string]: number };
+  } | null>(null);
+  const [isSelectingReference, setIsSelectingReference] = useState(false);
 
-  // Reference Line State (FUNCTIONALITY 1)
-  const [referenceValue, setReferenceValue] = useState<number | null>(null);
-  const [referenceTimestamp, setReferenceTimestamp] = useState<string | null>(null);
-  const [referenceInfo, setReferenceInfo] = useState<string>("");
-  const [manualReferenceInput, setManualReferenceInput] = useState<string>("");
-
-  // Zoom State (FUNCTIONALITY 2 - SEPARATE)
-  const [zoomStartIndex, setZoomStartIndex] = useState<number | null>(null);
-  const [zoomEndIndex, setZoomEndIndex] = useState<number | null>(null);
-  const [isSelectingZoom, setIsSelectingZoom] = useState<boolean>(false);
-
-  // Chart Style State
-  const [chartStyle, setChartStyle] = useState<"line" | "area" | "bar">("line");
 
   const flattenAssets = (assets: Asset[]): Asset[] => {
     const out: Asset[] = [];
@@ -100,7 +98,8 @@ export default function Signals() {
     return out;
   };
 
-  /* Load asset hierarchy */
+
+  /* ---------------- Load asset hierarchy ---------------- */
   useEffect(() => {
     const loadHierarchy = async () => {
       setLoading(true);
@@ -117,7 +116,8 @@ export default function Signals() {
     loadHierarchy();
   }, []);
 
-  /* Load main asset signals & device */
+
+  /* ---------------- Load main asset signals & device ---------------- */
   useEffect(() => {
     const loadMainSignals = async () => {
       if (!mainAsset) {
@@ -144,11 +144,20 @@ export default function Signals() {
     loadMainSignals();
   }, [mainAsset]);
 
+
+  // reset signals for main when main asset changes
   useEffect(() => {
-    setCompareSignalSelected(null);
+    setSelectedSignals([]);
+  }, [mainAsset]);
+
+
+  // reset signals for compare when compare asset changes
+  useEffect(() => {
+    setCompareSelectedSignals([]);
   }, [compareAssetId]);
 
-  /* Load compare asset signals & device */
+
+  /* ---------------- Compare asset signals & device ---------------- */
   useEffect(() => {
     const loadCompareSignals = async () => {
       if (!compareAssetId) {
@@ -169,6 +178,7 @@ export default function Signals() {
     };
     loadCompareSignals();
   }, [compareAssetId]);
+
 
   const fetchDevicesForAsset = async (assetId: string): Promise<string[]> => {
     try {
@@ -191,29 +201,26 @@ export default function Signals() {
     }
   };
 
-  useEffect(() => {
-    setSignalSelected(null);
-  }, [mainAsset]);
 
-  /* Fetch Telemetry Data */
+  /* ---------------- Fetch Telemetry Data (uses backend aggregated data) ---------------- */
   useEffect(() => {
     const fetchTelemetryData = async () => {
-      if (!signalSelected) {
-        setTelemetryData([]);
+      if (selectedSignals.length === 0 && compareSelectedSignals.length === 0) {
+        setFullTelemetryData([]);
+        setDisplayedTelemetryData([]);
         return;
       }
-
-      if (!mainAsset || mainSignals.length === 0) {
-        setTelemetryData([]);
+      if (!mainAsset && !compareAssetId) {
+        setFullTelemetryData([]);
+        setDisplayedTelemetryData([]);
         return;
       }
-
       setFetchingData(true);
       try {
+        // Determine time range
         let apiTimeRange: TimeRange;
         let startDate: string | undefined;
         let endDate: string | undefined;
-
         if (timeRange === "24h") {
           apiTimeRange = TimeRange.Last24Hours;
         } else if (timeRange === "7d") {
@@ -232,17 +239,9 @@ export default function Signals() {
           apiTimeRange = TimeRange.Last24Hours;
         }
 
-        const allSignals = [];
-        if (signalSelected) allSignals.push(signalSelected);
-        if (compareSignalSelected) {
-          // FIX: Create normalized signal object for compare signal
-          allSignals.push({
-            assetId: compareAssetId,
-            signalTypeId: compareSignalSelected.signalTypeID || compareSignalSelected.signalTypeId, // Handle both property names
-            signalName: compareSignalSelected.signalName
-          });
-        }
 
+        // Combine all selected signals from both assets
+        const allSignals = [...selectedSignals, ...compareSelectedSignals];
         const dataPromises = allSignals.map(async (signal) => {
           try {
             const response = await getTelemetryData({
@@ -255,6 +254,7 @@ export default function Signals() {
             return {
               ...response,
               signalKey: `${signal.assetId}-${signal.signalName}`,
+              signalName: signal.signalName,
               assetName: allAssets.find(a => a.assetId === signal.assetId)?.name || "Unknown",
             };
           } catch (error) {
@@ -263,314 +263,333 @@ export default function Signals() {
           }
         });
 
+
         const results = await Promise.all(dataPromises);
         const validResults = results.filter(r => r !== null);
 
+
+        // Transform data for recharts - NO aggregation, just use backend data as-is
         if (validResults.length > 0) {
-          const timeMap = new Map();
-          validResults.forEach((result) => {
+          const timeMap = new Map<number, any>();
+          validResults.forEach((result: any) => {
             result.values.forEach((point: any) => {
-              const timeKey = new Date(point.time).toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit'
-              });
+              const timeKey = new Date(point.time).getTime();
               if (!timeMap.has(timeKey)) {
-                timeMap.set(timeKey, { timestamp: timeKey });
+                timeMap.set(timeKey, { time: timeKey });
               }
               const dataPoint = timeMap.get(timeKey);
               const key = `${result.assetName}-${result.signalName}`;
               dataPoint[key] = point.value;
             });
           });
-
-          const chartData = Array.from(timeMap.values()).sort((a, b) => {
-            return new Date('1970/01/01 ' + a.timestamp).getTime() - 
-                   new Date('1970/01/01 ' + b.timestamp).getTime();
-          });
-
-          setTelemetryData(chartData);
-          setReferenceValue(null);
-          setReferenceTimestamp(null);
-          setReferenceInfo("");
-          setZoomStartIndex(null);
-          setZoomEndIndex(null);
+          const chartData = Array.from(timeMap.values()).sort((a, b) => a.time - b.time);
+          setFullTelemetryData(chartData);
+          setDisplayedTelemetryData(chartData);
         } else {
-          setTelemetryData([]);
+          setFullTelemetryData([]);
+          setDisplayedTelemetryData([]);
         }
       } catch (error) {
         console.error("Failed to fetch telemetry data:", error);
-        setTelemetryData([]);
+        setFullTelemetryData([]);
+        setDisplayedTelemetryData([]);
       } finally {
         setFetchingData(false);
       }
     };
-
     fetchTelemetryData();
-  }, [mainAsset, mainSignals, compareAssetId, compareSignals, timeRange, customStart, customEnd, allAssets, signalSelected, compareSignalSelected]);
+  }, [mainAsset, compareAssetId, timeRange, customStart, customEnd, allAssets, selectedSignals, compareSelectedSignals]);
 
-  /* Chart Keys */
+
+  /* ---------------- Chart Keys ---------------- */
   const mainKeys = useMemo(() => {
-    if (!mainAsset || !signalSelected) return [];
-    return [`${mainAsset.name}-${signalSelected.signalName}`];
-  }, [mainAsset, signalSelected]);
+    if (!mainAsset) return [];
+    return selectedSignals.map(s => `${mainAsset.name}-${s.signalName}`);
+  }, [mainAsset, selectedSignals]);
+
 
   const compareKeys = useMemo(() => {
-    if (!compareAssetId || !compareSignalSelected) return [];
+    if (!compareAssetId) return [];
     const assetObj = allAssets.find(a => a.assetId === compareAssetId);
     if (!assetObj) return [];
-    return [`${assetObj.name}-${compareSignalSelected.signalName}`];
-  }, [compareAssetId, compareSignalSelected, allAssets]);
+    return compareSelectedSignals.map(s => `${assetObj.name}-${s.signalName}`);
+  }, [compareAssetId, compareSelectedSignals, allAssets]);
 
-  /* Get zoomed data - SEPARATE FUNCTIONALITY */
-  const displayData = useMemo(() => {
-    if (zoomStartIndex !== null && zoomEndIndex !== null && telemetryData.length > 0) {
-      const start = Math.min(zoomStartIndex, zoomEndIndex);
-      const end = Math.max(zoomStartIndex, zoomEndIndex);
-      return telemetryData.slice(start, end + 1);
-    }
-    return telemetryData;
-  }, [zoomStartIndex, zoomEndIndex, telemetryData]);
 
-  /* FUNCTIONALITY 1: Reference Line */
-  const handleChartClick = (data: any) => {
-    if (data && data.timestamp && !isSelectingZoom) {
-      const mainKeyValue = mainKeys.length > 0 ? data[mainKeys[0]] : null;
-      if (mainKeyValue !== undefined && mainKeyValue !== null) {
-        setReferenceValue(mainKeyValue);
-        setReferenceTimestamp(data.timestamp);
-        setReferenceInfo(
-          `Reference Point: ${data.timestamp} → Value: ${mainKeyValue.toFixed(2)}`
-        );
-      }
-    }
-  };
+  const allKeys = useMemo(() => [...mainKeys, ...compareKeys], [mainKeys, compareKeys]);
 
-  const clearReference = () => {
-    setReferenceValue(null);
-    setReferenceTimestamp(null);
-    setReferenceInfo("");
-    setManualReferenceInput("");
-  };
 
-  const setManualReference = () => {
-    const value = parseFloat(manualReferenceInput);
-    if (!isNaN(value)) {
-      setReferenceValue(value);
-      setReferenceTimestamp(null);
-      setReferenceInfo(`Manual Reference Line: Y-axis value = ${value.toFixed(2)}`);
+  /* ---------------- Reference Point Functions ---------------- */
+  const handleChartClick = (e: any) => {
+    if (!isSelectingReference || !e || !e.activeLabel) return;
+   
+    const clickedTime = e.activeLabel;
+    const dataPoint = displayedTelemetryData.find(d => d.time === clickedTime);
+   
+    if (dataPoint) {
+      const values: { [key: string]: number } = {};
+      allKeys.forEach(key => {
+        if (dataPoint[key] != null) {
+          values[key] = dataPoint[key];
+        }
+      });
+     
+      setReferencePoint({
+        time: clickedTime,
+        values,
+      });
+      setIsSelectingReference(false);
     }
   };
 
-  /* FUNCTIONALITY 2: Zoom - SEPARATE */
-  const handleChartMouseDown = (state: any) => {
-    if (state?.activeTooltipIndex !== undefined) {
-      setIsSelectingZoom(true);
-      setZoomStartIndex(state.activeTooltipIndex);
+
+  const clearReferencePoint = () => {
+    setReferencePoint(null);
+    setIsSelectingReference(false);
+  };
+
+
+  const startSelectingReference = () => {
+    setIsSelectingReference(true);
+  };
+
+
+  /* ---------------- Zoom Functionality ---------------- */
+  const zoom = () => {
+    if (isSelectingReference) return;
+   
+    let left = refAreaLeft;
+    let right = refAreaRight;
+    if (left === right || right === undefined || left === undefined) {
+      setRefAreaLeft(undefined);
+      setRefAreaRight(undefined);
+      return;
     }
+    if (left > right) [left, right] = [right, left];
+    const zoomedData = displayedTelemetryData.filter(d => d.time >= left && d.time <= right);
+    setDisplayedTelemetryData(zoomedData);
+    setRefAreaLeft(undefined);
+    setRefAreaRight(undefined);
   };
 
-  const handleChartMouseUp = (state: any) => {
-    if (state?.activeTooltipIndex !== undefined && zoomStartIndex !== null) {
-      const start = Math.min(zoomStartIndex, state.activeTooltipIndex);
-      const end = Math.max(zoomStartIndex, state.activeTooltipIndex);
-      if (start !== end) {
-        setZoomStartIndex(start);
-        setZoomEndIndex(end);
-      }
-      setIsSelectingZoom(false);
-    }
+
+  const zoomOut = () => {
+    setDisplayedTelemetryData(fullTelemetryData);
   };
 
-  const resetZoom = () => {
-    setZoomStartIndex(null);
-    setZoomEndIndex(null);
-    setIsSelectingZoom(false);
+
+  /* ---------------- Signal Selection Handlers ---------------- */
+  const handleMainSignalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedOptions = Array.from(e.target.selectedOptions);
+    const selectedIds = selectedOptions.map(opt => opt.value);
+    const selected = mainSignals.filter(s => selectedIds.includes(s.signalTypeId));
+    setSelectedSignals(selected);
   };
 
-  /* Custom Tooltip */
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-3 border border-gray-300 rounded shadow-lg space-y-1 text-sm">
-          <p className="font-bold text-gray-800">{payload[0].payload.timestamp}</p>
-          {payload.map((entry: any, index: number) => {
-            const currentValue = entry.value;
-            const difference =
-              referenceValue !== null ? (currentValue - referenceValue).toFixed(2) : null;
-            const percentage =
-              referenceValue !== null && referenceValue !== 0
-                ? (((currentValue - referenceValue) / referenceValue) * 100).toFixed(2)
-                : null;
 
-            return (
-              <div key={index} className="space-y-1">
-                <p style={{ color: entry.color }}>
-                  <strong>{entry.name}:</strong> {currentValue.toFixed(2)}
-                </p>
-                {difference !== null && (
-                  <p className={parseFloat(difference) >= 0 ? "text-red-600 text-xs" : "text-green-600 text-xs"}>
-                    vs Ref: {difference} ({percentage}%)
-                  </p>
+  const handleCompareSignalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedOptions = Array.from(e.target.selectedOptions);
+    const selectedIds = selectedOptions.map(opt => opt.value);
+    const selected = compareSignals.filter(s => selectedIds.includes(s.signalTypeId));
+    setCompareSelectedSignals(selected);
+  };
+
+
+  /* ---------------- Custom Tooltip Component ---------------- */
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload || payload.length === 0) return null;
+
+
+    return (
+      <div className="bg-white p-4 border border-gray-300 rounded shadow-lg max-w-md">
+        <p className="font-semibold mb-2">{format(new Date(label), "MMM dd HH:mm:ss")}</p>
+       
+        {payload.map((entry: any, index: number) => {
+          const currentValue = entry.value;
+          const signalName = entry.name;
+         
+          let refValue = null;
+          let difference = null;
+          let percentChange = null;
+         
+          if (referencePoint && referencePoint.values) {
+            refValue = referencePoint.values[signalName];
+            if (refValue != null && currentValue != null) {
+              difference = currentValue - refValue;
+              percentChange = ((difference / refValue) * 100).toFixed(2);
+            }
+          }
+
+
+          return (
+            <div key={index} className="mb-2 pb-2 border-b last:border-b-0">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="font-medium">{signalName}</span>
+              </div>
+             
+              <div className="ml-5 mt-1 space-y-1 text-sm">
+                <div>
+                  <span className="text-gray-600">Current: </span>
+                  <span className="font-semibold">{currentValue?.toFixed(2)}</span>
+                </div>
+               
+                {refValue != null && (
+                  <>
+                    <div>
+                      <span className="text-gray-600">Reference: </span>
+                      <span className="font-semibold">{refValue.toFixed(2)}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Difference: </span>
+                      <span
+                        className={`font-semibold ${
+                          difference > 0 ? "text-green-600" : difference < 0 ? "text-red-600" : ""
+                        }`}
+                      >
+                        {difference > 0 ? "+" : ""}
+                        {difference?.toFixed(2)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Change: </span>
+                      <span
+                        className={`font-semibold ${
+                          parseFloat(percentChange) > 0
+                            ? "text-green-600"
+                            : parseFloat(percentChange) < 0
+                            ? "text-red-600"
+                            : ""
+                        }`}
+                      >
+                        {parseFloat(percentChange) > 0 ? "+" : ""}
+                        {percentChange}%
+                      </span>
+                    </div>
+                  </>
                 )}
               </div>
-            );
-          })}
-          {referenceValue !== null && (
-            <>
-              <hr className="my-1" />
-              <p className="text-green-600 text-xs">
-                <strong>Reference Value:</strong> {referenceValue.toFixed(2)}
-              </p>
-            </>
-          )}
-        </div>
-      );
-    }
-    return null;
+            </div>
+          );
+        })}
+       
+        {referencePoint && (
+          <p className="text-xs text-gray-500 mt-2 pt-2 border-t">
+            Reference Point: {format(new Date(referencePoint.time), "MMM dd HH:mm:ss")}
+          </p>
+        )}
+      </div>
+    );
   };
 
-  /* JSX */
+
+  /* ---------------- Custom Reference Dot Component ---------------- */
+  const ReferencePointDot = (props: any) => {
+    const { cx, cy } = props;
+    return (
+      <g>
+        <circle cx={cx} cy={cy} r={8} fill="#ff6b6b" stroke="#fff" strokeWidth={2} />
+        <circle cx={cx} cy={cy} r={3} fill="#fff" />
+      </g>
+    );
+  };
+
+
+  /* ---------------------- Small Shadcn Single Date Picker ---------------------- */
+  const today = new Date();
+  function SingleDatePicker({
+    value,
+    onChange,
+    placeholder,
+    disabled = (date: Date) => date > today,
+  }: {
+    value: Date | null;
+    onChange: (d: Date | null) => void;
+    placeholder?: string;
+    disabled?: (date: Date) => boolean;
+  }) {
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline">
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {value ? format(value, "PPP") : placeholder ?? "Pick date"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0">
+          <Calendar mode="single" selected={value} onSelect={onChange} disabled={disabled} initialFocus />
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+
+  /* ---------------------------- JSX ---------------------------- */
   return (
-    <div className="container mx-auto p-4 space-y-4">
+    <div className="p-4 space-y-6">
       {/* PAGE TITLE */}
-      <h1 className="text-3xl font-bold">Signal Analysis</h1>
+      <h1 className="text-2xl font-bold">Signal Analysis</h1>
+
 
       {/* TIME RANGE SECTION */}
       <Card>
         <CardHeader>
           <CardTitle>Time Range</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <select
-            className="border p-2 rounded w-full"
             value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as any)}
+            onChange={e => setTimeRange(e.target.value as any)}
+            className="border p-2 rounded w-full"
           >
             <option value="24h">Last 24 Hours</option>
             <option value="7d">Last 7 Days</option>
             <option value="today">Today</option>
             <option value="custom">Custom Range</option>
           </select>
-
           {timeRange === "custom" && (
-            <div className="flex gap-4 mt-4 items-center">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {customStart ? format(customStart, "PPP") : "Start Date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={customStart ?? undefined}
-                    onSelect={(date) => setCustomStart(date ?? null)}
-                    disabled={date => date > new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-
+            <div className="flex items-center space-x-2">
+              {/* Start Date */}
+              <SingleDatePicker
+                value={customStart}
+                onChange={setCustomStart}
+                placeholder="Start Date"
+                disabled={date => date > new Date()}
+              />
               <span>to</span>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {customEnd ? format(customEnd, "PPP") : "End Date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={customEnd ?? undefined}
-                    onSelect={(date) => setCustomEnd(date ?? null)}
-                    disabled={date => date < customStart || date > new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              {/* End Date */}
+              <SingleDatePicker
+                value={customEnd}
+                onChange={setCustomEnd}
+                placeholder="End Date"
+                disabled={date => (customStart ? date < customStart : false) || date > new Date()}
+              />
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* REFERENCE LINE INFO - FUNCTIONALITY 1 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Reference Line Control</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Manual Reference Input */}
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <label className="block mb-1 font-semibold text-sm">Set Y-Axis Reference Value:</label>
-                <input
-                  type="number"
-                  step="any"
-                  className="border p-2 rounded w-full"
-                  placeholder="Enter value (e.g., 100)"
-                  value={manualReferenceInput}
-                  onChange={(e) => setManualReferenceInput(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      setManualReference();
-                    }
-                  }}
-                />
-              </div>
-              <Button onClick={setManualReference} disabled={!manualReferenceInput}>
-                Set Reference
-              </Button>
-            </div>
-
-            {/* Active Reference Display */}
-            {referenceInfo && (
-              <div className="border-2 border-green-500 bg-green-50 rounded p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-green-700">{referenceInfo}</p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {referenceTimestamp 
-                        ? "Hover over the chart to compare values with this reference point"
-                        : "This horizontal line shows the reference value on the Y-axis. All signals will be compared against this value."}
-                    </p>
-                  </div>
-                  <button
-                    onClick={clearReference}
-                    className="text-red-500 hover:text-red-700 transition"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <p className="text-xs text-gray-500">
-              💡 Tip: You can also click on any point in the chart to set it as reference, or enter a custom Y-axis value above for comparing multiple signals.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* 2 CARDS: MAIN + COMPARE */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* MAIN ASSET CARD */}
         <Card>
           <CardHeader>
             <CardTitle>Selected Asset</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Asset Dropdown */}
             <div>
-              <label className="block mb-1 font-semibold">Select Asset:</label>
+              <label className="block mb-2 font-semibold">Select Asset:</label>
               <select
-                className="border p-2 rounded w-full"
                 value={mainAsset?.assetId ?? ""}
-                onChange={(e) =>
+                onChange={e =>
                   setMainAsset(allAssets.find(a => a.assetId === e.target.value) ?? null)
                 }
+                className="border p-2 rounded w-full"
               >
                 <option value="">--Select Asset--</option>
                 {allAssets.map(a => (
@@ -581,59 +600,62 @@ export default function Signals() {
               </select>
             </div>
 
+
+            {/* Signal Selection - Multiple Select */}
             <div>
-              <label className="block mb-1 font-semibold">Select Signal:</label>
+              <label className="block mb-2 font-semibold">
+                Select Signals (Hold Ctrl/Cmd for multiple):
+              </label>
               <select
-                className="border p-2 rounded w-full"
-                value={signalSelected?.signalTypeId ?? ""}
-                onChange={(e) => {
-                  const selectedSignal = mainSignals.find(a => a.signalTypeId === e.target.value) ?? null;
-                  setSignalSelected(selectedSignal);
-                }}
+                multiple
+                value={selectedSignals.map(s => s.signalTypeId)}
+                onChange={handleMainSignalChange}
                 disabled={!mainSignals.length}
+                className="border p-2 rounded w-full h-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">--Select Signal--</option>
-                {mainSignals.map(a => (
-                  <option key={a.signalTypeId} value={a.signalTypeId}>
-                    {a.signalName}
-                  </option>
-                ))}
+                {mainSignals.length === 0 ? (
+                  <option disabled>No signals available</option>
+                ) : (
+                  mainSignals.map(s => (
+                    <option key={s.signalTypeId} value={s.signalTypeId}>
+                      {s.signalName}
+                    </option>
+                  ))
+                )}
               </select>
+              {selectedSignals.length > 0 && (
+                <p className="text-sm text-gray-600 mt-2">
+                  Selected: {selectedSignals.map(s => s.signalName).join(", ")}
+                </p>
+              )}
             </div>
 
+
+            {/* Device */}
             <div>
-              <p className="font-semibold">Assigned Device:</p>
-              {deviceName ? (
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {deviceName.split(",").map((d, idx) => (
-                    <span key={idx} className="px-2 py-1 bg-blue-100 rounded text-sm">
-                      {d}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500">Not Assigned</p>
-              )}
+              <label className="block mb-2 font-semibold">Assigned Device:</label>
+              <p className="text-gray-700">{deviceName ? deviceName.split(",").map((d, idx) => <span key={idx}>{d}</span>) : "Not Assigned"}</p>
             </div>
           </CardContent>
         </Card>
+
 
         {/* COMPARE ASSET CARD */}
         <Card>
           <CardHeader>
             <CardTitle>Compare Asset</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div>
-              <label className="block mb-1 font-semibold">Select Asset</label>
+              <label className="block mb-2 font-semibold">Select Asset:</label>
               {loading ? (
                 <p>Loading...</p>
               ) : (
                 <select
-                  className="border p-2 rounded w-full"
                   value={compareAssetId}
-                  onChange={(e) => setCompareAssetId(e.target.value)}
+                  onChange={e => setCompareAssetId(e.target.value)}
                   disabled={!mainAsset}
+                  className="border p-2 rounded w-full"
                 >
                   <option value="">None</option>
                   {allAssets
@@ -647,281 +669,188 @@ export default function Signals() {
               )}
             </div>
 
-            {compareAssetId && (
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label className="block mb-1 font-semibold">Select Signal:</label>
-                  <select
-                    className="border p-2 rounded w-full"
-                    value={compareSignalSelected?.signalTypeID || compareSignalSelected?.signalTypeId || ""}
-                    onChange={(e) => {
-                      const selected = compareSignals.find(s => 
-                        (s.signalTypeID === e.target.value) || (s.signalTypeId === e.target.value)
-                      ) ?? null;
-                      setCompareSignalSelected(selected);
-                    }}
-                    disabled={!compareSignals.length}
-                  >
-                    <option value="">--Select Signal--</option>
-                    {compareSignals.map((s, idx) => (
-                      <option key={s.signalTypeID || s.signalTypeId || idx} value={s.signalTypeID || s.signalTypeId}>
-                        {s.signalName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
 
+            {compareAssetId && (
+              <>
+                {/* Compare Signal Selection - Multiple Select */}
                 <div>
-                  <p className="font-semibold">Assigned Device:</p>
-                  {compareDeviceName ? (
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {compareDeviceName.split(",").map((d, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-blue-100 rounded text-sm">
-                          {d}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500">Not Assigned</p>
+                  <label className="block mb-2 font-semibold">
+                    Select Signals (Hold Ctrl/Cmd for multiple):
+                  </label>
+                  <select
+                    multiple
+                    value={compareSelectedSignals.map(s => s.signalTypeId)}
+                    onChange={handleCompareSignalChange}
+                    disabled={!compareSignals.length}
+                    className="border p-2 rounded w-full h-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {compareSignals.length === 0 ? (
+                      <option disabled>No signals available</option>
+                    ) : (
+                      compareSignals.map(s => (
+                        <option key={s.signalTypeId} value={s.signalTypeId}>
+                          {s.signalName}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  {compareSelectedSignals.length > 0 && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Selected: {compareSelectedSignals.map(s => s.signalName).join(", ")}
+                    </p>
                   )}
                 </div>
-              </div>
+
+
+                {/* Device */}
+                <div>
+                  <label className="block mb-2 font-semibold">Assigned Device:</label>
+                  <p className="text-gray-700">
+                    {compareDeviceName
+                      ? compareDeviceName.split(",").map((d, idx) => <span key={idx}>{d}</span>)
+                      : "Not Assigned"}
+                  </p>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
       </div>
 
+
       {/* GRAPH CARD */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            Signals Graph
-            {fetchingData && <span className="ml-2 text-sm text-gray-500">(Loading...)</span>}
-          </CardTitle>
-          <div className="flex items-center justify-between mt-3">
-            <div className="text-xs text-gray-600 space-y-1">
-              <p>📍 Click on any point to set reference line</p>
-              <p>🔍 Drag to select a range for zoom (works with 1 or 2 signals)</p>
-              {zoomStartIndex !== null && zoomEndIndex !== null && (
-                <p className="text-blue-600 font-semibold">Zoomed: {displayData.length} points</p>
-              )}
-            </div>
-            <div className="flex gap-2 items-center">
-              {/* Chart Style Selector */}
-              <select
-                className="border p-2 rounded text-sm"
-                value={chartStyle}
-                onChange={(e) => setChartStyle(e.target.value as any)}
-              >
-                <option value="line">Line Chart</option>
-                <option value="area">Area Chart</option>
-                <option value="bar">Bar Chart</option>
-              </select>
-              {zoomStartIndex !== null && zoomEndIndex !== null && (
-                <Button 
-                  onClick={resetZoom}
-                  variant="outline"
-                  size="sm"
-                >
-                  Reset Zoom
-                </Button>
-              )}
-            </div>
-          </div>
+          <CardTitle>Signals Graph</CardTitle>
+          {fetchingData && <p className="text-sm text-gray-500">Loading data...</p>}
         </CardHeader>
         <CardContent>
           {fetchingData ? (
-            <div className="h-96 flex items-center justify-center">
-              <p className="text-gray-500">Loading telemetry data...</p>
+            <div className="flex justify-center items-center h-96">
+              <p className="text-lg">Loading telemetry data...</p>
             </div>
-          ) : telemetryData.length === 0 ? (
-            <div className="h-96 flex items-center justify-center">
-              <p className="text-gray-500">
-                No data available. Please select an asset and a signal.
-              </p>
+          ) : fullTelemetryData.length === 0 ? (
+            <div className="flex justify-center items-center h-96 bg-gray-50 rounded">
+              <p className="text-lg text-gray-600">No data available. Please select an asset and signals.</p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={400}>
-              {chartStyle === "line" && (
+            <>
+              <div className="mb-4 space-y-3">
+                <div className="flex flex-wrap gap-3">
+                  <Button onClick={zoomOut}>Zoom Out</Button>
+                  <Button
+                    onClick={startSelectingReference}
+                    disabled={isSelectingReference}
+                    variant={isSelectingReference ? "default" : "outline"}
+                    className="flex items-center gap-2"
+                  >
+                    <Pin className="w-4 h-4" />
+                    {isSelectingReference ? "Click on chart to set..." : "Set Reference Point"}
+                  </Button>
+                  {referencePoint && (
+                    <Button
+                      onClick={clearReferencePoint}
+                      variant="destructive"
+                      className="flex items-center gap-2"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Clear Reference Point
+                    </Button>
+                  )}
+                </div>
+               
+                {referencePoint && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded">
+                    <p className="font-semibold text-sm">
+                      Reference Point: {format(new Date(referencePoint.time), "MMM dd HH:mm:ss")}
+                    </p>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                      {Object.entries(referencePoint.values).map(([key, value]) => (
+                        <div key={key} className="flex justify-between">
+                          <span className="text-gray-600">{key}:</span>
+                          <span className="font-semibold">{value.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+               
+                {isSelectingReference && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded">
+                    <p className="text-sm font-semibold text-green-800">
+                      🎯 Click on any point in the chart below to set as reference
+                    </p>
+                  </div>
+                )}
+               
+                <p className="text-sm text-gray-600">
+                  {isSelectingReference
+                    ? "Click on the chart to set reference point"
+                    : "Drag on chart to zoom into a time range"}
+                </p>
+              </div>
+              <ResponsiveContainer width="100%" height={400}>
                 <LineChart
-                  data={displayData}
-                  onMouseDown={handleChartMouseDown}
-                  onMouseUp={handleChartMouseUp}
-                  onClick={(state) => {
-                    if (state && state.activeTooltipIndex !== undefined && !isSelectingZoom) {
-                      handleChartClick(displayData[state.activeTooltipIndex]);
-                    }
-                  }}
+                  data={displayedTelemetryData}
+                  onClick={handleChartClick}
+                  onMouseDown={e => !isSelectingReference && e && setRefAreaLeft(e.activeLabel as number)}
+                  onMouseMove={e => !isSelectingReference && refAreaLeft && e && setRefAreaRight(e.activeLabel as number)}
+                  onMouseUp={() => !isSelectingReference && zoom()}
+                  style={{ cursor: isSelectingReference ? "crosshair" : "default" }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="timestamp" />
+                  <XAxis
+                    dataKey="time"
+                    tickFormatter={tick => format(new Date(tick), "MMM dd HH:mm")}
+                  />
                   <YAxis />
-                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#ccc" }} />
+                  <Tooltip content={<CustomTooltip />} />
                   <Legend />
-
+                 
                   {/* Reference Line */}
-                  {referenceValue !== null && (
+                  {referencePoint && (
                     <ReferenceLine
-                      y={referenceValue}
-                      stroke="#16a34a"
+                      x={referencePoint.time}
+                      stroke="#ff6b6b"
                       strokeWidth={2}
                       strokeDasharray="5 5"
                       label={{
-                        value: `Ref: ${referenceValue.toFixed(2)}`,
-                        position: "right",
-                        fill: "#16a34a",
-                        fontSize: 11,
-                        fontWeight: "bold",
+                        value: "Reference",
+                        position: "top",
+                        fill: "#ff6b6b",
+                        fontSize: 12,
                       }}
                     />
                   )}
-
-                  {/* Main Signal Line */}
-                  {mainKeys.map(key => (
+                 
+                  {allKeys.map(key => (
                     <Line
                       key={key}
                       type="monotone"
                       dataKey={key}
-                      stroke={colorForAsset(mainAsset?.assetId ?? "")}
+                      stroke={colorForString(key)}
+                      name={key}
+                      dot={
+                        referencePoint && referencePoint.time
+                          ? (props: any) => {
+                              if (props.payload.time === referencePoint.time) {
+                                return <ReferencePointDot {...props} />;
+                              }
+                              return <Dot {...props} r={0} />;
+                            }
+                          : false
+                      }
                       strokeWidth={2}
-                      dot={{ r: 3 }}
                       activeDot={{ r: 6 }}
                     />
                   ))}
-
-                  {/* Compare Signal Line */}
-                  {compareKeys.map(key => (
-                    <Line
-                      key={key}
-                      type="monotone"
-                      dataKey={key}
-                      stroke={colorForAsset(compareAssetId)}
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  ))}
+                 
+                  {!isSelectingReference && refAreaLeft && refAreaRight ? (
+                    <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} />
+                  ) : null}
                 </LineChart>
-              )}
-
-              {chartStyle === "area" && (
-                <AreaChart
-                  data={displayData}
-                  onMouseDown={handleChartMouseDown}
-                  onMouseUp={handleChartMouseUp}
-                  onClick={(state) => {
-                    if (state && state.activeTooltipIndex !== undefined && !isSelectingZoom) {
-                      handleChartClick(displayData[state.activeTooltipIndex]);
-                    }
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="timestamp" />
-                  <YAxis />
-                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#ccc" }} />
-                  <Legend />
-
-                  {/* Reference Line */}
-                  {referenceValue !== null && (
-                    <ReferenceLine
-                      y={referenceValue}
-                      stroke="#16a34a"
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      label={{
-                        value: `Ref: ${referenceValue.toFixed(2)}`,
-                        position: "right",
-                        fill: "#16a34a",
-                        fontSize: 11,
-                        fontWeight: "bold",
-                      }}
-                    />
-                  )}
-
-                  {/* Main Signal Area */}
-                  {mainKeys.map(key => (
-                    <Area
-                      key={key}
-                      type="monotone"
-                      dataKey={key}
-                      stroke={colorForAsset(mainAsset?.assetId ?? "")}
-                      fill={colorForAsset(mainAsset?.assetId ?? "")}
-                      fillOpacity={0.3}
-                      strokeWidth={2}
-                    />
-                  ))}
-
-                  {/* Compare Signal Area */}
-                  {compareKeys.map(key => (
-                    <Area
-                      key={key}
-                      type="monotone"
-                      dataKey={key}
-                      stroke={colorForAsset(compareAssetId)}
-                      fill={colorForAsset(compareAssetId)}
-                      fillOpacity={0.2}
-                      strokeWidth={2}
-                    />
-                  ))}
-                </AreaChart>
-              )}
-
-              {chartStyle === "bar" && (
-                <BarChart
-                  data={displayData}
-                  onMouseDown={handleChartMouseDown}
-                  onMouseUp={handleChartMouseUp}
-                  onClick={(state) => {
-                    if (state && state.activeTooltipIndex !== undefined && !isSelectingZoom) {
-                      handleChartClick(displayData[state.activeTooltipIndex]);
-                    }
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="timestamp" />
-                  <YAxis />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.1)' }} />
-                  <Legend />
-
-                  {/* Reference Line */}
-                  {referenceValue !== null && (
-                    <ReferenceLine
-                      y={referenceValue}
-                      stroke="#16a34a"
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                      label={{
-                        value: `Ref: ${referenceValue.toFixed(2)}`,
-                        position: "right",
-                        fill: "#16a34a",
-                        fontSize: 11,
-                        fontWeight: "bold",
-                      }}
-                    />
-                  )}
-
-                  {/* Main Signal Bar */}
-                  {mainKeys.map(key => (
-                    <Bar
-                      key={key}
-                      dataKey={key}
-                      fill={colorForAsset(mainAsset?.assetId ?? "")}
-                      radius={[4, 4, 0, 0]}
-                    />
-                  ))}
-
-                  {/* Compare Signal Bar */}
-                  {compareKeys.map(key => (
-                    <Bar
-                      key={key}
-                      dataKey={key}
-                      fill={colorForAsset(compareAssetId)}
-                      radius={[4, 4, 0, 0]}
-                    />
-                  ))}
-                </BarChart>
-              )}
-            </ResponsiveContainer>
+              </ResponsiveContainer>
+            </>
           )}
         </CardContent>
       </Card>
