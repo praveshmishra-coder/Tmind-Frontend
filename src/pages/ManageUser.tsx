@@ -175,6 +175,7 @@ const updateRole = async (user: User, newRole: string) => {
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
+            id="user-search"
             placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => {
@@ -187,6 +188,7 @@ const updateRole = async (user: User, newRole: string) => {
 
         {isAdmin && (
           <Button
+            id="download-csv-btn"
             onClick={() =>
               downloadCSV(
                 filteredUsers.map((u) => ({
@@ -214,7 +216,7 @@ const updateRole = async (user: User, newRole: string) => {
       {/* Table */}
       {!loading && !error && (
         <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-        <table className="w-full text-sm text-foreground">
+        <table id="user-table" className="w-full text-sm text-foreground">
           <thead className="bg-muted/40">
             <tr>
               <th className="p-4 text-left font-semibold">User</th>
@@ -268,7 +270,7 @@ const updateRole = async (user: User, newRole: string) => {
           u.email === user?.email ||
           u.email === "admin@example.com"
         }
-        className="border border-border rounded-md bg-background px-2 py-1"
+        className="role-dropdown border border-border rounded-md bg-background px-2 py-1"
       >
         <option>User</option>
         <option>Engineer</option>
@@ -286,6 +288,7 @@ const updateRole = async (user: User, newRole: string) => {
       <Button
         variant="destructive"
         size="sm"
+        className="delete-user-btn"
         onClick={() => {
           if (u.email === user?.email) {
             toast.error("You cannot delete your own account!");
@@ -316,7 +319,7 @@ const updateRole = async (user: User, newRole: string) => {
             u.email === user?.email ||
             u.email === "admin@example.com"
           }
-          className="border border-border rounded-md bg-background px-2 py-1 text-sm"
+          className=" role-dropdown border border-border rounded-md bg-background px-2 py-1 text-sm"
         >
           <option>User</option>
           <option>Engineer</option>
@@ -327,6 +330,7 @@ const updateRole = async (user: User, newRole: string) => {
         <Button
           variant="destructive"
           size="sm"
+          className="delete-user-btn"
           onClick={() => {
             if (u.email === user?.email) {
               toast.error("You cannot delete your own account!");

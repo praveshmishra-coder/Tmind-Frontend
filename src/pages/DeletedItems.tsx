@@ -109,21 +109,25 @@ export default function DeletedItems() {
   );
 
   return (
-    <div className="p-4">
+    <div className="p-2 space-y-2">
       {/* SIDE-BY-SIDE CARDS */}
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Recently Deleted</h1>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* -------------------------------- */}
         {/* LEFT CARD — Deleted Devices     */}
         {/* -------------------------------- */}
         <div className="rounded-lg border border-border bg-card p-4 shadow flex flex-col">
-          <h1 className="text-2xl font-bold mb-1">Deleted Devices</h1>
+          <h1 className="text-2xl font-semibold mb-1">Deleted Devices</h1>
           <p className="text-muted-foreground mb-4">Manage all deleted devices</p>
 
           {/* Search */}
           <div className="relative w-full mb-3">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <input
+              id="deleted-item-device"  
               type="text"
               placeholder="Search devices..."
               value={deviceSearch}
@@ -138,7 +142,7 @@ export default function DeletedItems() {
 
           {/* Device Table */}
           {!loadingDevices && !deviceError && (
-            <table className="w-full text-sm">
+            <table id="deleted-device-table" className="w-full text-sm">
               <thead className="bg-muted/40 text-left">
                 <tr>
                   <th className="p-3 font-semibold">Device Name</th>
@@ -158,7 +162,7 @@ export default function DeletedItems() {
                             variant="secondary"
                             size="sm"
                             onClick={() => retrieveDevice(d.deviceId)}
-                            className="flex items-center gap-1"
+                            className="retrieve-device-btn flex items-center gap-1"
                           >
                             <RotateCcw className="h-4 w-4" /> Retrieve
                           </Button>
@@ -182,13 +186,14 @@ export default function DeletedItems() {
         {/* RIGHT CARD — Deleted Assets     */}
         {/* -------------------------------- */}
         <div className="rounded-lg border border-border bg-card p-4 shadow flex flex-col">
-          <h1 className="text-2xl font-bold mb-1">Deleted Assets</h1>
+          <h1 className="text-2xl font-semibold mb-1">Deleted Assets</h1>
           <p className="text-muted-foreground mb-4">Manage all deleted assets</p>
 
           {/* Search */}
           <div className="relative w-full mb-3">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
             <input
+              id="deleted-item-asset"  
               type="text"
               placeholder="Search assets..."
               value={assetSearch}
@@ -203,7 +208,7 @@ export default function DeletedItems() {
 
           {/* Assets Table */}
           {!loadingAssets && !assetError && (
-            <table className="w-full text-sm">
+            <table id="deleted-asset-table"  className="w-full text-sm">
               <thead className="bg-muted/40 text-left">
                 <tr>
                   <th className="p-3 font-semibold">Asset Name</th>
@@ -223,7 +228,7 @@ export default function DeletedItems() {
                             variant="secondary"
                             size="sm"
                             onClick={() => restoreAsset(a.id)}
-                            className="flex items-center gap-1"
+                            className="restore-asset-btn flex items-center gap-1"
                           >
                             <RotateCcw className="h-4 w-4" /> Restore
                           </Button>
