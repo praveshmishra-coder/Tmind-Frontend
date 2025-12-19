@@ -68,6 +68,8 @@ export default function Signals() {
   const [telemetryData, setTelemetryData] = useState<any[]>([]);
   const [fetchingData, setFetchingData] = useState<boolean>(false);
   const [signalSelected, setSignalSelected] = useState<any | null>(null);
+  const [compareSignalSelected, setCompareSignalSelected] = useState<SignalType | null>(null);
+
 
   const flattenAssets = (assets: Asset[]): Asset[] => {
     const out: Asset[] = [];
@@ -124,6 +126,13 @@ export default function Signals() {
     };
     loadMainSignals();
   }, [mainAsset]);
+
+  // reset signal for compare when compare asset changes
+
+useEffect(() => {
+  setCompareSignalSelected(null);
+}, [compareAssetId]);
+
 
   /* ---------------- Compare asset signals & device ---------------- */
   useEffect(() => {
@@ -215,12 +224,10 @@ export default function Signals() {
         }
 
         // CHANGED: Only fetch data for the selected signal
-        const allSignals = [signalSelected];
-        // console.log("Fetching telemetry for signals:", allSignals);
+       const allSignals = [];
+        if (signalSelected) allSignals.push(signalSelected);
+        if (compareSignalSelected) allSignals.push(compareSignalSelected);
 
-        if (compareAssetId && compareSignals.length > 0) {
-          allSignals.push(...compareSignals);
-        }
 
         const dataPromises = allSignals.map(async (signal) => {
           try {
@@ -281,7 +288,7 @@ export default function Signals() {
     };
 
     fetchTelemetryData();
-  }, [mainAsset, mainSignals, compareAssetId, compareSignals, timeRange, customStart, customEnd, allAssets, signalSelected]); 
+  }, [mainAsset, mainSignals, compareAssetId, compareSignals, timeRange, customStart, customEnd, allAssets, signalSelected,compareSignalSelected]); 
   // CHANGED: Added signalSelected to dependency array
 
   /* ---------------- Chart Keys ---------------- */
@@ -292,10 +299,12 @@ export default function Signals() {
   }, [mainAsset, signalSelected]);
 
   const compareKeys = useMemo(() => {
-    const obj = allAssets.find(a => a.assetId === compareAssetId) ?? null;
-    if (!obj) return [];
-    return compareSignals.map(s => `${obj.name}-${s.signalName}`);
-  }, [compareAssetId, compareSignals, allAssets]);
+  if (!compareAssetId || !compareSignalSelected) return [];
+  const assetObj = allAssets.find(a => a.assetId === compareAssetId);
+  if (!assetObj) return [];
+  return [`${assetObj.name}-${compareSignalSelected.signalName}`];
+}, [compareAssetId, compareSignalSelected, allAssets]);
+
 
   /* ---------------------- Small Shadcn Single Date Picker ---------------------- */
   const today = new Date();
@@ -496,7 +505,27 @@ export default function Signals() {
 
             {compareAssetId && (
               <div className="mt-4 space-y-4">
-                {/* Device */}
+               {/* Compare Signal Selection */}
+            <div className="mt-4">
+              <label className="block mb-1 font-semibold">Select Signal:</label>
+              <select
+                className="border p-2 rounded w-full"
+                value={compareSignalSelected?.signalTypeId ?? ""}
+                onChange={(e) => {
+                  const selected = compareSignals.find(s => s.signalTypeId === e.target.value) ?? null;
+                  setCompareSignalSelected(selected);
+                }}
+                disabled={!compareSignals.length}
+              >
+                <option value="">--Select Signal--</option>
+                {compareSignals.map(s => (
+                  <option key={s.signalTypeId} value={s.signalTypeId}>
+                    {s.signalName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* Device */}
                 <div>
                   <p className="font-semibold">Assigned Device:</p>
                   {compareDeviceName ? (
@@ -512,21 +541,6 @@ export default function Signals() {
                   )}
                 </div>
 
-                {/* Signals */}
-                <div>
-                  <p className="font-semibold">Signals:</p>
-                  {compareSignals.length === 0 ? (
-                    <p className="text-gray-500">No signals</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {compareSignals.map(s => (
-                        <span key={s.signalTypeId} className="px-2 py-1 bg-green-100 rounded text-sm">
-                          {s.signalName}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             )}
           </CardContent>
