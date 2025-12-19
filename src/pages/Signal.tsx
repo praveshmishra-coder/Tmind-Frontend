@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
+import Graph from "./Graph";
 import {
   LineChart,
   Line,
@@ -344,124 +345,127 @@ useEffect(() => {
     <div className="container mx-auto p-4 space-y-4">
       {/* PAGE TITLE */}
       <h1 className="text-3xl font-bold">Signal Analysis</h1>
+    
+     
+<div className="grid grid-cols-100 gap-4 w-full" style={{ gridTemplateColumns: "35% 35% 28%" }}>
+  {/* Selected Asset - 40% */}
+  <Card  >
+    <CardHeader>
+      <CardTitle>Selected Asset</CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div>
+        
+        <label className="block mb-1 font-semibold">Select Asset:</label>
+        <select
+          className="border p-2 rounded w-full"
+          value={mainAsset?.assetId ?? ""}
+          onChange={(e) =>
+            setMainAsset(allAssets.find(a => a.assetId === e.target.value) ?? null)
+          }
+        >
+          <option value="">--Select Asset--</option>
+          {allAssets.map(a => (
+            <option key={a.assetId} value={a.assetId}>
+              {a.name} (Level {a.level})
+            </option>
+          ))}
+        </select>
+      </div>
 
-      {/* TIME RANGE SECTION */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Time Range</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div>
+        <label className="block mb-1 font-semibold">Select Signal:</label>
+        <select
+          className="border p-2 rounded w-full"
+          value={signalSelected?.signalTypeId ?? ""}
+          onChange={(e) => {
+            const selectedSignal = mainSignals.find(a => a.signalTypeId === e.target.value) ?? null;
+            setSignalSelected(selectedSignal);
+          }}
+          disabled={!mainSignals.length}
+        >
+          <option value="">--Select Signal--</option>
+          {mainSignals.map(a => (
+            <option key={a.signalTypeId} value={a.signalTypeId}>
+              {a.signalName}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <p className="font-semibold">Assigned Device:</p>
+        {deviceName ? (
+          <div className="flex flex-wrap gap-2 mt-1">
+            {deviceName.split(",").map((d, idx) => (
+              <span key={idx} className="px-2 py-1 bg-blue-100 rounded text-sm">
+                {d}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-500">Not Assigned</p>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+
+  {/* Compare Asset - 40% */}
+  <Card>
+    <CardHeader>
+      <CardTitle>Compare Asset</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div>
+        <label className="block mb-1 font-semibold">Select Asset</label>
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
           <select
             className="border p-2 rounded w-full"
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as any)}
+            value={compareAssetId}
+            onChange={(e) => setCompareAssetId(e.target.value)}
+            disabled={!mainAsset}
           >
-            <option value="24h">Last 24 Hours</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="today">Today</option>
-            <option value="custom">Custom Range</option>
+            <option value="">None</option>
+            {allAssets
+              .filter(a => a.assetId !== mainAsset?.assetId)
+              .map(a => (
+                <option key={a.assetId} value={a.assetId}>
+                  {a.name} (Level {a.level})
+                </option>
+              ))}
           </select>
+        )}
+      </div>
 
-          {timeRange === "custom" && (
-            <div className="flex gap-4 mt-4 items-center">
-              {/* Start Date */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {customStart ? format(customStart, "PPP") : "Start Date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={customStart ?? undefined}
-                    onSelect={(date) => setCustomStart(date ?? null)}
-                    disabled={date => date > new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+      {compareAssetId && (
+        <div className="mt-4 space-y-4">
+          <div>
+            <label className="block mb-1 font-semibold">Select Signal:</label>
+            <select
+              className="border p-2 rounded w-full"
+              value={compareSignalSelected?.signalTypeId ?? ""}
+              onChange={(e) => {
+                const selected = compareSignals.find(s => s.signalTypeId === e.target.value) ?? null;
+                setCompareSignalSelected(selected);
+              }}
+              disabled={!compareSignals.length}
+            >
+              <option value="">--Select Signal--</option>
+              {compareSignals.map(s => (
+                <option key={s.signalTypeId} value={s.signalTypeId}>
+                  {s.signalName}
+                </option>
+              ))}
+            </select>
+          </div>
 
-              <span>to</span>
-
-              {/* End Date */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {customEnd ? format(customEnd, "PPP") : "End Date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={customEnd ?? undefined}
-                    onSelect={(date) => setCustomEnd(date ?? null)}
-                    disabled={date => date < customStart || date > new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 2 CARDS: MAIN + COMPARE */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* MAIN ASSET CARD */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Selected Asset</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Asset Dropdown */}
-            <div>
-              <label className="block mb-1 font-semibold">Select Asset:</label>
-              <select
-                className="border p-2 rounded w-full"
-                value={mainAsset?.assetId ?? ""}
-                onChange={(e) =>
-                  setMainAsset(allAssets.find(a => a.assetId === e.target.value) ?? null)
-                }
-              >
-                <option value="">--Select Asset--</option>
-                {allAssets.map(a => (
-                  <option key={a.assetId} value={a.assetId}>
-                    {a.name} (Level {a.level})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Signal Selection - CHANGED: Added this section */}
-            <div>
-              <label className="block mb-1 font-semibold">Select Signal:</label>
-              <select
-                className="border p-2 rounded w-full"
-                value={signalSelected?.signalTypeId ?? ""}
-                onChange={(e) => {
-                  const selectedSignal = mainSignals.find(a => a.signalTypeId === e.target.value) ?? null;
-                  setSignalSelected(selectedSignal);
-                  // console.log("Signal selected:", selectedSignal);
-                }}
-                disabled={!mainSignals.length}
-              >
-                <option value="">--Select Signal--</option>
-                {mainSignals.map(a => (
-                  <option key={a.signalTypeId} value={a.signalTypeId}>
-                    {a.signalName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {/* Device */}
           <div>
             <p className="font-semibold">Assigned Device:</p>
-            {deviceName ? (
+            {compareDeviceName ? (
               <div className="flex flex-wrap gap-2 mt-1">
-                {deviceName.split(",").map((d, idx) => (
+                {compareDeviceName.split(",").map((d, idx) => (
                   <span key={idx} className="px-2 py-1 bg-blue-100 rounded text-sm">
                     {d}
                   </span>
@@ -471,136 +475,112 @@ useEffect(() => {
               <p className="text-gray-500">Not Assigned</p>
             )}
           </div>
-          </CardContent>
-        </Card>
+        </div>
+      )}
+    </CardContent>
+  </Card>
 
-        {/* COMPARE ASSET CARD */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Compare Asset</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div>
-              <label className="block mb-1 font-semibold">Select Asset</label>
-              {loading ? (
-                <p>Loading...</p>
-              ) : (
-                <select
-                  className="border p-2 rounded w-full"
-                  value={compareAssetId}
-                  onChange={(e) => setCompareAssetId(e.target.value)}
-                  disabled={!mainAsset}
-                >
-                  <option value="">None</option>
-                  {allAssets
-                    .filter(a => a.assetId !== mainAsset?.assetId)
-                    .map(a => (
-                      <option key={a.assetId} value={a.assetId}>
-                        {a.name} (Level {a.level})
-                      </option>
-                    ))}
-                </select>
-              )}
-            </div>
+  {/* Time Range - 20% */}
+  <Card >
+    <CardHeader>
+      <CardTitle>Time Range</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <select
+        className="border p-2 rounded w-full"
+        value={timeRange}
+        onChange={(e) => setTimeRange(e.target.value as any)}
+      >
+        <option value="24h">Last 24 Hours</option>
+        <option value="7d">Last 7 Days</option>
+        <option value="today">Today</option>
+        <option value="custom">Custom Range</option>
+      </select>
 
-            {compareAssetId && (
-              <div className="mt-4 space-y-4">
-               {/* Compare Signal Selection */}
-            <div className="mt-4">
-              <label className="block mb-1 font-semibold">Select Signal:</label>
-              <select
-                className="border p-2 rounded w-full"
-                value={compareSignalSelected?.signalTypeId ?? ""}
-                onChange={(e) => {
-                  const selected = compareSignals.find(s => s.signalTypeId === e.target.value) ?? null;
-                  setCompareSignalSelected(selected);
-                }}
-                disabled={!compareSignals.length}
-              >
-                <option value="">--Select Signal--</option>
-                {compareSignals.map(s => (
-                  <option key={s.signalTypeId} value={s.signalTypeId}>
-                    {s.signalName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {/* Device */}
-                <div>
-                  <p className="font-semibold">Assigned Device:</p>
-                  {compareDeviceName ? (
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {compareDeviceName.split(",").map((d, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-blue-100 rounded text-sm">
-                          {d}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500">Not Assigned</p>
-                  )}
-                </div>
+      {timeRange === "custom" && (
+        <div className="flex gap-4 mt-4 items-center">
+          {/* Start Date */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {customStart ? format(customStart, "PPP") : "Start Date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={customStart ?? undefined}
+                onSelect={(date) => setCustomStart(date ?? null)}
+                disabled={date => date > new Date()}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
 
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          <span>to</span>
+
+          {/* End Date */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {customEnd ? format(customEnd, "PPP") : "End Date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={customEnd ?? undefined}
+                onSelect={(date) => setCustomEnd(date ?? null)}
+                disabled={date => date < customStart || date > new Date()}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+</div>      {/* GRAPH CARD */}
+      import Graph from "@/components/Graph";
+
+// Inside the graph card
+<Card>
+  <CardHeader>
+    <CardTitle>
+      Signals Graph
+      {fetchingData && <span className="ml-2 text-sm text-gray-500">(Loading...)</span>}
+    </CardTitle>
+  </CardHeader>
+  <CardContent>
+    {fetchingData ? (
+      <div className="h-96 flex items-center justify-center">
+        <p className="text-gray-500">Loading telemetry data...</p>
       </div>
+    ) : telemetryData.length === 0 ? (
+      <div className="h-96 flex items-center justify-center">
+        <p className="text-gray-500">
+          No data available. Please select an asset and a signal.
+        </p>
+      </div>
+    ) : (
+      <Graph
+        telemetryData={telemetryData}
+        mainKeys={mainKeys}
+        compareKeys={compareKeys}
+        mainAssetId={mainAsset?.assetId}
+        compareAssetId={compareAssetId}
+        aggregationWindow={
+          // Example: you can calculate based on time range or pass backend value
+          timeRange === "24h" ? "1m" : timeRange === "7d" ? "5m" : "10m"
+        }
+        colorForAsset={colorForAsset}
+      />
+    )}
+  </CardContent>
+</Card>
 
-      {/* GRAPH CARD */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            Signals Graph
-            {fetchingData && <span className="ml-2 text-sm text-gray-500">(Loading...)</span>}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {fetchingData ? (
-            <div className="h-96 flex items-center justify-center">
-              <p className="text-gray-500">Loading telemetry data...</p>
-            </div>
-          ) : telemetryData.length === 0 ? (
-            <div className="h-96 flex items-center justify-center">
-              <p className="text-gray-500">
-                No data available. Please select an asset and a signal.
-              </p>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={telemetryData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="timestamp" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                {mainKeys.map(key => (
-                  <Line
-                    key={key}
-                    type="monotone"
-                    dataKey={key}
-                    stroke={colorForAsset(mainAsset?.assetId ?? "")}
-                    strokeWidth={2}
-                  />
-                ))}
-                {compareKeys.map(key => {
-                  const assetObj = allAssets.find(a => a.assetId === compareAssetId);
-                  return (
-                    <Line
-                      key={key}
-                      type="monotone"
-                      dataKey={key}
-                      stroke={colorForAsset(compareAssetId)}
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                    />
-                  );
-                })}
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
