@@ -390,9 +390,8 @@ export default function Reports() {
               onChange={(e) => setReportFormat(e.target.value)}
               className="w-full p-2 border rounded-md dark:bg-gray-700"
             >
-              <option value="excel">Excel</option>
-              <option value="csv">CSV</option>
-              <option value="pdf">PDF</option>
+              <option value="excel">Excel/CSV</option>
+             
             </select>
           </div>
         </div>
