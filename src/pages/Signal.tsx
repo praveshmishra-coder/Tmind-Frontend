@@ -589,7 +589,7 @@ export default function Signals() {
                 onChange={e =>
                   setMainAsset(allAssets.find(a => a.assetId === e.target.value) ?? null)
                 }
-               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+               className="tour-main-asset-dropdown w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="">--Select Asset--</option>
                 {allAssets.map(a => (
@@ -612,7 +612,7 @@ export default function Signals() {
                 onChange={handleMainSignalChange}
                 disabled={!mainSignals.length}
                 size={4}
-                className="w-full rounded-md border border-border bg-background
+                className="tour-main-signals w-full rounded-md border border-border bg-background
              px-3 py-2 text-sm text-foreground
              focus:outline-none focus:ring-2 focus:ring-primary"
               >
@@ -636,7 +636,7 @@ export default function Signals() {
 
             {/* Device */}
             <div>
-              <label className="block mb-2 font-semibold">Assigned Device:</label>
+              <label className="tour-main-device block mb-2 font-semibold">Assigned Device:</label>
               <p className="text-foreground">{deviceName ? deviceName.split(",").map((d, idx) => <span key={idx}>{d}</span>) : "Not Assigned"}</p>
             </div>
           </CardContent>
@@ -658,7 +658,7 @@ export default function Signals() {
                   value={compareAssetId}
                   onChange={e => setCompareAssetId(e.target.value)}
                   disabled={!mainAsset}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="tour-compare-dropdown w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="">None</option>
                   {allAssets
