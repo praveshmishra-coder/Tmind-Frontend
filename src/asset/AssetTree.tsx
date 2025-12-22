@@ -225,9 +225,10 @@ const expandRecursivelyToMap = (node: BackendAsset, map: Record<string, boolean>
   return (
     <div>
       <div
-        className={`flex items-center justify-between gap-2 px-3 py-2 cursor-pointer hover:bg-accent rounded-sm ${
+        className={`flex items-center justify-between gap-2 px-3 py-2 cursor-pointer hover:bg-primary/5  hover:shadow-sm ${
           isSelected ? "bg-primary/10 text-primary font-medium" : ""
         } ${asset.isDeleted ? "opacity-50" : ""}`}
+
         onClick={handleFullToggle}
       >
         <div className="flex items-center gap-2 flex-1">
