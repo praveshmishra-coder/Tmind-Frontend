@@ -6,12 +6,8 @@ import { Calendar as CalendarIcon, FileText, Download, RefreshCw } from "lucide-
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { getAssetHierarchy, getAssetConfig, getSignalOnAsset } from "@/api/assetApi";
+import { getAssetHierarchy, getAssetConfig, getSignalOnAsset,getRequestedReports,requestAssetReport,downloadAssetReport } from "@/api/assetApi";
 import { getDeviceById } from "@/api/deviceApi";
-import type { Asset } from "@/api/assetApi";
-
-// API Base URL - adjust this to your backend URL
-const API_BASE_URL = "http://localhost:5000/asset"
 
 export default function Reports() {
   const [startDate, setStartDate] = useState("");
@@ -92,106 +88,91 @@ export default function Reports() {
 
   // Fetch all requested reports
   const fetchRequestedReports = async () => {
-    setIsLoadingReports(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/Reports`);
-      if (!response.ok) throw new Error("Failed to fetch reports");
-      const data = await response.json();
-      setRequestedReports(data);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to load report history");
-    } finally {
-      setIsLoadingReports(false);
-    }
-  };
+  setIsLoadingReports(true);
+  try {
+    const data = await getRequestedReports();
+    setRequestedReports(data);
+  } catch (err) {
+    console.error(err);
+    toast.error(err.message || "Failed to load report history");
+  } finally {
+    setIsLoadingReports(false);
+  }
+};
+
 
   // Request a new report generation
-  const requestReport = async () => {
-    // Validation
-    if (!selectedAssetId) {
-      toast.error("Please select an asset");
-      return;
-    }
-    if (selectedSignalIds.length === 0) {
-      toast.error("Please select at least one signal");
-      return;
-    }
-    if (!startDate || !endDate) {
-      toast.error("Please select both start and end dates");
-      return;
-    }
+ const requestReport = async () => {
+  if (!selectedAssetId) {
+    toast.error("Please select an asset");
+    return;
+  }
+  if (selectedSignalIds.length === 0) {
+    toast.error("Please select at least one signal");
+    return;
+  }
+  if (!startDate || !endDate) {
+    toast.error("Please select both start and end dates");
+    return;
+  }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    if (end < start) {
-      toast.error("End date cannot be earlier than start date");
-      return;
-    }
+  const start = new Date(startDate);
+  const end = new Date(endDate);
 
-    const daysDiff = (end - start) / (1000 * 60 * 60 * 24);
-    if (daysDiff > 31) {
-      toast.error("Date range cannot exceed 31 days");
-      return;
-    }
+  if (end < start) {
+    toast.error("End date cannot be earlier than start date");
+    return;
+  }
 
-    try {
-      const requestBody = {
-        assetID: selectedAssetId,
-        signalIDs: selectedSignalIds,
-        startDate: new Date(startDate).toISOString(),
-        endDate: new Date(endDate).toISOString(),
-        reportFormat: reportFormat
-      };
+  const daysDiff =
+    (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
 
-      const response = await fetch(`${API_BASE_URL}/Reports/ReportRequest`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
+  if (daysDiff > 31) {
+    toast.error("Date range cannot exceed 31 days");
+    return;
+  }
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to request report");
-      }
+  try {
+    await requestAssetReport({
+      assetID: selectedAssetId,
+      signalIDs: selectedSignalIds,
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      reportFormat,
+    });
 
-      toast.success("Report requested successfully! Processing...");
-      
-      // Refresh the reports list after a short delay
-      setTimeout(() => {
-        fetchRequestedReports();
-      }, 2000);
-    } catch (err) {
-      console.error(err);
-      toast.error(err.message || "Failed to request report");
-    }
-  };
+    toast.success("Report requested successfully! Processing...");
+    setTimeout(fetchRequestedReports, 2000);
+  } catch (err: any) {
+    console.error(err);
+    toast.error(err.message || "Failed to request report");
+  }
+};
+
 
   // Download a specific report
-  const downloadReport = async (reportId, fileName) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/Reports/download/${reportId}`);
-      if (!response.ok) throw new Error("Failed to download report");
+  const downloadReport = async (reportId: string, fileName: string) => {
+  try {
+    const blob = await downloadAssetReport(reportId);
 
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
 
-      toast.success("Report downloaded successfully!");
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to download report");
-    }
-  };
+    document.body.appendChild(a);
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    toast.success("Report downloaded successfully!");
+  } catch (err: any) {
+    console.error(err);
+    toast.error(err.message || "Failed to download report");
+  }
+};
+
 
   // Toggle signal selection
   const toggleSignalSelection = (signalId) => {
