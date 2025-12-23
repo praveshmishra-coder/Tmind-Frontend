@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
-
+import { toast } from "react-toastify";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -142,6 +142,7 @@ export default function DeviceBulkUpload() {
       const data = res.data as { createdDeviceIds?: string[]; errors?: string[] };
 
       if (data.errors && data.errors.length > 0) {
+        toast.error("Some devices failed to upload.");
         const backendFieldErrors: FieldError[] = [];
         const backendGlobalErrors: string[] = [];
 
@@ -167,6 +168,8 @@ export default function DeviceBulkUpload() {
       }
 
       // Success
+
+      toast.success(`${payload.length} device${payload.length > 1 ? "s" : ""} uploaded successfully`);
       setRows([]);
       setDevices([]);
       setGlobalErrors([]);

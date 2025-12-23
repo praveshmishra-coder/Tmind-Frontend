@@ -36,14 +36,16 @@ export default function AddRoot({ onClose, onAdd }: AddRootProps) {
     return true;
   };
 
-  useEffect(() => {
-    setIsValid(validateName(name));
-  }, [name]);
-
   const handleAdd = async () => {
-    if (!isValid) return;
+    const valid = validateName(name); // 🔥 validate on click
+    
+    if (!valid) {
+      setIsValid(false);
+      return;}
 
+    setIsValid(true);
     setLoading(true);
+
     try {
       const payload = {
         parentId: null,
@@ -96,7 +98,7 @@ export default function AddRoot({ onClose, onAdd }: AddRootProps) {
                   Cancel
                 </Button>
 
-                <Button onClick={handleAdd} disabled={!isValid || loading}>
+                <Button onClick={handleAdd} disabled={loading}>
                   {loading ? "Adding..." : "Add"}
                 </Button>
               </div>
