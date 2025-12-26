@@ -173,6 +173,17 @@ export default function Reports() {
   }
 };
 
+const formatToIST = (utcDate) =>
+  new Date(utcDate + "Z").toLocaleString("en-IN", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
 
   // Toggle signal selection
   const toggleSignalSelection = (signalId) => {
@@ -437,7 +448,8 @@ export default function Reports() {
                     <td className="px-6 py-4 text-sm">{report.fileName}</td>
                     <td className="px-6 py-4 text-sm">{report.assetName}</td>
                     <td className="px-6 py-4 text-sm">
-                      {new Date(report.requestedAt).toLocaleString()}
+                      {/* {new Date(report.requestedAt).toLocaleString()} */}
+                      {formatToIST(report.requestedAt)}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(report.status)}`}>

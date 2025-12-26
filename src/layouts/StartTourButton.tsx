@@ -68,7 +68,7 @@ export default function StartTourButton() {
     return null;
   };
 
-  // ⭐ AUTO TOUR BASED ON BACKEND
+  // AUTO TOUR BASED ON BACKEND
   useEffect(() => {
     const autoStart = async () => {
       let backendTourDone = getBackendTourStatus();

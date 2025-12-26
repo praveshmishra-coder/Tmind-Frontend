@@ -1,4 +1,4 @@
-// 📌 src/utils/tourStorage.ts
+// src/utils/tourStorage.ts
 
 export const PAGE_TOUR_KEY = "page_tour_completed";
 export const BACKEND_TOUR_KEY = "backend_tour_done";

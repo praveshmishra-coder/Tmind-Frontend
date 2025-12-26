@@ -11,9 +11,9 @@ export type DriveStep = {
 };
 
 export const useTour = () => {
-  const startTour = (steps: DriveStep[], autoDelayMs: number = 2500) => {
+  const startTour = (steps: DriveStep[], autoDelayMs: number = 5000) => {
 
-    // ⭐ Delay so DOM elements exist (fix autoTour filtering issue)
+    // Delay so DOM elements exist (fix autoTour filtering issue)
     setTimeout(() => {
 
       const filteredSteps = steps.filter((step) => {
@@ -42,7 +42,7 @@ export const useTour = () => {
 
       tour.drive();
 
-      // ⭐ Auto-next logic
+      // Auto-next logic
       if (autoDelayMs > 0) {
         let index = 0;
         const interval = setInterval(() => {
@@ -55,7 +55,7 @@ export const useTour = () => {
         }, autoDelayMs);
       }
 
-    }, 700); // ⭐ Delay ensures all DOM elements exist
+    }, 700); // Delay ensures all DOM elements exist
   };
 
   return { startTour };
